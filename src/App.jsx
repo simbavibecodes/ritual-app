@@ -23,7 +23,22 @@ const DEFAULT_HAIR = [
   { id: "leave_in",     label: "Leave-In / Styling",emoji: "💅" },
 ];
 const MOODS = ["✨ Glowing", "😊 Good", "😐 Okay", "😞 Bad"];
-const EMOJI_OPTIONS = ["🫧","💧","✨","🌿","☀️","👁️","🔬","🎭","🪨","🚿","🫙","💆","🌺","🔥","🌱","☁️","💅","🧴","🧼","🪷","🌸","🍃","💎","🌙","⭐","🫐","🍋","🥥","🌾","🧘","💊","🩺","🪸","🌊","🫚","🧪","🌞","🧁","🫶"];
+const EMOJI_OPTIONS = [
+  // Skincare & beauty
+  "🫧","💧","✨","🌿","☀️","👁️","🔬","🎭","🪨","🧴","🧼","💄","💋","👄","🪞","🪥","🧹","🫦","💅","🪷",
+  // Hair
+  "🚿","🫙","💆","🌺","🔥","🌱","☁️","💇","🪮","✂️","🎀","🪢","🧖","💈",
+  // Nature & plants
+  "🌸","🍃","🌷","🌼","🌻","🌹","🍀","🌴","🌵","🎋","🎍","🍂","🍁","🌾","🪸","🪴","🌊","🫚",
+  // Food & wellness
+  "🍋","🥥","🫐","🍓","🥑","🫒","🍯","🧃","🫖","🍵","🧊","🫧","🫐","🍇","🥦",
+  // Health & wellness  
+  "🧘","💊","🩺","🩹","🩻","💉","🧪","🫀","🧠","🦷","👃","🌡️","⚕️","🏃","🧗","🤸",
+  // Gems, stars & magic
+  "💎","🌙","⭐","🌟","💫","✨","🌞","🌈","⚡","🔮","🪄","💜","🩵","🩷","❤️","🧡","💛","💚",
+  // Objects & tools
+  "🪨","🫶","🧁","🕯️","🛁","🪣","🧺","🎁","🪬","📿","🧿","🪩","💌","🫧","🧋","🥤"
+];
 const DOW = ["Su","Mo","Tu","We","Th","Fr","Sa"];
 
 const fmt      = d => d.toLocaleDateString("en-CA");
@@ -204,6 +219,11 @@ body{font-family:'DM Sans',sans-serif;background:#fdf6f0;min-height:100vh;color:
 .reminder-banner{background:#e8f0e8;border:1px solid #b8d4b8;border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px}
 .rb-text{flex:1;font-size:.82rem;color:#3a5a3a;line-height:1.5}
 .rb-dismiss{background:none;border:none;cursor:pointer;color:#7a9e7a;font-size:.75rem;text-decoration:underline;padding:0;margin-top:2px}
+.name-prompt-overlay{position:fixed;inset:0;background:rgba(58,46,39,.5);display:flex;align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(3px);padding:24px}
+.name-prompt{background:#fdf6f0;border-radius:24px;padding:36px 28px;width:100%;max-width:360px;text-align:center}
+.name-prompt-title{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;color:#3a2e27;margin-bottom:6px}
+.name-prompt-title span{font-style:italic;color:#b07a5e}
+.name-prompt-sub{font-size:.8rem;color:#a08070;margin-bottom:24px;line-height:1.5}
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#3a2e27;color:#fff;padding:11px 22px;border-radius:30px;font-size:.8rem;letter-spacing:.08em;animation:fiu .3s ease,fout .3s ease 1.7s forwards;z-index:300;white-space:nowrap}
 @keyframes fiu{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 @keyframes fout{to{opacity:0}}
@@ -264,18 +284,34 @@ function PhotoNotes({ notes, photos, onNotesChange, onPhotosChange }) {
   );
 }
 
-function ManageItemsModal({ type, items, onAdd, onRemove, onClose }) {
-  const [label, setLabel] = useState("");
-  const [emoji, setEmoji] = useState("🌿");
+function ManageItemsModal({ type, items, onAdd, onRemove, onEdit, onClose }) {
+  const [label,    setLabel]    = useState("");
+  const [emoji,    setEmoji]    = useState("🌿");
   const [showPick, setShowPick] = useState(false);
+  const [editingId,setEditingId]= useState(null); // id of item being edited
+  const [editLabel,setEditLabel]= useState("");
+  const [editEmoji,setEditEmoji]= useState("🌿");
+  const [showEditPick,setShowEditPick]=useState(false);
   const ref = useRef();
   useEffect(()=>{ setTimeout(()=>ref.current?.focus(),80); },[]);
+
   const doAdd = () => {
     if (!label.trim()) return;
     onAdd({ id:uid(), label:label.trim(), emoji });
     setLabel(""); setEmoji("🌿"); setShowPick(false);
     ref.current?.focus();
   };
+
+  const startEdit = (it) => {
+    setEditingId(it.id); setEditLabel(it.label); setEditEmoji(it.emoji); setShowEditPick(false);
+  };
+  const saveEdit = () => {
+    if (!editLabel.trim()) return;
+    onEdit(editingId, { label: editLabel.trim(), emoji: editEmoji });
+    setEditingId(null); setShowEditPick(false);
+  };
+  const cancelEdit = () => { setEditingId(null); setShowEditPick(false); };
+
   return (
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal">
@@ -283,6 +319,7 @@ function ManageItemsModal({ type, items, onAdd, onRemove, onClose }) {
           <div className="modal-title">Manage {type==="skin"?"Skin":"Hair"} Steps</div>
           <button className="modal-x" onClick={onClose}>×</button>
         </div>
+
         <div className="modal-sub">Add a new step</div>
         <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
           <div className="row">
@@ -291,19 +328,41 @@ function ManageItemsModal({ type, items, onAdd, onRemove, onClose }) {
               onChange={e=>setLabel(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doAdd()}/>
             <button className="confirm-btn" onClick={doAdd} disabled={!label.trim()}>+ Add</button>
           </div>
-          {showPick&&<div className="egrid">{EMOJI_OPTIONS.map(em=>(
+          {showPick&&<div className="egrid">{EMOJI_OPTIONS.flat().map(em=>(
             <span key={em} className={`eopt ${emoji===em?"on":""}`}
               onClick={()=>{setEmoji(em);setShowPick(false)}}>{em}</span>
           ))}</div>}
         </div>
+
         <hr className="modal-hr"/>
         <div className="modal-sub">Current steps ({items.length})</div>
         {!items.length&&<div style={{textAlign:"center",color:"#b09080",fontStyle:"italic",padding:"12px 0",fontSize:".86rem"}}>None yet</div>}
         {items.map(it=>(
-          <div key={it.id} className="m-item">
-            <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-            <span className="m-item-lbl">{it.label}</span>
-            <button className="m-rem-btn" onClick={()=>onRemove(it.id)}>Remove</button>
+          <div key={it.id}>
+            {editingId===it.id ? (
+              <div style={{background:"#fff8f3",border:"1.5px solid #b07a5e",borderRadius:12,padding:"10px 13px",marginBottom:8}}>
+                <div className="row" style={{marginBottom:8}}>
+                  <button className="epick-btn" onClick={()=>setShowEditPick(p=>!p)}>{editEmoji}</button>
+                  <input className="ifield" value={editLabel} onChange={e=>setEditLabel(e.target.value)}
+                    onKeyDown={e=>e.key==="Enter"&&saveEdit()} autoFocus/>
+                </div>
+                {showEditPick&&<div className="egrid" style={{marginBottom:8}}>{EMOJI_OPTIONS.flat().map(em=>(
+                  <span key={em} className={`eopt ${editEmoji===em?"on":""}`}
+                    onClick={()=>{setEditEmoji(em);setShowEditPick(false)}}>{em}</span>
+                ))}</div>}
+                <div style={{display:"flex",gap:8}}>
+                  <button className="confirm-btn" onClick={saveEdit} disabled={!editLabel.trim()} style={{flex:1}}>Save</button>
+                  <button onClick={cancelEdit} style={{background:"none",border:"1.5px solid #e8d8cc",borderRadius:10,padding:"9px 16px",fontSize:".78rem",color:"#a08070",cursor:"pointer",flex:1}}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div className="m-item" style={{marginBottom:8}}>
+                <span style={{fontSize:"1rem"}}>{it.emoji}</span>
+                <span className="m-item-lbl">{it.label}</span>
+                <button className="ghost-btn" style={{fontSize:".7rem",padding:"3px 9px"}} onClick={()=>startEdit(it)}>Edit</button>
+                <button className="m-rem-btn" onClick={()=>onRemove(it.id)}>Remove</button>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -546,6 +605,8 @@ export default function App({ user }) {
   const [rangeEnd,    setRangeEnd]    = useState(null);
   const [hoverDay,    setHoverDay]    = useState(null);
   const [curPhotos,   setCurPhotos]   = useState([]);
+  const [userName,    setUserName]    = useState("");
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
 
   // Load all data from Supabase on mount
   useEffect(()=>{
@@ -573,6 +634,11 @@ export default function App({ user }) {
         // Load freq settings
         const { data: freqRows } = await supabase.from("freq_settings").select("*").eq("user_id", user.id).single();
         if (freqRows) { setFreqTracked(freqRows.tracked||[]); setFreqPeriod(freqRows.period||"year"); }
+        // Load user name from profile metadata
+        const { data: { user: freshUser } } = await supabase.auth.getUser();
+        const name = freshUser?.user_metadata?.display_name || "";
+        if (name) setUserName(name);
+        else setShowNamePrompt(true);
       } catch(e) { console.error("Load error", e); }
     })();
   },[user]);
@@ -667,6 +733,10 @@ export default function App({ user }) {
     if(type==="skin") setSkinR(p=>p.filter(r=>r.id!==id)); else setHairR(p=>p.filter(r=>r.id!==id));
     setEntries(p=>{ const u={...p}; for(const d in u){ if(u[d][type]) u[d]={...u[d],[type]:u[d][type].filter(x=>x!==id)} } return u; });
   };
+  const editItem=(type,id,changes)=>{
+    if(type==="skin") setSkinR(p=>p.map(r=>r.id===id?{...r,...changes}:r));
+    else setHairR(p=>p.map(r=>r.id===id?{...r,...changes}:r));
+  };
   const saveSched=async(s)=>{
     const newS = [...schedules.filter(x=>x.id!==s.id), s];
     setSchedules(newS);
@@ -756,7 +826,7 @@ export default function App({ user }) {
       <style>{STYLES}</style>
       <div className="app">
         <div className="header">
-          <div className="header-title">My <span>Ritual</span> Journal</div>
+          <div className="header-title">{userName ? <>{userName}'s</> : "My"} <span>Ritual</span></div>
           <div className="header-sub">Skin · Hair</div>
           <button onClick={()=>supabase.auth.signOut()} style={{marginTop:10,background:"none",border:"none",fontSize:".7rem",color:"#c0a898",cursor:"pointer",letterSpacing:".08em",textTransform:"uppercase",textDecoration:"underline",fontFamily:"'DM Sans',sans-serif"}}>Sign out</button>
         </div>
@@ -806,7 +876,6 @@ export default function App({ user }) {
                   <div className="r-check">{on&&<CheckIcon/>}</div>
                 </div>
               );})}
-              <div className="add-card" onClick={()=>setModal("manageItems")}><span>＋</span><span>Add step</span></div>
             </div>
             <div className="sec-title" style={{marginBottom:12}}>How's your skin feeling?</div>
             <div className="mood-row">
@@ -963,12 +1032,30 @@ export default function App({ user }) {
         )}
       </div>
 
-      {modal==="manageItems"&&<ManageItemsModal type={activeTab} items={activeTab==="skin"?skinR:hairR} onAdd={item=>addItem(activeTab,item)} onRemove={id=>removeItem(activeTab,id)} onClose={()=>setModal(null)}/>}
+      {modal==="manageItems"&&<ManageItemsModal type={activeTab} items={activeTab==="skin"?skinR:hairR} onAdd={item=>addItem(activeTab,item)} onRemove={id=>removeItem(activeTab,id)} onEdit={(id,changes)=>editItem(activeTab,id,changes)} onClose={()=>setModal(null)}/>}
       {modal==="plan"&&<PlanModal allItems={allItems} schedules={schedules} onSave={saveSched} onDelete={deleteSched} onClose={()=>setModal(null)}/>}
       {modal==="freq"&&<FreqModal allItems={allItems} tracked={freqTracked} period={freqPeriod} onToggle={id=>setFreqTracked(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id])} onPeriod={async p=>{ setFreqPeriod(p); await persist({freqPeriod:p}); }} onClose={()=>setModal(null)}/>}
       {modal==="dayEdit"&&selectedDay&&<DayEditModal date={selectedDay} entry={getE(selectedDay)} skinRoutines={skinR} hairRoutines={hairR} onSave={data=>saveDayEdit(selectedDay,data)} onClose={()=>setModal(null)}/>}
       {modal==="rangeApply"&&rangeStart&&rangeEnd&&<RangeApplyModal rangeStart={rangeStart} rangeEnd={rangeEnd} skinRoutines={skinR} hairRoutines={hairR} onApply={applyRange} onClose={()=>{ setModal(null); setRangeStart(null); setRangeEnd(null); }}/>}
 
+      {showNamePrompt&&(
+        <div className="name-prompt-overlay">
+          <div className="name-prompt">
+            <div className="name-prompt-title">Welcome to <span>Ritual</span></div>
+            <div className="name-prompt-sub">What should we call you? We'll personalise your journal.</div>
+            <input className="ifield" style={{textAlign:"center",marginBottom:14,width:"100%"}}
+              placeholder="Your first name…"
+              value={userName} onChange={e=>setUserName(e.target.value)}
+              onKeyDown={async e=>{ if(e.key==="Enter"&&userName.trim()){ await supabase.auth.updateUser({data:{display_name:userName.trim()}}); setShowNamePrompt(false); }}}
+              autoFocus/>
+            <button className="save-btn" disabled={!userName.trim()}
+              style={{opacity:userName.trim()?1:.4}}
+              onClick={async()=>{ await supabase.auth.updateUser({data:{display_name:userName.trim()}}); setShowNamePrompt(false); }}>
+              Let's go ✨
+            </button>
+          </div>
+        </div>
+      )}
       {toast&&<div className="toast">{toast}</div>}
     </>
   );
