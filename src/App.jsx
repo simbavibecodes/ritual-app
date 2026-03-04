@@ -224,6 +224,21 @@ body{font-family:'DM Sans',sans-serif;background:#fdf6f0;min-height:100vh;color:
 .name-prompt-title{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;color:#3a2e27;margin-bottom:6px}
 .name-prompt-title span{font-style:italic;color:#b07a5e}
 .name-prompt-sub{font-size:.8rem;color:#a08070;margin-bottom:24px;line-height:1.5}
+.hair-length-card{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:14px;padding:16px 18px;margin-bottom:20px}
+.hair-length-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-style:italic;color:#7a5c48;margin-bottom:4px}
+.hair-length-sub{font-size:.74rem;color:#a08070;margin-bottom:14px}
+.hair-length-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.hair-length-month{font-size:.8rem;color:#7a5c48;font-weight:500;min-width:80px}
+.hair-length-input{flex:1;background:#fdf6f0;border:1.5px solid #e8d8cc;border-radius:10px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:.86rem;color:#3a2e27;outline:none;transition:border .18s}
+.hair-length-input:focus{border-color:#7a9e7a}
+.hair-length-input::placeholder{color:#c0a898;font-style:italic}
+.hair-length-save{background:#7a9e7a;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .18s;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.hair-length-save:hover{background:#5a7e5a}
+.hair-history-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0e0d4}
+.hair-history-row:last-child{border-bottom:none}
+.hair-history-month{font-size:.8rem;color:#7a5c48}
+.hair-history-val{font-size:.9rem;color:#3a2e27;font-weight:500}
+.hair-growth-badge{font-size:.72rem;color:#7a9e7a;margin-left:8px}
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#3a2e27;color:#fff;padding:11px 22px;border-radius:30px;font-size:.8rem;letter-spacing:.08em;animation:fiu .3s ease,fout .3s ease 1.7s forwards;z-index:300;white-space:nowrap}
 @keyframes fiu{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 @keyframes fout{to{opacity:0}}
@@ -584,6 +599,62 @@ function RangeApplyModal({ rangeStart, rangeEnd, skinRoutines, hairRoutines, onA
   );
 }
 
+function HairLengthCard({ hairLengths, setHairLengths, saveHairLength }) {
+  const now = new Date();
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+  const isLastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate() === now.getDate();
+  const monthLabel = m => { const [y,mo]=m.split("-"); return new Date(y, mo-1, 1).toLocaleDateString("en-US",{month:"long",year:"numeric"}); };
+  const history = Object.entries(hairLengths).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,24);
+  const [saving, setSaving] = useState(false);
+
+  const doSave = async () => {
+    setSaving(true);
+    await saveHairLength(monthKey, hairLengths[monthKey]||"");
+    setSaving(false);
+  };
+
+  return (
+    <div className="hair-length-card">
+      <div className="hair-length-title">📏 Hair Length Tracker</div>
+      <div className="hair-length-sub">Record your measurement on the last day of each month to track your growth</div>
+      <div className="hair-length-row">
+        <span className="hair-length-month">{monthLabel(monthKey)}</span>
+        <input className="hair-length-input" placeholder="e.g. 32 cm"
+          value={hairLengths[monthKey]||""}
+          onChange={e=>setHairLengths(p=>({...p,[monthKey]:e.target.value}))}
+          onKeyDown={e=>e.key==="Enter"&&doSave()}/>
+        <button className="hair-length-save" onClick={doSave} disabled={saving}>
+          {saving?"…":"Save"}
+        </button>
+      </div>
+      {!isLastDay&&<div style={{fontSize:".72rem",color:"#a08070",marginBottom:10,fontStyle:"italic"}}>
+        💡 You can update this anytime — just save it on the last day of the month for accuracy!
+      </div>}
+      {history.length>0&&(
+        <>
+          <div style={{fontSize:".74rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginTop:6,marginBottom:8}}>Growth History</div>
+          {history.map(([month, val], i)=>{
+            const prev = history[i+1]?.[1];
+            const curr = parseFloat(val), prevN = parseFloat(prev);
+            const unit = val.replace(/[\d.\s]/g,"").trim() || "";
+            const growth = (!isNaN(curr)&&!isNaN(prevN)) ? +(curr-prevN).toFixed(1) : null;
+            return (
+              <div key={month} className="hair-history-row">
+                <span className="hair-history-month">{monthLabel(month)}</span>
+                <span>
+                  <span className="hair-history-val">{val}</span>
+                  {growth!==null&&growth>0&&<span className="hair-growth-badge">▲ +{growth}{unit} growth</span>}
+                  {growth!==null&&growth<0&&<span className="hair-growth-badge" style={{color:"#c07060"}}>▼ {growth}{unit}</span>}
+                </span>
+              </div>
+            );
+          })}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function App({ user }) {
   const today = fmt(new Date());
   const [view,        setView]        = useState("log");
@@ -607,6 +678,7 @@ export default function App({ user }) {
   const [curPhotos,   setCurPhotos]   = useState([]);
   const [userName,    setUserName]    = useState("");
   const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const [hairLengths,   setHairLengths]   = useState({}); // { "2026-03": "12cm" }
 
   // Load all data from Supabase on mount
   useEffect(()=>{
@@ -634,6 +706,13 @@ export default function App({ user }) {
         // Load freq settings
         const { data: freqRows } = await supabase.from("freq_settings").select("*").eq("user_id", user.id).single();
         if (freqRows) { setFreqTracked(freqRows.tracked||[]); setFreqPeriod(freqRows.period||"year"); }
+        // Load hair lengths
+        const { data: hlRows } = await supabase.from("hair_lengths").select("*").eq("user_id", user.id);
+        if (hlRows) {
+          const map = {};
+          hlRows.forEach(r => { map[r.month] = r.length_cm; });
+          setHairLengths(map);
+        }
         // Load user name from profile metadata
         const { data: { user: freshUser } } = await supabase.auth.getUser();
         const name = freshUser?.user_metadata?.display_name || "";
@@ -695,6 +774,19 @@ export default function App({ user }) {
         updated_at: new Date().toISOString()
       }, { onConflict: "user_id,date" });
     } catch(e) { console.error("Entry save error", e); }
+  };
+
+  // Save a hair length measurement
+  const saveHairLength = async (month, lengthVal) => {
+    const updated = { ...hairLengths, [month]: lengthVal };
+    setHairLengths(updated);
+    if (!user) return;
+    try {
+      await supabase.from("hair_lengths").upsert(
+        { user_id: user.id, month, length_cm: lengthVal, updated_at: new Date().toISOString() },
+        { onConflict: "user_id,month" }
+      );
+    } catch(e) { console.error("Hair length save error", e); }
   };
 
   // Save schedules to Supabase
@@ -877,7 +969,7 @@ export default function App({ user }) {
                 </div>
               );})}
             </div>
-            <div className="sec-title" style={{marginBottom:12}}>How's your skin feeling?</div>
+            <div className="sec-title" style={{marginBottom:12}}>How's your {activeTab==="skin"?"skin":"hair"} feeling?</div>
             <div className="mood-row">
               {MOODS.map(m=><button key={m} className={`mood-chip ${entry.mood===m?"on":""}`} onClick={()=>setMoodVal(activeDate,m)}>{m}</button>)}
             </div>
@@ -888,6 +980,7 @@ export default function App({ user }) {
             {curPhotos.length>0&&curPhotos.map(p=>(
               <div key={p.id} className="photo-full"><img src={p.src} alt={p.name}/></div>
             ))}
+            {activeTab==="hair"&&<HairLengthCard hairLengths={hairLengths} setHairLengths={setHairLengths} saveHairLength={saveHairLength}/>}
             <button className="save-btn" onClick={saveEntry}>Save Entry</button>
           </>
         )}
