@@ -171,8 +171,8 @@ body{font-family:'DM Sans',sans-serif;background:#fdf6f0;min-height:100vh;color:
 .sched-reminder{font-size:.7rem;color:#7a9e7a;margin-top:3px;padding-left:28px}
 .add-sched-btn{width:100%;background:none;border:1.5px dashed #d0b8aa;border-radius:12px;padding:12px;font-size:.82rem;color:#b07a5e;cursor:pointer;transition:all .18s;margin-top:4px;font-family:'DM Sans',sans-serif}
 .add-sched-btn:hover{background:#fef2ea;border-color:#b07a5e}
-.overlay{position:fixed;inset:0;background:rgba(58,46,39,.42);display:flex;align-items:flex-end;justify-content:center;z-index:200;backdrop-filter:blur(2px)}
-.modal{background:#fdf6f0;border-radius:24px 24px 0 0;padding:26px 22px 48px;width:100%;max-width:680px;max-height:85vh;overflow-y:auto}
+.overlay{position:fixed;inset:0;background:rgba(58,46,39,.42);display:flex;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(2px);padding:16px}
+.modal{background:#fdf6f0;border-radius:24px;padding:26px 22px 36px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto}
 .modal-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px}
 .modal-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:300;font-style:italic;color:#3a2e27}
 .modal-x{background:none;border:none;font-size:1.5rem;cursor:pointer;color:#a08070;line-height:1;padding:0}
@@ -820,14 +820,33 @@ export default function App({ user }) {
     await persistEntry(activeDate, e);
     showT("✓ Entry saved");
   };
-  const addItem=(type,item)=>{ if(type==="skin") setSkinR(p=>[...p,item]); else setHairR(p=>[...p,item]); };
-  const removeItem=(type,id)=>{
-    if(type==="skin") setSkinR(p=>p.filter(r=>r.id!==id)); else setHairR(p=>p.filter(r=>r.id!==id));
-    setEntries(p=>{ const u={...p}; for(const d in u){ if(u[d][type]) u[d]={...u[d],[type]:u[d][type].filter(x=>x!==id)} } return u; });
+  const persistRoutines = async (newSkin, newHair) => {
+    if (!user) return;
+    try {
+      await supabase.from("routines").upsert([
+        { user_id: user.id, type: "skin", items: newSkin, updated_at: new Date().toISOString() },
+        { user_id: user.id, type: "hair", items: newHair, updated_at: new Date().toISOString() }
+      ], { onConflict: "user_id,type" });
+    } catch(e) { console.error("Routine save error", e); }
   };
-  const editItem=(type,id,changes)=>{
-    if(type==="skin") setSkinR(p=>p.map(r=>r.id===id?{...r,...changes}:r));
-    else setHairR(p=>p.map(r=>r.id===id?{...r,...changes}:r));
+  const addItem=async(type,item)=>{
+    const newSkin = type==="skin" ? [...skinR, item] : skinR;
+    const newHair = type==="hair" ? [...hairR, item] : hairR;
+    if(type==="skin") setSkinR(newSkin); else setHairR(newHair);
+    await persistRoutines(newSkin, newHair);
+  };
+  const removeItem=async(type,id)=>{
+    const newSkin = type==="skin" ? skinR.filter(r=>r.id!==id) : skinR;
+    const newHair = type==="hair" ? hairR.filter(r=>r.id!==id) : hairR;
+    if(type==="skin") setSkinR(newSkin); else setHairR(newHair);
+    setEntries(p=>{ const u={...p}; for(const d in u){ if(u[d][type]) u[d]={...u[d],[type]:u[d][type].filter(x=>x!==id)} } return u; });
+    await persistRoutines(newSkin, newHair);
+  };
+  const editItem=async(type,id,changes)=>{
+    const newSkin = type==="skin" ? skinR.map(r=>r.id===id?{...r,...changes}:r) : skinR;
+    const newHair = type==="hair" ? hairR.map(r=>r.id===id?{...r,...changes}:r) : hairR;
+    if(type==="skin") setSkinR(newSkin); else setHairR(newHair);
+    await persistRoutines(newSkin, newHair);
   };
   const saveSched=async(s)=>{
     const newS = [...schedules.filter(x=>x.id!==s.id), s];
@@ -873,19 +892,20 @@ export default function App({ user }) {
   const isRangeEnd=d=>rangeEnd?d===rangeEnd:(rangeStart&&hoverDay&&d===hoverDay&&hoverDay!==rangeStart);
 
   const handleCalClick=d=>{
-    if(!rangeStart||(rangeStart&&rangeEnd)){
-      // First tap (or reset): select day, show detail
+    if(rangeStart&&rangeEnd){
+      // Reset after a completed range — start fresh
       setRangeStart(d); setRangeEnd(null); setSelectedDay(d);
+    } else if(!rangeStart){
+      // Nothing selected — select this day
+      setRangeStart(d); setSelectedDay(d);
+    } else if(d===rangeStart){
+      // Tapped the already-selected day — deselect it (clear selection)
+      setRangeStart(null); setSelectedDay(null);
     } else {
-      if(d===rangeStart){
-        // Tapped same day twice — open single-day editor
-        setSelectedDay(d); setModal("dayEdit");
-      } else {
-        // Second tap on different day — open range modal
-        const [lo,hi]=d>=rangeStart?[rangeStart,d]:[d,rangeStart];
-        setRangeStart(lo); setRangeEnd(hi); setSelectedDay(lo);
-        setModal("rangeApply");
-      }
+      // Second tap on a different day — open range modal
+      const [lo,hi]=d>=rangeStart?[rangeStart,d]:[d,rangeStart];
+      setRangeStart(lo); setRangeEnd(hi); setSelectedDay(lo);
+      setModal("rangeApply");
     }
   };
 
@@ -1024,7 +1044,7 @@ export default function App({ user }) {
               <span style={{color:"#7a9e7a"}}>● Planned</span>
               <span style={{color:"#b07a5e",fontStyle:"italic"}}>Today</span>
             </div>
-            {selectedDay&&!rangeEnd&&(()=>{
+            {selectedDay&&rangeStart&&!rangeEnd&&(()=>{
               const e=getE(selectedDay);
               const si=(e.skin||[]).map(id=>allSkinMap[id]).filter(Boolean);
               const hi=(e.hair||[]).map(id=>allHairMap[id]).filter(Boolean);
