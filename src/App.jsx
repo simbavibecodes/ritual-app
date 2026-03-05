@@ -31,7 +31,7 @@ const EMOJI_OPTIONS = [
   // Objects & tools
   "🪨","🫶","🧁","🕯️","🛁","🪣","🧺","🎁","🪬","📿","🧿","🪩","💌","🫧","🧋","🥤"
 ];
-const DOW = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+const DOW = ["Mo","Tu","We","Th","Fr","Sa","Su"]; // Week starts Monday
 
 const fmt      = d => d.toLocaleDateString("en-CA");
 const parse    = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
@@ -76,11 +76,11 @@ body{font-family:'DM Sans',sans-serif;background:#fdf6f0;min-height:100vh;color:
 .routine-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:24px}
 .r-item{display:flex;align-items:center;gap:9px;background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:12px;padding:11px 13px;cursor:pointer;transition:all .28s;user-select:none;overflow:hidden}
 .r-item:hover:not(.on){border-color:#c89a7e;background:#fef2ea}
-.r-item.on{background:#eef4ee;border-color:#6a9e6a;padding:7px 12px;border-radius:20px;gap:6px}
-.r-emoji{font-size:1rem;flex-shrink:0;transition:font-size .28s}
-.r-item.on .r-emoji{font-size:.82rem}
+.r-item.on{background:#eef4ee;border-color:#6a9e6a;padding:7px 12px;border-radius:20px;gap:6px;opacity:.78}
+.r-emoji{font-size:1rem;flex-shrink:0;transition:all .28s}
+.r-item.on .r-emoji{font-size:.78rem;opacity:.6}
 .r-label{font-size:.8rem;color:#8a6858;flex:1;line-height:1.3;transition:all .28s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.r-item.on .r-label{font-size:.73rem;color:#2d4a2d;font-weight:600}
+.r-item.on .r-label{font-size:.72rem;color:#3a5a3a;text-decoration:line-through;text-decoration-color:#3a5a3a;text-decoration-thickness:1.5px}
 .r-check{width:17px;height:17px;border-radius:50%;border:1.5px solid #d0b0a0;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .28s}
 .r-item.on .r-check{width:15px;height:15px;background:#2d4a2d;border-color:#2d4a2d}
 .r-check svg{display:none}
@@ -157,12 +157,20 @@ body{font-family:'DM Sans',sans-serif;background:#fdf6f0;min-height:100vh;color:
 .period-row{display:flex;gap:8px;margin-bottom:18px}
 .period-chip{flex:1;background:none;border:1.5px solid #e8d8cc;border-radius:20px;padding:7px 0;font-size:.76rem;text-align:center;color:#a08070;cursor:pointer;transition:all .15s}
 .period-chip.on{background:#b07a5e;border-color:#b07a5e;color:#fff}
-.sched-card{background:#fff8f3;border:1px solid #e8d8cc;border-radius:14px;padding:14px;margin-bottom:10px}
+.sched-card{background:linear-gradient(135deg,#f7ece4 0%,#fdf0e8 100%);border:1.5px solid #d4a888;border-radius:14px;padding:14px;margin-bottom:10px}
+.sched-card.treatment-card{background:linear-gradient(135deg,#fde8e0 0%,#fdf4f0 100%);border-color:#e8a898}
 .sched-top{display:flex;align-items:center;gap:10px}
-.sched-label{flex:1;font-size:.84rem;color:#3a2e27}
-.sched-reminder{font-size:.7rem;color:#7a9e7a;margin-top:3px;padding-left:28px}
+.sched-label{flex:1;font-size:.84rem;color:#5a3a27;font-weight:500}
+.sched-reminder{font-size:.7rem;color:#9a7a5a;margin-top:3px;padding-left:28px}
 .add-sched-btn{width:100%;background:none;border:1.5px dashed #d0b8aa;border-radius:12px;padding:12px;font-size:.82rem;color:#b07a5e;cursor:pointer;transition:all .18s;margin-top:4px;font-family:'DM Sans',sans-serif}
 .add-sched-btn:hover{background:#fef2ea;border-color:#b07a5e}
+.treatment-banner{background:#fde8e0;border:1.5px solid #e8a898;border-radius:12px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .25s}
+.treatment-banner:hover{background:#fad8cc}
+.treatment-banner.done{background:#eef4ee;border-color:#6a9e6a;opacity:.75}
+.treatment-banner.done .tb-text{color:#2d4a2d;text-decoration:line-through;text-decoration-color:#2d4a2d}
+.tb-text{flex:1;font-size:.82rem;color:#c05040;font-weight:500;line-height:1.4}
+.tb-dot{width:8px;height:8px;border-radius:50%;background:#e06050;flex-shrink:0;transition:background .25s}
+.treatment-banner.done .tb-dot{background:#2d4a2d}
 .overlay{position:fixed;inset:0;background:rgba(58,46,39,.42);display:flex;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(2px);padding:16px}
 .modal{background:#fdf6f0;border-radius:24px;padding:26px 22px 36px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto}
 .modal-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px}
@@ -381,81 +389,268 @@ function ManageItemsModal({ type, items, onAdd, onRemove, onEdit, onClose }) {
   );
 }
 
-function PlanModal({ allItems, schedules, onSave, onDelete, onClose }) {
-  const [editing, setEditing] = useState(null);
-  const [showItemPick, setShowItemPick] = useState(false);
-  const startNew  = ()=>setEditing({id:uid(),itemId:"",days:[],reminder:false,time:"08:00"});
-  const startEdit = s=>setEditing({...s});
-  const saveEdit  = ()=>{ if(!editing.itemId||!editing.days.length) return; onSave(editing); setEditing(null); };
-  const toggleDay = d=>setEditing(e=>({...e,days:e.days.includes(d)?e.days.filter(x=>x!==d):[...e.days,d]}));
-  const getItem   = id=>allItems.find(x=>x.id===id);
-  if (editing) {
+function TreatmentHistoryCard({ tx, doneDates }) {
+  const [open, setOpen] = useState(false);
+  const sorted = [...doneDates].sort((a,b)=>b.localeCompare(a));
+  return (
+    <div className="freq-card" style={{marginBottom:10}}>
+      <div className="freq-top" style={{cursor:"pointer"}} onClick={()=>setOpen(p=>!p)}>
+        <span className="freq-emoji">💉</span>
+        <span className="freq-label">{tx.name}</span>
+        <span className="freq-count">{doneDates.length}x done</span>
+        <span style={{marginLeft:6,color:"#b07a5e",fontSize:".8rem"}}>{open?"▲":"▼"}</span>
+      </div>
+      <div style={{fontSize:".72rem",color:"#a08070",marginTop:2}}>{tx.type==="skin"?"🌿 Skin":"✨ Hair"}</div>
+      {open&&sorted.length>0&&<div style={{marginTop:10,borderTop:"1px solid #f0e0d4",paddingTop:8}}>
+        {sorted.map(d=>(
+          <div key={d} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid #f7ece4",fontSize:".8rem",color:"#5a3a27"}}>
+            <span>{parse(d).toLocaleDateString("en-US",{weekday:"short",month:"long",day:"numeric",year:"numeric"})}</span>
+            <span style={{color:"#2d4a2d",fontWeight:500}}>✓</span>
+          </div>
+        ))}
+      </div>}
+      {open&&sorted.length===0&&<div style={{marginTop:8,fontSize:".8rem",color:"#b09080",fontStyle:"italic"}}>No completed sessions yet</div>}
+    </div>
+  );
+}
+
+function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRangeEnd }) {
+  const today=fmt(new Date());
+  const [calM, setCalM]=useState({y:new Date().getFullYear(),m:new Date().getMonth()});
+  const [hov, setHov]=useState(null);
+  function daysInM(y,m){return new Date(y,m+1,0).getDate();}
+  function getCells(){
+    const {y,m}=calM;
+    const rawFirst=new Date(y,m,1).getDay();
+    const first=(rawFirst===0)?6:rawFirst-1;
+    const days=daysInM(y,m);
+    const cells=[];
+    for(let i=0;i<first;i++) cells.push(null);
+    for(let d=1;d<=days;d++) cells.push(fmt(new Date(y,m,d)));
+    return cells;
+  }
+  const cells=getCells();
+  const monthLabel=new Date(calM.y,calM.m,1).toLocaleDateString("en-US",{month:"long",year:"numeric"});
+  // For range selection preview
+  const effEnd=rangeStart&&hov&&hov!==rangeStart?hov:null;
+  const inPreview=d=>{
+    if(!rangeStart||!effEnd||!d) return false;
+    const [lo,hi]=rangeStart<effEnd?[rangeStart,effEnd]:[effEnd,rangeStart];
+    return d>lo&&d<hi;
+  };
+  const handleClick=d=>{
+    if(!rangeStart){onRangeStart(d);}
+    else if(d===rangeStart){onRangeStart(null);}
+    else{
+      const [lo,hi]=d>rangeStart?[rangeStart,d]:[d,rangeStart];
+      const range=[];
+      const cur=parse(lo);
+      const end=parse(hi);
+      while(cur<=end){range.push(fmt(new Date(cur)));cur.setDate(cur.getDate()+1);}
+      onRangeEnd(range);
+    }
+  };
+  return (
+    <div style={{background:"#fff8f3",border:"1px solid #e8d8cc",borderRadius:12,overflow:"hidden",marginBottom:14}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderBottom:"1px solid #eedad2"}}>
+        <button onClick={()=>setCalM(p=>{const d=new Date(p.y,p.m-1,1);return{y:d.getFullYear(),m:d.getMonth()};})} style={{background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1rem",padding:"2px 8px"}}>‹</button>
+        <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",color:"#3a2e27"}}>{monthLabel}</span>
+        <button onClick={()=>setCalM(p=>{const d=new Date(p.y,p.m+1,1);return{y:d.getFullYear(),m:d.getMonth()};})} style={{background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1rem",padding:"2px 8px"}}>›</button>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",textAlign:"center",padding:"6px 8px 2px"}}>
+        {["Mo","Tu","We","Th","Fr","Sa","Su"].map(d=><div key={d} style={{fontSize:".62rem",color:"#b09080",fontWeight:500,letterSpacing:".04em"}}>{d}</div>)}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",padding:"2px 8px 10px",gap:2}}>
+        {cells.map((d,i)=>{
+          if(!d) return <div key={`e${i}`} style={{aspectRatio:1}}/>;
+          const sel=selectedDates.includes(d);
+          const isRS=d===rangeStart;
+          const prev=inPreview(d);
+          return (
+            <div key={d} onClick={()=>handleClick(d)}
+              onMouseEnter={()=>rangeStart&&setHov(d)}
+              onMouseLeave={()=>setHov(null)}
+              style={{aspectRatio:1,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:"50%",fontSize:".78rem",cursor:"pointer",
+                background:sel?"#b07a5e":isRS?"#e8b090":prev?"#f7e8de":"transparent",
+                color:sel?"#fff":isRS?"#fff":"#3a2e27",fontWeight:sel?600:400,
+                border:d===today?"1.5px solid #b07a5e":"none"}}>
+              {parse(d).getDate()}
+            </div>
+          );
+        })}
+      </div>
+      {selectedDates.length>0&&<div style={{padding:"6px 14px 10px",fontSize:".72rem",color:"#b07a5e"}}>
+        {selectedDates.length} date{selectedDates.length!==1?"s":""} selected
+      </div>}
+    </div>
+  );
+}
+
+function PlanModal({ allItems, schedules, treatments, onSave, onDelete, onSaveTreatment, onDeleteTreatment, onClose }) {
+  const [screen, setScreen]=useState("list"); // list | editPlan | editTreatment
+  const [editing, setEditing]=useState(null);
+  const [editTx, setEditTx]=useState(null);
+  const [showItemPick, setShowItemPick]=useState(false);
+  const [calRangeStart, setCalRangeStart]=useState(null);
+
+  const startNewPlan=()=>{ setEditing({id:uid(),itemId:"",days:[],dates:[],reminder:false,time:"08:00"}); setScreen("editPlan"); };
+  const startEditPlan=s=>{ setEditing({...s,dates:s.dates||[]}); setScreen("editPlan"); };
+  const startNewTx=()=>{ setEditTx({id:uid(),name:"",type:"skin",dates:[]}); setScreen("editTreatment"); };
+  const startEditTx=t=>{ setEditTx({...t}); setScreen("editTreatment"); };
+
+  const toggleDay=d=>setEditing(e=>({...e,days:e.days.includes(d)?e.days.filter(x=>x!==d):[...e.days,d]}));
+  const getItem=id=>allItems.find(x=>x.id===id);
+
+  const savePlan=()=>{
+    if(!editing.itemId||(editing.days.length===0&&editing.dates.length===0)) return;
+    onSave(editing); setEditing(null); setScreen("list");
+  };
+  const saveTx=()=>{
+    if(!editTx.name.trim()||!editTx.dates.length) return;
+    onSaveTreatment(editTx); setEditTx(null); setScreen("list");
+  };
+
+  if(screen==="editPlan"&&editing){
     const sel=getItem(editing.itemId);
+    const canSave=editing.itemId&&(editing.days.length>0||editing.dates.length>0);
     return (
-      <div className="overlay" onClick={e=>e.target===e.currentTarget&&setEditing(null)}>
+      <div className="overlay" onClick={e=>e.target===e.currentTarget&&setScreen("list")}>
         <div className="modal">
           <div className="modal-top">
             <div className="modal-title">{schedules.find(s=>s.id===editing.id)?"Edit":"New"} Plan</div>
-            <button className="modal-x" onClick={()=>setEditing(null)}>×</button>
+            <button className="modal-x" onClick={()=>setScreen("list")}>×</button>
           </div>
-          <div className="modal-sub">Routine step</div>
+          <div className="modal-sub">Step</div>
           <button style={{width:"100%",background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:10,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:10,fontSize:".86rem",color:"#3a2e27",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}
             onClick={()=>setShowItemPick(p=>!p)}>
             {sel?<>{sel.emoji} {sel.label}</>:<span style={{color:"#c0a898",fontStyle:"italic"}}>Select a step…</span>}
           </button>
-          {showItemPick&&<div style={{marginBottom:14}}>{allItems.map(it=>(
+          {showItemPick&&<div style={{marginBottom:14,maxHeight:200,overflowY:"auto"}}>{allItems.map(it=>(
             <div key={it.id} className="m-item" style={{cursor:"pointer",marginBottom:6}}
-              onClick={()=>{setEditing(e=>({...e,itemId:it.id}));setShowItemPick(false)}}>
+              onClick={()=>{setEditing(e=>({...e,itemId:it.id}));setShowItemPick(false);}}>
               <span style={{fontSize:"1rem"}}>{it.emoji}</span>
               <span className="m-item-lbl">{it.label}</span>
             </div>
           ))}</div>}
-          <div className="modal-sub">Repeat on</div>
+          <div className="modal-sub">Specific dates (tap to select, tap two for range)</div>
+          <MiniCal
+            selectedDates={editing.dates||[]}
+            onToggleDate={d=>setEditing(e=>({...e,dates:e.dates.includes(d)?e.dates.filter(x=>x!==d):[...e.dates,d]}))}
+            rangeStart={calRangeStart}
+            onRangeStart={d=>setCalRangeStart(d)}
+            onRangeEnd={range=>{ setEditing(e=>({...e,dates:[...new Set([...(e.dates||[]),...range])]})); setCalRangeStart(null); }}
+          />
+          <div className="modal-sub">Repeat on (optional — leave blank for date-specific only)</div>
           <div className="dow-row">
-            {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d,i)=>(
-              <button key={d} className={`dow-chip ${editing.days.includes(i)?"on":""}`} onClick={()=>toggleDay(i)}>{d}</button>
-            ))}
+            {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d,i)=>{
+              const dow=[1,2,3,4,5,6,0][i];
+              return <button key={d} className={`dow-chip ${editing.days.includes(dow)?"on":""}`} onClick={()=>toggleDay(dow)}>{d}</button>;
+            })}
           </div>
           <div className="toggle-row">
             <div><div className="toggle-lbl">🔔 Remind me</div><div className="toggle-sub">Browser notification</div></div>
             <Toggle on={editing.reminder} onChange={v=>setEditing(e=>({...e,reminder:v}))}/>
           </div>
           {editing.reminder&&<div style={{marginBottom:14}}>
-            <input type="time" className="time-input" value={editing.time}
-              onChange={e=>setEditing(ed=>({...ed,time:e.target.value}))}/>
+            <input type="time" className="time-input" value={editing.time} onChange={e=>setEditing(ed=>({...ed,time:e.target.value}))}/>
           </div>}
-          <button className="save-btn" onClick={saveEdit}
-            disabled={!editing.itemId||!editing.days.length}
-            style={{opacity:(!editing.itemId||!editing.days.length)?.4:1}}>Save Plan</button>
+          <button className="save-btn" onClick={savePlan} disabled={!canSave} style={{opacity:canSave?1:.4}}>Save Plan</button>
         </div>
       </div>
     );
   }
+
+  if(screen==="editTreatment"&&editTx){
+    const canSave=editTx.name.trim()&&editTx.dates.length>0;
+    return (
+      <div className="overlay" onClick={e=>e.target===e.currentTarget&&setScreen("list")}>
+        <div className="modal">
+          <div className="modal-top">
+            <div className="modal-title">Plan a Treatment</div>
+            <button className="modal-x" onClick={()=>setScreen("list")}>×</button>
+          </div>
+          <div className="modal-sub">Treatment name</div>
+          <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Facial, Microneedling…"
+            value={editTx.name} onChange={e=>setEditTx(t=>({...t,name:e.target.value}))} autoFocus/>
+          <div className="modal-sub">Skin or Hair</div>
+          <div style={{display:"flex",gap:8,marginBottom:14}}>
+            {["skin","hair"].map(tp=>(
+              <button key={tp} className={`dow-chip ${editTx.type===tp?"on":""}`} style={{flex:1,textAlign:"center"}}
+                onClick={()=>setEditTx(t=>({...t,type:tp}))}>
+                {tp==="skin"?"🌿 Skin":"✨ Hair"}
+              </button>
+            ))}
+          </div>
+          <div className="modal-sub">Scheduled date(s)</div>
+          <MiniCal
+            selectedDates={editTx.dates}
+            onToggleDate={d=>setEditTx(t=>({...t,dates:t.dates.includes(d)?t.dates.filter(x=>x!==d):[...t.dates,d]}))}
+            rangeStart={calRangeStart}
+            onRangeStart={d=>setCalRangeStart(d)}
+            onRangeEnd={range=>{ setEditTx(t=>({...t,dates:[...new Set([...t.dates,...range])]})); setCalRangeStart(null); }}
+          />
+          <button className="save-btn" onClick={saveTx} disabled={!canSave} style={{opacity:canSave?1:.4}}>Schedule Treatment</button>
+        </div>
+      </div>
+    );
+  }
+
+  // List screen
+  const getItem2=id=>allItems.find(x=>x.id===id);
   return (
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal">
         <div className="modal-top">
-          <div className="modal-title">Routine Plans</div>
+          <div className="modal-title">Plans</div>
           <button className="modal-x" onClick={onClose}>×</button>
         </div>
-        {!schedules.length&&<div style={{textAlign:"center",color:"#b09080",fontStyle:"italic",padding:"16px 0",fontSize:".86rem"}}>No plans yet</div>}
-        {schedules.map(s=>{
-          const it=getItem(s.itemId); if(!it) return null;
-          const dn=s.days.map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
-          return (
-            <div key={s.id} className="sched-card">
-              <div className="sched-top">
-                <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-                <span className="sched-label">{it.label}</span>
-                <span style={{fontSize:".72rem",color:"#b07a5e"}}>{dn}</span>
-                <button className="del-btn" onClick={()=>onDelete(s.id)}>✕</button>
-                <button className="ghost-btn" onClick={()=>startEdit(s)}>Edit</button>
+        {schedules.length>0&&<>
+          <div className="modal-sub" style={{marginBottom:8}}>Routine Plans</div>
+          {schedules.map(s=>{
+            const it=getItem2(s.itemId); if(!it) return null;
+            const recurDays=(s.days||[]).map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
+            const dateCount=(s.dates||[]).length;
+            return (
+              <div key={s.id} className="sched-card" style={{marginBottom:8}}>
+                <div className="sched-top">
+                  <span style={{fontSize:"1rem"}}>{it.emoji}</span>
+                  <div style={{flex:1}}>
+                    <div className="sched-label">{it.label}</div>
+                    <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
+                      {recurDays&&<span>{recurDays}</span>}
+                      {recurDays&&dateCount>0&&<span> · </span>}
+                      {dateCount>0&&<span>{dateCount} specific date{dateCount!==1?"s":""}</span>}
+                    </div>
+                  </div>
+                  <button className="ghost-btn" style={{fontSize:".7rem",padding:"3px 9px"}} onClick={()=>startEditPlan(s)}>Edit</button>
+                  <button className="del-btn" onClick={()=>onDelete(s.id)}>✕</button>
+                </div>
+                {s.reminder&&<div className="sched-reminder">🔔 at {s.time}</div>}
               </div>
-              {s.reminder&&<div className="sched-reminder">🔔 at {s.time}</div>}
+            );
+          })}
+        </>}
+        {treatments.length>0&&<>
+          <div className="modal-sub" style={{marginTop:16,marginBottom:8}}>Treatments</div>
+          {treatments.map(tx=>(
+            <div key={tx.id} className="sched-card treatment-card" style={{marginBottom:8}}>
+              <div className="sched-top">
+                <span style={{fontSize:"1rem"}}>💉</span>
+                <div style={{flex:1}}>
+                  <div className="sched-label">{tx.name}</div>
+                  <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>{tx.type==="skin"?"🌿 Skin":"✨ Hair"} · {tx.dates.length} date{tx.dates.length!==1?"s":""} · {tx.completedDates?.length||0} completed</div>
+                </div>
+                <button className="ghost-btn" style={{fontSize:".7rem",padding:"3px 9px"}} onClick={()=>startEditTx(tx)}>Edit</button>
+                <button className="del-btn" onClick={()=>onDeleteTreatment(tx.id)}>✕</button>
+              </div>
             </div>
-          );
-        })}
-        <button className="add-sched-btn" onClick={startNew}>+ Add Plan</button>
+          ))}
+        </>}
+        {!schedules.length&&!treatments.length&&<div style={{textAlign:"center",color:"#b09080",fontStyle:"italic",padding:"16px 0",fontSize:".86rem"}}>No plans yet</div>}
+        <div style={{display:"flex",gap:8,marginTop:8}}>
+          <button className="add-sched-btn" style={{flex:1}} onClick={startNewPlan}>+ Add Plan</button>
+          <button className="add-sched-btn" style={{flex:1,borderColor:"#e8a898",color:"#c07060"}} onClick={startNewTx}>💉 Treatment</button>
+        </div>
       </div>
     </div>
   );
@@ -693,6 +888,7 @@ export default function App({ user }) {
   const [userName,    setUserName]    = useState("");
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [hairLengths,   setHairLengths]   = useState({}); // { "2026-03": "12cm" }
+  const [treatments,    setTreatments]    = useState([]); // [{id, name, type(skin/hair), dates:[], completedDates:[]}]
 
   // Load all data from Supabase on mount
   useEffect(()=>{
@@ -721,7 +917,7 @@ export default function App({ user }) {
         }
         // Load schedules
         const { data: schedRows } = await supabase.from("schedules").select("*").eq("user_id", user.id);
-        if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days, reminder:r.reminder, time:r.time })));
+        if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days||[], dates:r.dates||[], reminder:r.reminder, time:r.time })));
         // Load freq settings
         const { data: freqRows } = await supabase.from("freq_settings").select("*").eq("user_id", user.id).single();
         if (freqRows) { setFreqTracked(freqRows.tracked||[]); setFreqPeriod(freqRows.period||"year"); }
@@ -732,6 +928,9 @@ export default function App({ user }) {
           hlRows.forEach(r => { map[r.month] = r.length_cm; });
           setHairLengths(map);
         }
+        // Load treatments
+        const { data: txRows } = await supabase.from("treatments").select("*").eq("user_id", user.id);
+        if (txRows) setTreatments(txRows.map(r=>({ id:r.id, name:r.name, type:r.type, dates:r.dates||[], completedDates:r.completed_dates||[] })));
         // Load user name from profile metadata
         const { data: { user: freshUser } } = await supabase.auth.getUser();
         const name = freshUser?.user_metadata?.display_name || "";
@@ -810,6 +1009,21 @@ export default function App({ user }) {
     } catch(e) { console.error("Hair length save error", e); }
   };
 
+  // Save a treatment to Supabase
+  const persistTreatment = async (tx) => {
+    if (!user) return;
+    try {
+      await supabase.from("treatments").upsert({
+        id: tx.id, user_id: user.id, name: tx.name, type: tx.type,
+        dates: tx.dates, completed_dates: tx.completedDates, updated_at: new Date().toISOString()
+      }, { onConflict: "id" });
+    } catch(e) { console.error("Treatment save error", e); }
+  };
+  const deleteTreatmentFromDB = async (id) => {
+    if (!user) return;
+    try { await supabase.from("treatments").delete().eq("id", id).eq("user_id", user.id); } catch(e) {}
+  };
+
   // Save schedules to Supabase
   const persistSchedules = async (newSchedules) => {
     if (!user) return;
@@ -818,7 +1032,7 @@ export default function App({ user }) {
       if (newSchedules.length > 0) {
         await supabase.from("schedules").insert(newSchedules.map(s => ({
           id: s.id, user_id: user.id, item_id: s.itemId,
-          days: s.days, reminder: s.reminder, time: s.time
+          days: s.days||[], dates: s.dates||[], reminder: s.reminder, time: s.time
         })));
       }
     } catch(e) { console.error("Schedule save error", e); }
@@ -870,6 +1084,25 @@ export default function App({ user }) {
     if(type==="skin") setSkinR(newSkin); else setHairR(newHair);
     await persistRoutines(newSkin, newHair);
   };
+  const saveTreatment = async (tx) => {
+    const updated = [...treatments.filter(t=>t.id!==tx.id), tx];
+    setTreatments(updated);
+    await persistTreatment(tx);
+    showT("✓ Treatment saved");
+  };
+  const deleteTreatment = async (id) => {
+    setTreatments(p=>p.filter(t=>t.id!==id));
+    await deleteTreatmentFromDB(id);
+    showT("Treatment removed");
+  };
+  const completeTreatment = async (txId, date) => {
+    const tx = treatments.find(t=>t.id===txId); if(!tx) return;
+    const already = tx.completedDates.includes(date);
+    const updated = {...tx, completedDates: already ? tx.completedDates.filter(d=>d!==date) : [...tx.completedDates, date]};
+    setTreatments(p=>p.map(t=>t.id===txId?updated:t));
+    await persistTreatment(updated);
+  };
+
   const saveSched=async(s)=>{
     const newS = [...schedules.filter(x=>x.id!==s.id), s];
     setSchedules(newS);
@@ -899,7 +1132,10 @@ export default function App({ user }) {
 
   const calDays=()=>{
     const {y,m}=calMonth;
-    const first=new Date(y,m,1).getDay(), days=daysInMonth(y,m);
+    // Week starts Monday: Sun=0 becomes offset 6, Mon=1 becomes offset 0
+    const rawFirst=new Date(y,m,1).getDay();
+    const first=(rawFirst===0)?6:rawFirst-1;
+    const days=daysInMonth(y,m);
     const cells=[];
     for(let i=0;i<first;i++) cells.push(null);
     for(let d=1;d<=days;d++) cells.push(fmt(new Date(y,m,d)));
@@ -914,12 +1150,21 @@ export default function App({ user }) {
     const e=entries[d];
     if(!e) return null;
     const dow=parse(d).getDay();
-    const plannedIds=schedules.filter(s=>s.days.includes(dow)).map(s=>s.itemId);
-    if(!plannedIds.length) return null;
-    const allChecked=e.skin&&e.hair&&plannedIds.every(id=>(e.skin.includes(id)||e.hair.includes(id)));
-    if(!allChecked) return null;
-    const isGlowing=e.skin_mood==="✨ Glowing"&&e.hair_mood==="✨ Glowing";
-    return isGlowing?"heart-star":"heart";
+    // Check recurring plans
+    const recurPlanned=schedules.filter(s=>s.days.includes(dow)).map(s=>s.itemId);
+    // Check one-off/range plans for this specific date
+    const oneOffPlanned=schedules.filter(s=>s.dates&&s.dates.includes(d)).map(s=>s.itemId);
+    const plannedIds=[...new Set([...recurPlanned,...oneOffPlanned])];
+    const hasTreatment=treatments.some(t=>t.dates.includes(d)&&t.completedDates.includes(d));
+    let heart=null;
+    if(plannedIds.length>0){
+      const allChecked=plannedIds.every(id=>(e.skin||[]).includes(id)||(e.hair||[]).includes(id));
+      if(allChecked){
+        const isGlowing=e.skin_mood==="✨ Glowing"&&e.hair_mood==="✨ Glowing";
+        heart=isGlowing?"heart-star":"heart";
+      }
+    }
+    return {heart, hasTreatment};
   };
 
   const effEnd=rangeEnd||(rangeStart&&hoverDay?hoverDay:null);
@@ -963,7 +1208,7 @@ export default function App({ user }) {
   },[entries,freqRange,today]);
 
   const todayDow=new Date().getDay();
-  const visibleReminders=schedules.filter(s=>s.days.includes(todayDow)&&!dismissed.includes(s.id));
+  const visibleReminders=schedules.filter(s=>!dismissed.includes(s.id)&&((s.days&&s.days.includes(todayDow))||(s.dates&&s.dates.includes(activeDate))));
   const entry=getE(activeDate);
   const routines=activeTab==="skin"?skinR:hairR;
   const checked=activeTab==="skin"?entry.skin:entry.hair;
@@ -987,14 +1232,26 @@ export default function App({ user }) {
 
         {view==="log"&&(
           <>
-            {visibleReminders.map(s=>{ const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
-              const tab=skinR.find(r=>r.id===s.itemId)?"skin":"hair";
-              const isDone=(tab==="skin"?getE(activeDate).skin:getE(activeDate).hair)?.includes(s.itemId);
+            {visibleReminders.filter(s=>{
+                const itemTab=skinR.find(r=>r.id===s.itemId)?"skin":"hair";
+                return itemTab===activeTab;
+              }).map(s=>{ const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
+              const isDone=(activeTab==="skin"?getE(activeDate).skin:getE(activeDate).hair)?.includes(s.itemId);
               return (
                 <div key={s.id} className={`reminder-banner ${isDone?"done":""}`}
-                  onClick={()=>{ if(!isDone) toggleItem(activeDate,tab,s.itemId); }}>
+                  onClick={()=>{ if(!isDone) toggleItem(activeDate,activeTab,s.itemId); }}>
                   <div className="rb-dot"/>
-                  <div className="rb-text">{isDone?"✓":""} {it.emoji} {it.label}{s.reminder&&!isDone?` · ${s.time}`:""}</div>
+                  <div className="rb-text">{isDone?"✓ ":""}{it.emoji} {it.label}{s.reminder&&!isDone?` · ${s.time}`:""}</div>
+                </div>
+              );
+            })}
+            {treatments.filter(t=>t.dates.includes(activeDate)&&t.type===activeTab).map(tx=>{
+              const isDone=tx.completedDates.includes(activeDate);
+              return (
+                <div key={tx.id} className={`treatment-banner ${isDone?"done":""}`}
+                  onClick={()=>completeTreatment(tx.id,activeDate)}>
+                  <div className="tb-dot"/>
+                  <div className="tb-text">{isDone?"✓ ":""}💉 {tx.name}{isDone?"":" · tap to complete"}</div>
                 </div>
               );
             })}
@@ -1085,13 +1342,17 @@ export default function App({ user }) {
                   else if(isRangeEnd(d)) cls.push("range-end");
                   else if(inRange(d)) cls.push("in-range");
                   else if(d===selectedDay&&!rangeStart) cls.push("selected-cell");
-                  const achievement=getDayAchievement(d);
+                  const ach=getDayAchievement(d);
                   return (
                     <div key={d} className={cls.join(" ")}
                       onClick={()=>handleCalClick(d)}
                       onMouseEnter={()=>rangeStart&&!rangeEnd&&setHoverDay(d)}
                       onMouseLeave={()=>setHoverDay(null)}>
-                      {achievement&&<span style={{position:"absolute",top:1,left:2,fontSize:".6rem",lineHeight:1}}>{achievement==="heart-star"?"❤️✨":"❤️"}</span>}
+                      {(ach?.heart||ach?.hasTreatment)&&<span style={{position:"absolute",top:0,left:1,fontSize:".52rem",lineHeight:1,display:"flex",gap:"1px"}}>
+                        {ach.heart==="heart-star"&&<>❤️✨</>}
+                        {ach.heart==="heart"&&<>❤️</>}
+                        {ach.hasTreatment&&<>💉</>}
+                      </span>}
                       {parse(d).getDate()}
                       {hasEntry(d)&&<div className="cal-dot"/>}
                     </div>
@@ -1099,12 +1360,7 @@ export default function App({ user }) {
                 })}
               </div>
             </div>
-            <div style={{display:"flex",gap:16,fontSize:".7rem",color:"#a08070",marginBottom:18,flexWrap:"wrap"}}>
-              <span>● Entry logged</span>
-              <span style={{color:"#b07a5e",fontStyle:"italic"}}>Today</span>
-              <span>❤️ All planned done</span>
-              <span>❤️✨ Glowing day</span>
-            </div>
+
             {selectedDay&&rangeStart&&!rangeEnd&&(()=>{
               const e=getE(selectedDay);
               const si=(e.skin||[]).map(id=>allSkinMap[id]).filter(Boolean);
@@ -1149,33 +1405,64 @@ export default function App({ user }) {
         {view==="plan"&&(
           <>
             <div className="sec-head">
-              <div className="sec-title">Routine Plans</div>
-              <button className="ghost-btn" onClick={()=>setModal("plan")}>+ Manage</button>
+              <div className="sec-title">Plans</div>
+              <button className="ghost-btn" onClick={()=>setModal("plan")}>+ Add</button>
             </div>
-            <p style={{fontSize:".83rem",color:"#a08070",marginBottom:16,lineHeight:1.6}}>
-              Set weekly recurring plans for your steps. Planned days show on the calendar. Enable reminders for browser notifications.
-            </p>
-            {!schedules.length?(
-              <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No plans yet — tap Manage to add one</div>
-            ):schedules.map(s=>{
-              const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
-              const dn=s.days.sort().map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
-              const isToday=s.days.includes(new Date().getDay());
-              return (
-                <div key={s.id} className="sched-card" style={isToday?{borderColor:"#7a9e7a",background:"#f4f9f4"}:{}}>
-                  <div className="sched-top">
-                    <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-                    <div style={{flex:1}}>
-                      <div className="sched-label" style={{fontWeight:500}}>{it.label}</div>
-                      <div style={{fontSize:".72rem",color:"#a08070",marginTop:2}}>{dn}</div>
+            {schedules.length>0&&<>
+              <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10}}>Routine Plans</div>
+              {schedules.map(s=>{
+                const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
+                const recurDays=(s.days||[]).sort().map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
+                const dateCount=(s.dates||[]).length;
+                const isToday=(s.days||[]).includes(new Date().getDay())||(s.dates||[]).includes(today);
+                return (
+                  <div key={s.id} className="sched-card" onClick={()=>setModal("plan")}>
+                    <div className="sched-top">
+                      <span style={{fontSize:"1rem"}}>{it.emoji}</span>
+                      <div style={{flex:1}}>
+                        <div className="sched-label">{it.label}</div>
+                        <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
+                          {recurDays&&<span>{recurDays}</span>}
+                          {recurDays&&dateCount>0&&<span> · </span>}
+                          {dateCount>0&&<span>{dateCount} specific date{dateCount!==1?"s":""}</span>}
+                        </div>
+                      </div>
+                      {isToday&&<span style={{fontSize:".68rem",background:"#b07a5e",color:"#fff",borderRadius:20,padding:"2px 8px",whiteSpace:"nowrap"}}>Today</span>}
                     </div>
-                    {isToday&&<span style={{fontSize:".7rem",background:"#7a9e7a",color:"#fff",borderRadius:20,padding:"2px 8px"}}>Today</span>}
+                    {s.reminder&&<div className="sched-reminder">🔔 at {s.time}</div>}
                   </div>
-                  {s.reminder&&<div className="sched-reminder">🔔 at {s.time}</div>}
-                </div>
-              );
-            })}
-            <button className="add-sched-btn" onClick={()=>setModal("plan")}>+ Add Plan</button>
+                );
+              })}
+            </>}
+            {treatments.length>0&&<>
+              <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,marginTop:schedules.length?20:0}}>Treatments</div>
+              {treatments.map(tx=>{
+                const upcoming=tx.dates.filter(d=>d>=today).sort();
+                const next=upcoming[0];
+                return (
+                  <div key={tx.id} className="sched-card treatment-card" onClick={()=>setModal("plan")}>
+                    <div className="sched-top">
+                      <span style={{fontSize:"1rem"}}>💉</span>
+                      <div style={{flex:1}}>
+                        <div className="sched-label">{tx.name}</div>
+                        <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
+                          {tx.type==="skin"?"🌿 Skin":"✨ Hair"} · {tx.dates.length} date{tx.dates.length!==1?"s":""} · {tx.completedDates?.length||0} done
+                          {next&&<span> · Next: {parse(next).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
+                        </div>
+                      </div>
+                      {tx.dates.includes(today)&&<span style={{fontSize:".68rem",background:"#e06050",color:"#fff",borderRadius:20,padding:"2px 8px",whiteSpace:"nowrap"}}>Today</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </>}
+            {!schedules.length&&!treatments.length&&(
+              <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No plans yet — tap + Add to start</div>
+            )}
+            <div style={{display:"flex",gap:8,marginTop:8}}>
+              <button className="add-sched-btn" style={{flex:1}} onClick={()=>setModal("plan")}>+ Add Plan</button>
+              <button className="add-sched-btn" style={{flex:1,borderColor:"#e8a898",color:"#c07060"}} onClick={()=>setModal("plan")}>💉 Treatment</button>
+            </div>
           </>
         )}
 
@@ -1211,12 +1498,23 @@ export default function App({ user }) {
                 </div>
               );
             })}
+          {treatments.length>0&&<>
+            <div className="sec-head" style={{marginTop:28}}>
+              <div className="sec-title">Treatment History</div>
+            </div>
+            {treatments.map(tx=>{
+              const done=tx.completedDates||[];
+              return (
+                <TreatmentHistoryCard key={tx.id} tx={tx} doneDates={done}/>
+              );
+            })}
+          </>}
           </>
         )}
       </div>
 
       {modal==="manageItems"&&<ManageItemsModal type={activeTab} items={activeTab==="skin"?skinR:hairR} onAdd={item=>addItem(activeTab,item)} onRemove={id=>removeItem(activeTab,id)} onEdit={(id,changes)=>editItem(activeTab,id,changes)} onClose={()=>setModal(null)}/>}
-      {modal==="plan"&&<PlanModal allItems={allItems} schedules={schedules} onSave={saveSched} onDelete={deleteSched} onClose={()=>setModal(null)}/>}
+      {modal==="plan"&&<PlanModal allItems={allItems} schedules={schedules} treatments={treatments} onSave={saveSched} onDelete={deleteSched} onSaveTreatment={saveTreatment} onDeleteTreatment={deleteTreatment} onClose={()=>setModal(null)}/>}
       {modal==="freq"&&<FreqModal allItems={allItems} tracked={freqTracked} period={freqPeriod} onToggle={id=>setFreqTracked(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id])} onPeriod={async p=>{ setFreqPeriod(p); await persist({freqPeriod:p}); }} onClose={()=>setModal(null)}/>}
       {modal==="dayEdit"&&selectedDay&&<DayEditModal date={selectedDay} entry={getE(selectedDay)} skinRoutines={skinR} hairRoutines={hairR} onSave={data=>saveDayEdit(selectedDay,data)} onClose={()=>setModal(null)}/>}
       {modal==="rangeApply"&&rangeStart&&rangeEnd&&<RangeApplyModal rangeStart={rangeStart} rangeEnd={rangeEnd} skinRoutines={skinR} hairRoutines={hairR} onApply={applyRange} onClose={()=>{ setModal(null); setRangeStart(null); setRangeEnd(null); }}/>}
