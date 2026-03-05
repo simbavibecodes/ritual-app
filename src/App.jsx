@@ -497,8 +497,8 @@ function PlanModal({ allItems, schedules, treatments, onSave, onSaveMany, onDele
   const [showItemPick, setShowItemPick]=useState(false);
   const [calRangeStart, setCalRangeStart]=useState(null);
 
-  const startNewPlan=()=>{ setEditing({id:uid(),itemIds:[],days:[],dates:[],reminder:false,time:"08:00"}); setScreen("editPlan"); };
-  const startEditPlan=s=>{ setEditing({...s,itemIds:s.itemIds||[s.itemId].filter(Boolean),dates:s.dates||[]}); setScreen("editPlan"); };
+  const startNewPlan=()=>{ setEditing({id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),reminder:false,time:"08:00"}); setScreen("editPlan"); };
+  const startEditPlan=s=>{ setEditing({...s,itemIds:s.itemIds||[s.itemId].filter(Boolean),dates:s.dates||[],startDate:s.startDate||fmt(new Date())}); setScreen("editPlan"); };
   const startNewTx=()=>{ setEditTx({id:uid(),name:"",type:"skin",dates:[]}); setScreen("editTreatment"); };
   const startEditTx=t=>{ setEditTx({...t}); setScreen("editTreatment"); };
 
@@ -512,7 +512,8 @@ function PlanModal({ allItems, schedules, treatments, onSave, onSaveMany, onDele
       ...editing,
       id: i===0&&editing.itemIds.length===1 ? editing.id : uid(),
       itemId,
-      itemIds: undefined
+      itemIds: undefined,
+      startDate: editing.startDate||fmt(new Date())
     }));
     onSaveMany(plans);
     setEditing(null); setScreen("list");
@@ -548,6 +549,10 @@ function PlanModal({ allItems, schedules, treatments, onSave, onSaveMany, onDele
               );
             })}
           </div>
+          <div className="modal-sub">Start date</div>
+          <input type="date" className="time-input" style={{width:"100%",marginBottom:14}}
+            value={editing.startDate||fmt(new Date())}
+            onChange={e=>setEditing(ed=>({...ed,startDate:e.target.value}))}/>
           <div className="modal-sub">Specific dates (tap to select, tap two for range)</div>
           <MiniCal
             selectedDates={editing.dates||[]}
@@ -557,17 +562,16 @@ function PlanModal({ allItems, schedules, treatments, onSave, onSaveMany, onDele
             onRangeEnd={range=>{ setEditing(e=>({...e,dates:[...new Set([...(e.dates||[]),...range])]})); setCalRangeStart(null); }}
           />
           <div className="modal-sub">Repeat on (optional — leave blank for date-specific only)</div>
-          <div className="dow-row" style={{marginBottom:8}}>
-            <button className={`dow-chip ${editing.days.length===7?"on":""}`}
-              style={{fontWeight:500}}
-              onClick={()=>setEditing(e=>({...e,days:e.days.length===7?[]:[0,1,2,3,4,5,6]}))}>
-              Everyday
-            </button>
+          <div className="toggle-row" style={{marginBottom:10}}>
+            <div><div className="toggle-lbl">Everyday</div></div>
+            <Toggle on={editing.days.length===7} onChange={v=>setEditing(e=>({...e,days:v?[0,1,2,3,4,5,6]:[]}))}/>
+          </div>
+          {editing.days.length!==7&&<div className="dow-row">
             {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d,i)=>{
               const dow=[1,2,3,4,5,6,0][i];
               return <button key={d} className={`dow-chip ${editing.days.includes(dow)?"on":""}`} onClick={()=>toggleDay(dow)}>{d}</button>;
             })}
-          </div>
+          </div>}
           <div className="toggle-row">
             <div><div className="toggle-lbl">🔔 Remind me</div><div className="toggle-sub">Browser notification</div></div>
             <Toggle on={editing.reminder} onChange={v=>setEditing(e=>({...e,reminder:v}))}/>
@@ -941,7 +945,7 @@ export default function App({ user }) {
         // Load schedules
         const { data: schedRows, error: schedErr } = await supabase.from("schedules").select("*").eq("user_id", user.id);
         console.log("LOAD schedules:", schedRows, "error:", schedErr);
-        if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days||[], dates:r.dates||[], reminder:r.reminder, time:r.time })));
+        if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days||[], dates:r.dates||[], startDate:r.start_date||null, reminder:r.reminder, time:r.time })));
         // Load freq settings
         const { data: freqRows } = await supabase.from("freq_settings").select("*").eq("user_id", user.id).single();
         if (freqRows) { setFreqTracked(freqRows.tracked||[]); setFreqPeriod(freqRows.period||"year"); }
@@ -1056,7 +1060,8 @@ export default function App({ user }) {
         // Upsert each schedule individually - safer than delete+insert
         const rows = newSchedules.map(s => ({
           id: s.id, user_id: user.id, item_id: s.itemId,
-          days: s.days||[], dates: s.dates||[], reminder: s.reminder, time: s.time||"08:00"
+          days: s.days||[], dates: s.dates||[], start_date: s.startDate||null,
+          reminder: s.reminder, time: s.time||"08:00"
         }));
         const { error: upsertErr } = await supabase.from("schedules").upsert(rows, { onConflict: "id" });
         if (upsertErr) { console.error("Schedule upsert error:", upsertErr); return; }
@@ -1190,7 +1195,7 @@ export default function App({ user }) {
     if(!e) return null;
     const dow=parse(d).getDay();
     // Check recurring plans
-    const recurPlanned=schedules.filter(s=>s.days.includes(dow)).map(s=>s.itemId);
+    const recurPlanned=schedules.filter(s=>s.days.includes(dow)&&(!s.startDate||d>=s.startDate)).map(s=>s.itemId);
     // Check one-off/range plans for this specific date
     const oneOffPlanned=schedules.filter(s=>s.dates&&s.dates.includes(d)).map(s=>s.itemId);
     const plannedIds=[...new Set([...recurPlanned,...oneOffPlanned])];
@@ -1247,7 +1252,7 @@ export default function App({ user }) {
   },[entries,freqRange,today]);
 
   const todayDow=new Date().getDay();
-  const visibleReminders=schedules.filter(s=>!dismissed.includes(s.id)&&((s.days&&s.days.includes(todayDow))||(s.dates&&s.dates.includes(activeDate))));
+  const visibleReminders=schedules.filter(s=>!dismissed.includes(s.id)&&(!s.startDate||activeDate>=s.startDate)&&((s.days&&s.days.includes(todayDow))||(s.dates&&s.dates.includes(activeDate))));
   const entry=getE(activeDate);
   const routines=activeTab==="skin"?skinR:hairR;
   const checked=activeTab==="skin"?entry.skin:entry.hair;
@@ -1308,7 +1313,7 @@ export default function App({ user }) {
             </div>
             <div style={{marginBottom:18}}>
               {(()=>{
-                const todayPlanned=schedules.filter(s=>s.days.includes(todayDow)&&(activeTab==="skin"?skinR:hairR).find(r=>r.id===s.itemId));
+                const todayPlanned=schedules.filter(s=>s.days.includes(todayDow)&&(!s.startDate||today>=s.startDate)&&(activeTab==="skin"?skinR:hairR).find(r=>r.id===s.itemId));
                 const plannedIds=todayPlanned.map(s=>s.itemId);
                 const plannedDone=checked.filter(id=>plannedIds.includes(id)).length;
                 const hasPlanned=plannedIds.length>0;
