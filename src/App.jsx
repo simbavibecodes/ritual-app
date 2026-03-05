@@ -438,8 +438,7 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
   );
 }
 
-function SpendingSummary({ purchases, onGoToPurchases }) {
-  const [period, setPeriod] = useState("month");
+function SpendingSummary({ purchases, period, onGoToPurchases }) {
   const now = new Date();
   const fmt2 = d => d.toLocaleDateString("en-CA");
 
@@ -466,13 +465,7 @@ function SpendingSummary({ purchases, onGoToPurchases }) {
         <div className="sec-title">Spending Summary</div>
         <button className="ghost-btn" onClick={onGoToPurchases}>View All</button>
       </div>
-      <div className="period-row" style={{marginBottom:14}}>
-        {["week","month","year"].map(p=>(
-          <button key={p} className={`period-chip ${period===p?"on":""}`} onClick={()=>setPeriod(p)}>
-            This {p[0].toUpperCase()+p.slice(1)}
-          </button>
-        ))}
-      </div>
+      <div style={{fontSize:".72rem",color:"#a08070",marginBottom:12}}>This {period==="week"?"Week":period==="month"?"Month":"Year"}</div>
       {count===0?(
         <div style={{textAlign:"center",padding:"20px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem"}}>No purchases recorded yet</div>
       ):(
@@ -519,36 +512,154 @@ function SpendingSummary({ purchases, onGoToPurchases }) {
   );
 }
 
+function ProductSearch({ category, onSelect }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+
+  const search = async () => {
+    if (!query.trim()) return;
+    setLoading(true);
+    setSearched(true);
+    try {
+      const res = await fetch(`https://world.openbeautyfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=8`);
+      const data = await res.json();
+      setResults((data.products || []).filter(p => p.product_name));
+    } catch(e) { setResults([]); }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{marginBottom:12}}>
+      <div style={{fontSize:".7rem",color:"#a08070",marginBottom:6,letterSpacing:".08em",textTransform:"uppercase"}}>Search Product Database</div>
+      <div style={{display:"flex",gap:8,marginBottom:8}}>
+        <input className="ifield" style={{flex:1}} placeholder="Search by product name…" value={query}
+          onChange={e=>setQuery(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&search()}/>
+        <button onClick={search} style={{background:"#b07a5e",border:"none",borderRadius:10,padding:"8px 14px",color:"#fff",cursor:"pointer",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>
+          {loading?"…":"Search"}
+        </button>
+      </div>
+      {searched&&results.length===0&&!loading&&<div style={{fontSize:".78rem",color:"#a08070",fontStyle:"italic",marginBottom:8}}>No results — fill in manually below</div>}
+      {results.length>0&&(
+        <div style={{maxHeight:220,overflowY:"auto",border:"1px solid #e8d8cc",borderRadius:12,marginBottom:8}}>
+          {results.map((p,i)=>(
+            <div key={i} onClick={()=>onSelect({name:p.product_name||"",brand:p.brands||"",image:p.image_small_url||""})}
+              style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderBottom:"1px solid #f0e0d4",cursor:"pointer",background:"#fff8f3",transition:"background .15s"}}
+              onMouseEnter={e=>e.currentTarget.style.background="#fdf0e8"}
+              onMouseLeave={e=>e.currentTarget.style.background="#fff8f3"}>
+              {p.image_small_url
+                ?<img src={p.image_small_url} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:8,flexShrink:0}}/>
+                :<div style={{width:36,height:36,borderRadius:8,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",flexShrink:0}}>{category==="skin"?"🌿":category==="treatment"?"💉":"✨"}</div>
+              }
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:".82rem",color:"#3a2e27",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.product_name}</div>
+                {p.brands&&<div style={{fontSize:".72rem",color:"#a08070"}}>{p.brands}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{fontSize:".7rem",color:"#c0b0a8",textAlign:"center",marginBottom:4}}>or fill in manually ↓</div>
+    </div>
+  );
+}
+
 function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
   const today = fmt(new Date());
+  const thisYear = new Date().getFullYear().toString();
   const [showForm, setShowForm] = useState(false);
   const [editP, setEditP] = useState(null);
   const [filterCat, setFilterCat] = useState("all");
-
-  const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, price:"", quantity:"1", date:today, notes:"", tags:[] });
   const [chooseCat, setChooseCat] = useState(false);
+  const [openMonths, setOpenMonths] = useState({[today.slice(0,7)]:true});
+  const [openYears, setOpenYears] = useState({});
 
+  const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, price:"", quantity:"1", date:today, notes:"", tags:[], image:"" });
   const startAdd = () => { setChooseCat(true); };
-  const startEdit = p => { setEditP({...p, price:String(p.price), quantity:String(p.quantity)}); setShowForm(true); };
+  const startEdit = p => { setEditP({...p, price:String(p.price), quantity:String(p.quantity)}); setShowForm(true); setChooseCat(false); };
   const save = () => { if(!editP.name.trim()||!editP.date) return; onSave(editP); setShowForm(false); setEditP(null); };
+  const toggleMonth = m => setOpenMonths(s=>({...s,[m]:!s[m]}));
+  const toggleYear = y => setOpenYears(s=>({...s,[y]:!s[y]}));
 
   const filtered = purchases.filter(p=>filterCat==="all"||p.category===filterCat);
+  const grandTotal = filtered.reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
 
-  // Group by month
-  const grouped = {};
-  filtered.forEach(p=>{
-    const m = p.date.slice(0,7);
-    if(!grouped[m]) grouped[m]=[];
-    grouped[m].push(p);
+  // Separate current year (live months) from past years (tiles)
+  const currentYearPurchases = filtered.filter(p=>p.date.startsWith(thisYear));
+  const pastPurchases = filtered.filter(p=>!p.date.startsWith(thisYear));
+
+  // Group current year by month
+  const monthGroups = {};
+  currentYearPurchases.forEach(p=>{
+    const m=p.date.slice(0,7);
+    if(!monthGroups[m]) monthGroups[m]=[];
+    monthGroups[m].push(p);
   });
-  const months = Object.keys(grouped).sort((a,b)=>b.localeCompare(a));
+  const currentMonths = Object.keys(monthGroups).sort((a,b)=>b.localeCompare(a));
+
+  // Group past by year
+  const yearGroups = {};
+  pastPurchases.forEach(p=>{
+    const y=p.date.slice(0,4);
+    if(!yearGroups[y]) yearGroups[y]=[];
+    yearGroups[y].push(p);
+  });
+  const pastYears = Object.keys(yearGroups).sort((a,b)=>b.localeCompare(a));
+
+  const PurchaseCard = ({p}) => (
+    <div className="purch-card">
+      {p.image
+        ?<img src={p.image} alt="" style={{width:40,height:40,objectFit:"cover",borderRadius:8,flexShrink:0}}/>
+        :<div style={{fontSize:"1.1rem",flexShrink:0}}>{p.category==="skin"?"🌿":p.category==="treatment"?"💉":"✨"}</div>
+      }
+      <div className="purch-info">
+        <div className="purch-name">{p.name}</div>
+        <div className="purch-meta">{p.brand&&`${p.brand} · `}{p.category} · {parse(p.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})}{p.quantity>1&&` · qty ${p.quantity}`}</div>
+        {p.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>{p.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 8px",color:"#8a6858"}}>{t}</span>)}</div>}
+        {p.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
+      </div>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}}>
+        <div className="purch-price">${((parseFloat(p.price)||0)*(parseInt(p.quantity)||1)).toFixed(2)}</div>
+        <div style={{display:"flex",gap:4}}>
+          <button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px"}} onClick={()=>startEdit(p)}>Edit</button>
+          <button className="del-btn" style={{fontSize:".68rem"}} onClick={()=>onDelete(p.id)}>✕</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const YearSplit = ({ps}) => {
+    const skin=ps.filter(p=>p.category==="skin").reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
+    const hair=ps.filter(p=>p.category==="hair").reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
+    const tx=ps.filter(p=>p.category==="treatment").reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
+    const total=skin+hair+tx||1;
+    return (
+      <div style={{marginTop:8}}>
+        <div style={{display:"flex",height:6,borderRadius:4,overflow:"hidden",marginBottom:6}}>
+          {skin>0&&<div style={{flex:skin/total,background:"#b07a5e"}}/>}
+          {hair>0&&<div style={{flex:hair/total,background:"#d4a0c0"}}/>}
+          {tx>0&&<div style={{flex:tx/total,background:"#e8a898"}}/>}
+        </div>
+        <div style={{display:"flex",gap:10,fontSize:".68rem",color:"#a08070"}}>
+          {skin>0&&<span>🌿 ${skin.toFixed(0)}</span>}
+          {hair>0&&<span>✨ ${hair.toFixed(0)}</span>}
+          {tx>0&&<span>💉 ${tx.toFixed(0)}</span>}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="app">
       <style>{`
         .purch-form{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:16px;padding:18px;margin-bottom:16px}
-        .purch-month{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-style:italic;color:#7a5c48;margin:18px 0 10px}
-        .purch-month:first-child{margin-top:0}
+        .purch-month-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:12px;cursor:pointer;margin-bottom:6px;transition:background .15s}
+        .purch-month-header:hover{background:#fdf0e8}
+        .year-tile{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:16px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:all .15s}
+        .year-tile:hover{background:#fdf0e8}
+        .grand-total{background:linear-gradient(135deg,#f9ede4,#fdf6f0);border:1.5px solid #e8c8b4;border-radius:14px;padding:14px 18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
       `}</style>
       <div className="header" style={{position:"relative"}}>
         <button onClick={onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1.2rem",padding:"8px"}}>←</button>
@@ -556,9 +667,19 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
         <div className="header-sub">Skin · Hair Spending</div>
       </div>
 
+      {grandTotal>0&&(
+        <div className="grand-total">
+          <div>
+            <div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:2}}>All Time</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.4rem",color:"#3a2e27"}}>${grandTotal.toFixed(2)}</div>
+          </div>
+          <div style={{fontSize:".76rem",color:"#b07a5e"}}>{filtered.length} item{filtered.length!==1?"s":""}</div>
+        </div>
+      )}
+
       <div style={{display:"flex",gap:8,marginBottom:16}}>
-        {[["all","All"],["skin","🌿 Skin"],["hair","✨ Hair"],["treatment","💉 Treatment"]].map(([v,l])=>(
-          <button key={v} className={`period-chip ${filterCat===v?"on":""}`} style={{flex:1,fontSize:".72rem"}} onClick={()=>setFilterCat(v)}>{l}</button>
+        {[["all","All"],["skin","🌿"],["hair","✨"],["treatment","💉"]].map(([v,l])=>(
+          <button key={v} className={`period-chip ${filterCat===v?"on":""}`} style={{flex:1,fontSize:".82rem"}} onClick={()=>setFilterCat(v)}>{l}{v!=="all"?" "+v.charAt(0).toUpperCase()+v.slice(1):""}</button>
         ))}
       </div>
 
@@ -577,27 +698,28 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
           </div>
         </div>
       )}
+
       {showForm&&editP&&(
         <div className="purch-form">
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{purchases.find(p=>p.id===editP.id)?"Edit":"Add"} Purchase</div>
             <button onClick={()=>{setShowForm(false);setEditP(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
           </div>
+          <ProductSearch category={editP.category} onSelect={({name,brand,image})=>setEditP(p=>({...p,name,brand,image:image||""}))}/>
           <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editP.name} onChange={e=>setEditP(p=>({...p,name:e.target.value}))}/>
           <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand (optional)" value={editP.brand} onChange={e=>setEditP(p=>({...p,brand:e.target.value}))}/>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
-            {["skin","hair"].map(cat=>(
-              <button key={cat} className={`dow-chip ${editP.category===cat?"on":""}`} style={{flex:1,textAlign:"center"}}
+            {["skin","hair","treatment"].map(cat=>(
+              <button key={cat} className={`dow-chip ${editP.category===cat?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".74rem"}}
                 onClick={()=>setEditP(p=>({...p,category:cat}))}>
-                {cat==="skin"?"🌿 Skin":"✨ Hair"}
+                {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
               </button>
             ))}
           </div>
           <div style={{fontSize:".7rem",color:"#a08070",marginBottom:6,letterSpacing:".08em",textTransform:"uppercase"}}>Product Type</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
             {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
-              <button key={tag}
-                className={`dow-chip ${(editP.tags||[]).includes(tag)?"on":""}`}
+              <button key={tag} className={`dow-chip ${(editP.tags||[]).includes(tag)?"on":""}`}
                 style={{fontSize:".74rem",padding:"4px 10px"}}
                 onClick={()=>setEditP(p=>({...p,tags:(p.tags||[]).includes(tag)?(p.tags||[]).filter(t=>t!==tag):[...(p.tags||[]),tag]}))}>
                 {tag}
@@ -609,7 +731,7 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
               <div style={{fontSize:".7rem",color:"#a08070",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Price ($)</div>
               <input className="ifield" style={{width:"100%"}} type="number" placeholder="0.00" value={editP.price} onChange={e=>setEditP(p=>({...p,price:e.target.value}))}/>
             </div>
-            <div style={{width:80}}>
+            <div style={{width:70}}>
               <div style={{fontSize:".7rem",color:"#a08070",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Qty</div>
               <input className="ifield" style={{width:"100%"}} type="number" min="1" value={editP.quantity} onChange={e=>setEditP(p=>({...p,quantity:e.target.value}))}/>
             </div>
@@ -623,37 +745,74 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
         </div>
       )}
 
-      {!showForm&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={startAdd}>+ Add Purchase</button>}
+      {!showForm&&!chooseCat&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={startAdd}>+ Add Purchase</button>}
 
-      {months.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No purchases yet</div>}
-      {months.map(m=>{
-        const mPurchases=grouped[m];
-        const mTotal=mPurchases.reduce((s,p)=>s+p.price*p.quantity,0);
+      {filtered.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No purchases yet</div>}
+
+      {/* Current year - live month dropdowns */}
+      {currentMonths.map(m=>{
+        const ps=monthGroups[m];
+        const mTotal=ps.reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
         const label=new Date(m+"-15").toLocaleDateString("en-US",{month:"long",year:"numeric"});
+        const isOpen=!!openMonths[m];
         return (
-          <div key={m}>
-            <div className="purch-month" style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
-              <span>{label}</span>
-              <span style={{fontSize:".82rem",color:"#b07a5e",fontFamily:"'DM Sans',sans-serif"}}>${mTotal.toFixed(2)}</span>
-            </div>
-            {mPurchases.map(p=>(
-              <div key={p.id} className="purch-card">
-                <div style={{fontSize:"1.1rem"}}>{p.category==="skin"?"🌿":p.category==="treatment"?"💉":"✨"}</div>
-                <div className="purch-info">
-                  <div className="purch-name">{p.name}</div>
-                  <div className="purch-meta">{p.brand&&`${p.brand} · `}{p.category} · {parse(p.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})}{p.quantity>1&&` · qty ${p.quantity}`}</div>
-                  {p.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>{p.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 8px",color:"#8a6858"}}>{t}</span>)}</div>}
-                  {p.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
-                </div>
-                <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
-                  <div className="purch-price">${(p.price*p.quantity).toFixed(2)}</div>
-                  <div style={{display:"flex",gap:4}}>
-                    <button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px"}} onClick={()=>startEdit(p)}>Edit</button>
-                    <button className="del-btn" style={{fontSize:".68rem"}} onClick={()=>onDelete(p.id)}>✕</button>
-                  </div>
-                </div>
+          <div key={m} style={{marginBottom:8}}>
+            <div className="purch-month-header" onClick={()=>toggleMonth(m)}>
+              <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#7a5c48"}}>{label}</span>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:".82rem",color:"#b07a5e",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>${mTotal.toFixed(2)}</span>
+                <span style={{color:"#b07a5e",fontSize:".8rem"}}>{isOpen?"▲":"▼"}</span>
               </div>
-            ))}
+            </div>
+            {isOpen&&<div style={{paddingLeft:4}}>{ps.sort((a,b)=>b.date.localeCompare(a.date)).map(p=><PurchaseCard key={p.id} p={p}/>)}</div>}
+          </div>
+        );
+      })}
+
+      {/* Past years - tiles */}
+      {pastYears.map(y=>{
+        const ps=yearGroups[y];
+        const yTotal=ps.reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
+        const isOpen=!!openYears[y];
+
+        // Group by month inside year
+        const yMonths={};
+        ps.forEach(p=>{ const m=p.date.slice(0,7); if(!yMonths[m]) yMonths[m]=[]; yMonths[m].push(p); });
+        const sortedYMonths=Object.keys(yMonths).sort((a,b)=>b.localeCompare(a));
+
+        return (
+          <div key={y} className="year-tile" onClick={()=>toggleYear(y)}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",color:"#3a2e27"}}>{y}</div>
+                <div style={{fontSize:".72rem",color:"#a08070",marginTop:2}}>{ps.length} purchase{ps.length!==1?"s":""}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",color:"#b07a5e"}}>${yTotal.toFixed(2)}</div>
+                <div style={{fontSize:".72rem",color:"#b07a5e",marginTop:2}}>{isOpen?"▲ hide":"▼ show"}</div>
+              </div>
+            </div>
+            <YearSplit ps={ps}/>
+            {isOpen&&<div style={{marginTop:14}} onClick={e=>e.stopPropagation()}>
+              {sortedYMonths.map(m=>{
+                const mps=yMonths[m];
+                const mTotal=mps.reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
+                const label=new Date(m+"-15").toLocaleDateString("en-US",{month:"long"});
+                const isMonthOpen=!!openMonths[m];
+                return (
+                  <div key={m} style={{marginBottom:6}}>
+                    <div className="purch-month-header" onClick={()=>toggleMonth(m)}>
+                      <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:".9rem",fontStyle:"italic",color:"#7a5c48"}}>{label}</span>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontSize:".78rem",color:"#b07a5e"}}>${mTotal.toFixed(2)}</span>
+                        <span style={{color:"#b07a5e",fontSize:".75rem"}}>{isMonthOpen?"▲":"▼"}</span>
+                      </div>
+                    </div>
+                    {isMonthOpen&&<div style={{paddingLeft:4}}>{mps.sort((a,b)=>b.date.localeCompare(a.date)).map(p=><PurchaseCard key={p.id} p={p}/>)}</div>}
+                  </div>
+                );
+              })}
+            </div>}
           </div>
         );
       })}
@@ -1212,7 +1371,7 @@ export default function App({ user }) {
         }
         // Load purchases
         const { data: purchRows } = await supabase.from("purchases").select("*").eq("user_id", user.id).order("date", {ascending:false});
-        if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[] })));
+        if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[], image:r.image||'' })));
         // Load treatments
         const { data: txRows } = await supabase.from("treatments").select("*").eq("user_id", user.id);
         if (txRows) setTreatments(txRows.map(r=>({ id:r.id, name:r.name, type:r.type, dates:r.dates||[], completedDates:r.completed_dates||[] })));
@@ -1384,7 +1543,7 @@ export default function App({ user }) {
         id: p.id, user_id: user.id, name: p.name, brand: p.brand||"",
         category: p.category, price: parseFloat(p.price)||0,
         quantity: parseInt(p.quantity)||1, date: p.date, notes: p.notes||"",
-        tags: p.tags||[],
+        tags: p.tags||[], image: p.image||'',
         updated_at: new Date().toISOString()
       }, { onConflict: "id" });
       setPurchases(prev => { const f=prev.filter(x=>x.id!==p.id); return [p,...f].sort((a,b)=>b.date.localeCompare(a.date)); });
@@ -1589,6 +1748,18 @@ export default function App({ user }) {
 
         {view==="log"&&(
           <>
+            <div className="date-nav">
+              <button className="dnb" onClick={()=>setActiveDate(shiftD(activeDate,-1))}>‹</button>
+              <div style={{textAlign:"center"}}>
+                <div className={`date-label ${activeDate===today?"is-today":""}`}>{activeDate===today?"Today":dispLong(activeDate)}</div>
+                {activeDate===today&&<div style={{fontSize:".7rem",color:"#a08070"}}>{dispLong(today)}</div>}
+              </div>
+              <button className="dnb" onClick={()=>setActiveDate(shiftD(activeDate,1))} disabled={activeDate>=today}>›</button>
+            </div>
+            <div className="sub-tabs">
+              <button className={`sub-tab ${activeTab==="skin"?"active":""}`} onClick={()=>setActiveTab("skin")}>🌿 Skin</button>
+              <button className={`sub-tab ${activeTab==="hair"?"active":""}`} onClick={()=>setActiveTab("hair")}>✨ Hair</button>
+            </div>
             {visibleReminders.filter(s=>{
                 const itemTab=skinR.find(r=>r.id===s.itemId)?"skin":"hair";
                 return itemTab===activeTab;
@@ -1612,18 +1783,6 @@ export default function App({ user }) {
                 </div>
               );
             })}
-            <div className="date-nav">
-              <button className="dnb" onClick={()=>setActiveDate(shiftD(activeDate,-1))}>‹</button>
-              <div style={{textAlign:"center"}}>
-                <div className={`date-label ${activeDate===today?"is-today":""}`}>{activeDate===today?"Today":dispLong(activeDate)}</div>
-                {activeDate===today&&<div style={{fontSize:".7rem",color:"#a08070"}}>{dispLong(today)}</div>}
-              </div>
-              <button className="dnb" onClick={()=>setActiveDate(shiftD(activeDate,1))} disabled={activeDate>=today}>›</button>
-            </div>
-            <div className="sub-tabs">
-              <button className={`sub-tab ${activeTab==="skin"?"active":""}`} onClick={()=>setActiveTab("skin")}>🌿 Skin</button>
-              <button className={`sub-tab ${activeTab==="hair"?"active":""}`} onClick={()=>setActiveTab("hair")}>✨ Hair</button>
-            </div>
             <div style={{marginBottom:18}}>
               {(()=>{
                 const todayPlanned=schedules.filter(s=>s.days.includes(todayDow)&&(!s.startDate||today>=s.startDate)&&(activeTab==="skin"?skinR:hairR).find(r=>r.id===s.itemId));
@@ -1882,7 +2041,7 @@ export default function App({ user }) {
           </>}
 
           <hr style={{border:"none",borderTop:"1.5px solid #e8d8cc",margin:"28px 0 20px"}}/>
-          <SpendingSummary purchases={purchases} onGoToPurchases={()=>setPageView("purchases")}/>
+          <SpendingSummary purchases={purchases} period={freqPeriod} onGoToPurchases={()=>setPageView("purchases")}/>
           </>
         )}
       </div>
