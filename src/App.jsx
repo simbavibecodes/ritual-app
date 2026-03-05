@@ -512,7 +512,7 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
       `}</style>
       <div className="header" style={{position:"relative"}}>
         <button onClick={onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1.2rem",padding:"8px"}}>←</button>
-        <div className="header-title">💳 <span>Purchases</span></div>
+        <div className="header-title">My <span>Purchases</span></div>
         <div className="header-sub">Skin · Hair Spending</div>
       </div>
 
@@ -535,6 +535,17 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
               <button key={cat} className={`dow-chip ${editP.category===cat?"on":""}`} style={{flex:1,textAlign:"center"}}
                 onClick={()=>setEditP(p=>({...p,category:cat}))}>
                 {cat==="skin"?"🌿 Skin":"✨ Hair"}
+              </button>
+            ))}
+          </div>
+          <div style={{fontSize:".7rem",color:"#a08070",marginBottom:6,letterSpacing:".08em",textTransform:"uppercase"}}>Product Type</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+            {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
+              <button key={tag}
+                className={`dow-chip ${(editP.tags||[]).includes(tag)?"on":""}`}
+                style={{fontSize:".74rem",padding:"4px 10px"}}
+                onClick={()=>setEditP(p=>({...p,tags:(p.tags||[]).includes(tag)?(p.tags||[]).filter(t=>t!==tag):[...(p.tags||[]),tag]}))}>
+                {tag}
               </button>
             ))}
           </div>
@@ -576,6 +587,7 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
                 <div className="purch-info">
                   <div className="purch-name">{p.name}</div>
                   <div className="purch-meta">{p.brand&&`${p.brand} · `}{p.category} · {parse(p.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})}{p.quantity>1&&` · qty ${p.quantity}`}</div>
+                  {p.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>{p.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 8px",color:"#8a6858"}}>{t}</span>)}</div>}
                   {p.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
                 </div>
                 <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
@@ -1166,7 +1178,7 @@ export default function App({ user }) {
         }
         // Load purchases
         const { data: purchRows } = await supabase.from("purchases").select("*").eq("user_id", user.id).order("date", {ascending:false});
-        if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"" })));
+        if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[] })));
         // Load treatments
         const { data: txRows } = await supabase.from("treatments").select("*").eq("user_id", user.id);
         if (txRows) setTreatments(txRows.map(r=>({ id:r.id, name:r.name, type:r.type, dates:r.dates||[], completedDates:r.completed_dates||[] })));
@@ -1338,6 +1350,7 @@ export default function App({ user }) {
         id: p.id, user_id: user.id, name: p.name, brand: p.brand||"",
         category: p.category, price: parseFloat(p.price)||0,
         quantity: parseInt(p.quantity)||1, date: p.date, notes: p.notes||"",
+        tags: p.tags||[],
         updated_at: new Date().toISOString()
       }, { onConflict: "id" });
       setPurchases(prev => { const f=prev.filter(x=>x.id!==p.id); return [p,...f].sort((a,b)=>b.date.localeCompare(a.date)); });
