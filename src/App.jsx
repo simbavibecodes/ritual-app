@@ -1505,15 +1505,17 @@ export default function App({ user }) {
   const checked=activeTab==="skin"?entry.skin:entry.hair;
   const done=checked.filter(id=>routines.find(r=>r.id===id)).length;
 
-  if (pageView==="purchases") return <><style>{STYLES}</style><PurchasesPage purchases={purchases} onSave={savePurchase} onDelete={deletePurchase} onBack={()=>setPageView(null)}/></>;
+  if (pageView==="purchases") return (
+    <div><style>{STYLES}</style><PurchasesPage purchases={purchases} onSave={savePurchase} onDelete={deletePurchase} onBack={()=>setPageView(null)}/></div>
+  );
   if (pageView==="account") return (
     <div className="app">
       <style>{STYLES}</style>
       <div className="header" style={{position:"relative"}}>
-        <button onClick={()=>setPageView(null)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1.2rem",padding:"8px"}}>&#8592;</button>
-        <div className="header-title">&#128100; <span>Account</span></div>
+        <button onClick={()=>setPageView(null)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1.2rem",padding:"8px"}}>{"← Back"}</button>
+        <div className="header-title">My <span>Account</span></div>
       </div>
-      <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Coming soon ✨</div>
+      <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Coming soon</div>
     </div>
   );
 
