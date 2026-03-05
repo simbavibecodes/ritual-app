@@ -74,14 +74,15 @@ body{font-family:'DM Sans',sans-serif;background:#fdf6f0;min-height:100vh;color:
 .ghost-btn{background:none;border:1.5px solid #e8d8cc;border-radius:20px;padding:5px 13px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:#a08070;cursor:pointer;transition:all .18s}
 .ghost-btn:hover{background:#f7ece4;border-color:#c89a7e;color:#7a5c48}
 .routine-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:24px}
-.r-item{display:flex;align-items:center;gap:9px;background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:12px;padding:11px 13px;cursor:pointer;transition:all .18s;user-select:none}
-.r-item:hover{border-color:#c89a7e;background:#fef2ea}
-.r-item.on{background:#f7e8de;border-color:#b07a5e}
-.r-item.on .r-label{color:#3a2e27}
-.r-emoji{font-size:1rem;flex-shrink:0}
-.r-label{font-size:.8rem;color:#8a6858;flex:1;line-height:1.3}
-.r-check{width:17px;height:17px;border-radius:50%;border:1.5px solid #d0b0a0;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .18s}
-.r-item.on .r-check{background:#b07a5e;border-color:#b07a5e}
+.r-item{display:flex;align-items:center;gap:9px;background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:12px;padding:11px 13px;cursor:pointer;transition:all .28s;user-select:none;overflow:hidden}
+.r-item:hover:not(.on){border-color:#c89a7e;background:#fef2ea}
+.r-item.on{background:#eef4ee;border-color:#6a9e6a;padding:7px 12px;border-radius:20px;gap:6px}
+.r-emoji{font-size:1rem;flex-shrink:0;transition:font-size .28s}
+.r-item.on .r-emoji{font-size:.82rem}
+.r-label{font-size:.8rem;color:#8a6858;flex:1;line-height:1.3;transition:all .28s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-item.on .r-label{font-size:.73rem;color:#2d4a2d;font-weight:600}
+.r-check{width:17px;height:17px;border-radius:50%;border:1.5px solid #d0b0a0;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .28s}
+.r-item.on .r-check{width:15px;height:15px;background:#2d4a2d;border-color:#2d4a2d}
 .r-check svg{display:none}
 .r-item.on .r-check svg{display:block}
 .add-card{background:#fff8f3;border:1.5px dashed #d0b8aa;border-radius:12px;padding:11px 13px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;transition:all .18s;color:#b07a5e;font-size:.8rem}
@@ -130,7 +131,6 @@ body{font-family:'DM Sans',sans-serif;background:#fdf6f0;min-height:100vh;color:
 .cal-cell.range-start.range-end{border-radius:50%}
 .cal-dot{width:4px;height:4px;border-radius:50%;background:#b07a5e;position:absolute;bottom:3px}
 .cal-cell.selected-cell .cal-dot,.cal-cell.range-start .cal-dot,.cal-cell.range-end .cal-dot{background:#fff}
-.cal-cell.scheduled-cell::after{content:'';width:5px;height:5px;border-radius:50%;background:#7a9e7a;position:absolute;top:3px;right:3px}
 .range-toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#fff8f3;border:1px solid #e8d8cc;border-radius:12px;margin-bottom:14px}
 .range-toggle-lbl{font-size:.8rem;color:#7a5c48;font-weight:500}
 .range-hint{font-size:.71rem;color:#a08070;margin-top:2px}
@@ -208,9 +208,13 @@ body{font-family:'DM Sans',sans-serif;background:#fdf6f0;min-height:100vh;color:
 .freq-toggle-item.on{border-color:#b07a5e;background:#fef2ea}
 .fti-check{width:18px;height:18px;border-radius:4px;border:1.5px solid #d0b0a0;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s}
 .freq-toggle-item.on .fti-check{background:#b07a5e;border-color:#b07a5e}
-.reminder-banner{background:#e8f0e8;border:1px solid #b8d4b8;border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px}
-.rb-text{flex:1;font-size:.82rem;color:#3a5a3a;line-height:1.5}
-.rb-dismiss{background:none;border:none;cursor:pointer;color:#7a9e7a;font-size:.75rem;text-decoration:underline;padding:0;margin-top:2px}
+.reminder-banner{background:#fde8e0;border:1.5px solid #e8b0a0;border-radius:12px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .25s;user-select:none}
+.reminder-banner:hover{background:#fad8cc}
+.reminder-banner.done{background:#eef4ee;border-color:#6a9e6a;opacity:.7;padding:7px 14px}
+.rb-text{flex:1;font-size:.82rem;color:#c05040;line-height:1.5;font-weight:500;transition:color .25s}
+.reminder-banner.done .rb-text{color:#2d4a2d;text-decoration:line-through;text-decoration-color:#2d4a2d;font-weight:400}
+.rb-dot{width:8px;height:8px;border-radius:50%;background:#e06050;flex-shrink:0;transition:background .25s}
+.reminder-banner.done .rb-dot{background:#2d4a2d}
 .name-prompt-overlay{position:fixed;inset:0;background:rgba(58,46,39,.5);display:flex;align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(3px);padding:24px}
 .name-prompt{background:#fdf6f0;border-radius:24px;padding:36px 28px;width:100%;max-width:360px;text-align:center}
 .name-prompt-title{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;color:#3a2e27;margin-bottom:6px}
@@ -904,6 +908,20 @@ export default function App({ user }) {
   const hasEntry=d=>{ if(!d) return false; const e=entries[d]; return e&&(e.skin?.length||e.hair?.length||e.skin_notes||e.hair_notes||e.skin_mood||e.hair_mood||e.skin_photos?.length||e.hair_photos?.length); };
   const getSchedDow=d=>schedules.some(s=>s.days.includes(parse(d).getDay()));
 
+  // Achievement checks for calendar badges
+  const getDayAchievement=d=>{
+    if(!d||d>today) return null;
+    const e=entries[d];
+    if(!e) return null;
+    const dow=parse(d).getDay();
+    const plannedIds=schedules.filter(s=>s.days.includes(dow)).map(s=>s.itemId);
+    if(!plannedIds.length) return null;
+    const allChecked=e.skin&&e.hair&&plannedIds.every(id=>(e.skin.includes(id)||e.hair.includes(id)));
+    if(!allChecked) return null;
+    const isGlowing=e.skin_mood==="✨ Glowing"&&e.hair_mood==="✨ Glowing";
+    return isGlowing?"heart-star":"heart";
+  };
+
   const effEnd=rangeEnd||(rangeStart&&hoverDay?hoverDay:null);
   const inRange=d=>{ if(!rangeStart||!effEnd||!d) return false; const [lo,hi]=rangeStart<=effEnd?[rangeStart,effEnd]:[effEnd,rangeStart]; return d>lo&&d<hi; };
   const isRangeStart=d=>d===rangeStart;
@@ -969,12 +987,17 @@ export default function App({ user }) {
 
         {view==="log"&&(
           <>
-            {visibleReminders.map(s=>{ const it=allItems.find(x=>x.id===s.itemId); if(!it) return null; return (
-              <div key={s.id} className="reminder-banner">
-                <div className="rb-text">🔔 <strong>Planned today:</strong> {it.emoji} {it.label}{s.reminder?` at ${s.time}`:""}</div>
-                <button className="rb-dismiss" onClick={()=>setDismissed(p=>[...p,s.id])}>dismiss</button>
-              </div>
-            );})}
+            {visibleReminders.map(s=>{ const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
+              const tab=skinR.find(r=>r.id===s.itemId)?"skin":"hair";
+              const isDone=(tab==="skin"?getE(activeDate).skin:getE(activeDate).hair)?.includes(s.itemId);
+              return (
+                <div key={s.id} className={`reminder-banner ${isDone?"done":""}`}
+                  onClick={()=>{ if(!isDone) toggleItem(activeDate,tab,s.itemId); }}>
+                  <div className="rb-dot"/>
+                  <div className="rb-text">{isDone?"✓":""} {it.emoji} {it.label}{s.reminder&&!isDone?` · ${s.time}`:""}</div>
+                </div>
+              );
+            })}
             <div className="date-nav">
               <button className="dnb" onClick={()=>setActiveDate(shiftD(activeDate,-1))}>‹</button>
               <div style={{textAlign:"center"}}>
@@ -988,11 +1011,29 @@ export default function App({ user }) {
               <button className={`sub-tab ${activeTab==="hair"?"active":""}`} onClick={()=>setActiveTab("hair")}>✨ Hair</button>
             </div>
             <div style={{marginBottom:18}}>
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:".73rem",color:"#a08070",marginBottom:5}}>
-                <span>{activeTab==="skin"?"Skin Routine":"Hair Routine"}</span>
-                <span>{done} / {routines.length} steps</span>
-              </div>
-              <div className="prog-wrap"><div className="prog-bar" style={{width:routines.length?`${(done/routines.length)*100}%`:"0%"}}/></div>
+              {(()=>{
+                const todayPlanned=schedules.filter(s=>s.days.includes(todayDow)&&(activeTab==="skin"?skinR:hairR).find(r=>r.id===s.itemId));
+                const plannedIds=todayPlanned.map(s=>s.itemId);
+                const plannedDone=checked.filter(id=>plannedIds.includes(id)).length;
+                const hasPlanned=plannedIds.length>0;
+                return hasPlanned?(
+                  <>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:".73rem",color:"#a08070",marginBottom:5}}>
+                      <span>Planned for today</span>
+                      <span style={{color:plannedDone===plannedIds.length?"#2d4a2d":"#a08070",fontWeight:plannedDone===plannedIds.length?600:400}}>{plannedDone} / {plannedIds.length} done{plannedDone===plannedIds.length?" ✓":""}</span>
+                    </div>
+                    <div className="prog-wrap"><div className="prog-bar" style={{width:`${(plannedDone/plannedIds.length)*100}%`,background:plannedDone===plannedIds.length?"#2d4a2d":"#b07a5e"}}/></div>
+                  </>
+                ):(
+                  <>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:".73rem",color:"#a08070",marginBottom:5}}>
+                      <span>{activeTab==="skin"?"Skin Routine":"Hair Routine"}</span>
+                      <span>{done} / {routines.length} steps</span>
+                    </div>
+                    <div className="prog-wrap"><div className="prog-bar" style={{width:routines.length?`${(done/routines.length)*100}%`:"0%"}}/></div>
+                  </>
+                );
+              })()}
             </div>
             <div className="sec-head">
               <div className="sec-title">{activeTab==="skin"?"Skin Steps":"Hair Steps"}</div>
@@ -1040,16 +1081,17 @@ export default function App({ user }) {
                   if(hasEntry(d)) cls.push("has-entry");
                   if(d===today) cls.push("today-cell");
                   if(d>today) cls.push("future-cell");
-                  if(getSchedDow(d)) cls.push("scheduled-cell");
                   if(isRangeStart(d)) cls.push("range-start");
                   else if(isRangeEnd(d)) cls.push("range-end");
                   else if(inRange(d)) cls.push("in-range");
                   else if(d===selectedDay&&!rangeStart) cls.push("selected-cell");
+                  const achievement=getDayAchievement(d);
                   return (
                     <div key={d} className={cls.join(" ")}
                       onClick={()=>handleCalClick(d)}
                       onMouseEnter={()=>rangeStart&&!rangeEnd&&setHoverDay(d)}
                       onMouseLeave={()=>setHoverDay(null)}>
+                      {achievement&&<span style={{position:"absolute",top:1,left:2,fontSize:".6rem",lineHeight:1}}>{achievement==="heart-star"?"❤️✨":"❤️"}</span>}
                       {parse(d).getDate()}
                       {hasEntry(d)&&<div className="cal-dot"/>}
                     </div>
@@ -1059,8 +1101,9 @@ export default function App({ user }) {
             </div>
             <div style={{display:"flex",gap:16,fontSize:".7rem",color:"#a08070",marginBottom:18,flexWrap:"wrap"}}>
               <span>● Entry logged</span>
-              <span style={{color:"#7a9e7a"}}>● Planned</span>
               <span style={{color:"#b07a5e",fontStyle:"italic"}}>Today</span>
+              <span>❤️ All planned done</span>
+              <span>❤️✨ Glowing day</span>
             </div>
             {selectedDay&&rangeStart&&!rangeEnd&&(()=>{
               const e=getE(selectedDay);
