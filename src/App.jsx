@@ -454,9 +454,11 @@ function SpendingSummary({ purchases, onGoToPurchases }) {
   const total = filtered.reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
   const skin  = filtered.filter(p=>p.category==="skin").reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
   const hair  = filtered.filter(p=>p.category==="hair").reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
+  const treatment = filtered.filter(p=>p.category==="treatment").reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
   const count = filtered.length;
   const skinPct = total>0?Math.round((skin/total)*100):0;
   const hairPct = total>0?Math.round((hair/total)*100):0;
+  const treatmentPct = total>0?Math.round((treatment/total)*100):0;
 
   return (
     <div>
@@ -493,6 +495,13 @@ function SpendingSummary({ purchases, onGoToPurchases }) {
               <span className="spend-val">${hair.toFixed(2)}</span>
             </span>
           </div>
+          {treatment>0&&<div className="spend-row">
+            <span className="spend-label">💉 Treatment</span>
+            <span style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:".72rem",color:"#a08070"}}>{treatmentPct}%</span>
+              <span className="spend-val">${treatment.toFixed(2)}</span>
+            </span>
+          </div>}
           <div className="spend-row" style={{borderBottom:"none",paddingBottom:0}}>
             <span className="spend-label" style={{color:"#a08070",fontSize:".78rem"}}>{count} purchase{count!==1?"s":""}</span>
           </div>
@@ -548,8 +557,8 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
       </div>
 
       <div style={{display:"flex",gap:8,marginBottom:16}}>
-        {[["all","All"],["skin","🌿 Skin"],["hair","✨ Hair"]].map(([v,l])=>(
-          <button key={v} className={`period-chip ${filterCat===v?"on":""}`} style={{flex:1}} onClick={()=>setFilterCat(v)}>{l}</button>
+        {[["all","All"],["skin","🌿 Skin"],["hair","✨ Hair"],["treatment","💉 Treatment"]].map(([v,l])=>(
+          <button key={v} className={`period-chip ${filterCat===v?"on":""}`} style={{flex:1,fontSize:".72rem"}} onClick={()=>setFilterCat(v)}>{l}</button>
         ))}
       </div>
 
@@ -557,7 +566,7 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
         <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
           <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:14}}>What did you purchase?</div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {[["🌿","Skin","skin"],["✨","Hair","hair"]].map(([emoji,label,cat])=>(
+            {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
               <button key={cat} onClick={()=>{setEditP(blank(cat));setShowForm(true);setChooseCat(false);}}
                 style={{display:"flex",alignItems:"center",gap:12,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
                 <span style={{fontSize:"1.3rem"}}>{emoji}</span>
@@ -629,7 +638,7 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
             </div>
             {mPurchases.map(p=>(
               <div key={p.id} className="purch-card">
-                <div style={{fontSize:"1.1rem"}}>{p.category==="skin"?"🌿":"✨"}</div>
+                <div style={{fontSize:"1.1rem"}}>{p.category==="skin"?"🌿":p.category==="treatment"?"💉":"✨"}</div>
                 <div className="purch-info">
                   <div className="purch-name">{p.name}</div>
                   <div className="purch-meta">{p.brand&&`${p.brand} · `}{p.category} · {parse(p.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})}{p.quantity>1&&` · qty ${p.quantity}`}</div>
@@ -1756,25 +1765,29 @@ export default function App({ user }) {
               <div className="sec-title">Plans</div>
               <button className="ghost-btn" onClick={()=>setModal("plan")}>+ Add</button>
             </div>
-            {schedules.length>0&&<>
-              <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10}}>Routine Plans</div>
-              {schedules.map(s=>{
+            {(()=>{
+              const skinPlans=schedules.filter(s=>skinR.find(r=>r.id===s.itemId));
+              const hairPlans=schedules.filter(s=>hairR.find(r=>r.id===s.itemId));
+              const skinTreatments=treatments.filter(t=>t.type==="skin");
+              const hairTreatments=treatments.filter(t=>t.type==="hair");
+              const hasAnything=schedules.length||treatments.length;
+
+              const PlanCard=({s})=>{
                 const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
                 const recurDays=(s.days||[]).sort().map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
                 const dateCount=(s.dates||[]).length;
                 const isToday=(s.days||[]).includes(new Date().getDay())||(s.dates||[]).includes(today);
                 return (
-                  <div key={s.id} className="sched-card" style={{cursor:"pointer"}} onClick={()=>setSelectedPlan({type:"plan",data:s})}>
+                  <div className="sched-card" style={{cursor:"pointer",marginBottom:8}} onClick={()=>setSelectedPlan({type:"plan",data:s})}>
                     <div className="sched-top">
                       <span style={{fontSize:"1rem"}}>{it.emoji}</span>
                       <div style={{flex:1}}>
                         <div className="sched-label">{it.label}</div>
                         <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
-                          {(s.days||[]).length===7
-                            ?<span>Everyday</span>
-                            :recurDays&&<span>{recurDays}</span>}
+                          {(s.days||[]).length===7?<span>Everyday</span>:recurDays&&<span>{recurDays}</span>}
                           {recurDays&&dateCount>0&&<span> · </span>}
-                          {dateCount>0&&<span>{dateCount} specific date{dateCount!==1?"s":""}</span>}
+                          {dateCount>0&&<span>{dateCount} date{dateCount!==1?"s":""}</span>}
+                          {s.startDate&&<span style={{color:"#b8a090"}}> · from {parse(s.startDate).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
                         </div>
                       </div>
                       {isToday&&<span style={{fontSize:".68rem",background:"#b07a5e",color:"#fff",borderRadius:20,padding:"2px 8px",whiteSpace:"nowrap"}}>Today</span>}
@@ -1782,21 +1795,19 @@ export default function App({ user }) {
                     {s.reminder&&<div className="sched-reminder">🔔 at {s.time}</div>}
                   </div>
                 );
-              })}
-            </>}
-            {treatments.length>0&&<>
-              <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,marginTop:schedules.length?20:0}}>Treatments</div>
-              {treatments.map(tx=>{
+              };
+
+              const TxCard=({tx})=>{
                 const upcoming=tx.dates.filter(d=>d>=today).sort();
                 const next=upcoming[0];
                 return (
-                  <div key={tx.id} className="sched-card treatment-card" style={{cursor:"pointer"}} onClick={()=>setSelectedPlan({type:"treatment",data:tx})}>
+                  <div className="sched-card treatment-card" style={{cursor:"pointer",marginBottom:8}} onClick={()=>setSelectedPlan({type:"treatment",data:tx})}>
                     <div className="sched-top">
                       <span style={{fontSize:"1rem"}}>💉</span>
                       <div style={{flex:1}}>
                         <div className="sched-label">{tx.name}</div>
                         <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
-                          {tx.type==="skin"?"🌿 Skin":"✨ Hair"} · {tx.dates.length} date{tx.dates.length!==1?"s":""} · {tx.completedDates?.length||0} done
+                          {tx.dates.length} date{tx.dates.length!==1?"s":""} · {tx.completedDates?.length||0} done
                           {next&&<span> · Next: {parse(next).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
                         </div>
                       </div>
@@ -1804,11 +1815,25 @@ export default function App({ user }) {
                     </div>
                   </div>
                 );
-              })}
-            </>}
-            {!schedules.length&&!treatments.length&&(
-              <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No plans yet — tap + Add to start</div>
-            )}
+              };
+
+              return !hasAnything?(
+                <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No plans yet — tap + Add to start</div>
+              ):(
+                <>
+                  {(skinPlans.length>0||skinTreatments.length>0)&&<>
+                    <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,display:"flex",alignItems:"center",gap:6}}>🌿 Skin</div>
+                    {skinPlans.map(s=><PlanCard key={s.id} s={s}/>)}
+                    {skinTreatments.map(tx=><TxCard key={tx.id} tx={tx}/>)}
+                  </>}
+                  {(hairPlans.length>0||hairTreatments.length>0)&&<>
+                    <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,marginTop:(skinPlans.length||skinTreatments.length)?20:0,display:"flex",alignItems:"center",gap:6}}>✨ Hair</div>
+                    {hairPlans.map(s=><PlanCard key={s.id} s={s}/>)}
+                    {hairTreatments.map(tx=><TxCard key={tx.id} tx={tx}/>)}
+                  </>}
+                </>
+              );
+            })()}
           </>
         )}
 
@@ -1901,11 +1926,12 @@ export default function App({ user }) {
       {sideMenu&&<div className="side-menu-overlay" onClick={()=>setSideMenu(false)}/>}
       <div className={`side-menu ${sideMenu?"open":""}`}>
         <div className="side-menu-title">Menu</div>
-        <button className="side-menu-item" onClick={()=>{setPageView("purchases");setSideMenu(false);}}>
-          <span>💳</span> Purchases
-        </button>
         <button className="side-menu-item" onClick={()=>{setPageView("account");setSideMenu(false);}}>
           <span>👤</span> My Account
+        </button>
+        <hr style={{border:"none",borderTop:"1px solid #f0e0d4",margin:"8px 0"}}/>
+        <button className="side-menu-item" onClick={()=>{setPageView("purchases");setSideMenu(false);}}>
+          <span>💳</span> Purchases
         </button>
         <hr style={{border:"none",borderTop:"1px solid #f0e0d4",margin:"16px 0"}}/>
         <button className="side-menu-item" style={{color:"#c0a898"}} onClick={()=>supabase.auth.signOut()}>
