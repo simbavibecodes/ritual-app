@@ -1520,11 +1520,11 @@ export default function App({ user }) {
   );
 
   return (
-    <>
+    <div>
       <style>{STYLES}</style>
       <div className="app">
         <div className="header" style={{position:"relative"}}>
-          <div className="header-title">{userName ? <>{userName}{"'s"}</> : "My"} <span>Ritual</span></div>
+          <div className="header-title">{userName ? userName+"'s" : "My"} <span>Ritual</span></div>
           <div className="header-sub">Skin · Hair</div>
           <button className="hamburger-btn" onClick={()=>setSideMenu(true)}>
             <span/><span/><span/>
@@ -1846,7 +1846,6 @@ export default function App({ user }) {
         </div>
       )}
       {toast&&<div className="toast">{toast}</div>}
-      </div>
 
       {sideMenu&&<div className="side-menu-overlay" onClick={()=>setSideMenu(false)}/>}
       <div className={`side-menu ${sideMenu?"open":""}`}>
@@ -1862,6 +1861,6 @@ export default function App({ user }) {
           <span>🚪</span> Sign Out
         </button>
       </div>
-    </>
+    </div>
   );
 }
