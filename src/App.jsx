@@ -36,7 +36,7 @@ const DOW = ["Mo","Tu","We","Th","Fr","Sa","Su"]; // Week starts Monday
 const fmt      = d => d.toLocaleDateString("en-CA");
 const parse    = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
 const dispLong = s => parse(s).toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
-const uid      = () => Math.random().toString(36).slice(2,9);
+const uid      = () => crypto.randomUUID();
 function daysInMonth(y,m){ return new Date(y,m+1,0).getDate(); }
 function dateRange(start, end) {
   const dates=[], s=parse(start), e=parse(end);
