@@ -1505,22 +1505,24 @@ export default function App({ user }) {
   const checked=activeTab==="skin"?entry.skin:entry.hair;
   const done=checked.filter(id=>routines.find(r=>r.id===id)).length;
 
+  if (pageView==="purchases") return <><style>{STYLES}</style><PurchasesPage purchases={purchases} onSave={savePurchase} onDelete={deletePurchase} onBack={()=>setPageView(null)}/></>;
+  if (pageView==="account") return (
+    <><style>{STYLES}</style>
+    <div className="app">
+      <div className="header" style={{position:"relative"}}>
+        <button onClick={()=>setPageView(null)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1.2rem",padding:"8px"}}>{"<"}</button>
+        <div className="header-title">{"👤 "}  <span>Account</span></div>
+      </div>
+      <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Coming soon</div>
+    </div></>
+  );
+
   return (
     <>
       <style>{STYLES}</style>
-
-      {pageView==="purchases"&&<PurchasesPage purchases={purchases} onSave={savePurchase} onDelete={deletePurchase} onBack={()=>setPageView(null)}/>}
-      {pageView==="account"&&<div className="app">
+      <div className="app">
         <div className="header" style={{position:"relative"}}>
-          <button onClick={()=>setPageView(null)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1.2rem",padding:"8px"}}>←</button>
-          <div className="header-title">👤 <span>Account</span></div>
-        </div>
-        <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Coming soon — Phase 2 ✨</div>
-      </div>}
-
-      {!pageView&&<div className="app">
-        <div className="header" style={{position:"relative"}}>
-          <div className="header-title">{userName ? <>{userName}'s</> : "My"} <span>Ritual</span></div>
+          <div className="header-title">{userName ? <>{userName}{"'s"}</> : "My"} <span>Ritual</span></div>
           <div className="header-sub">Skin · Hair</div>
           <button className="hamburger-btn" onClick={()=>setSideMenu(true)}>
             <span/><span/><span/>
@@ -1842,9 +1844,7 @@ export default function App({ user }) {
         </div>
       )}
       {toast&&<div className="toast">{toast}</div>}
-
-      {/* Side menu overlay */}
-      </div>}
+      </div>
 
       {sideMenu&&<div className="side-menu-overlay" onClick={()=>setSideMenu(false)}/>}
       <div className={`side-menu ${sideMenu?"open":""}`}>
