@@ -2,25 +2,17 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "./supabase";
 
 const DEFAULT_SKIN = [
-  { id: "cleanser",    label: "Cleanser",        emoji: "🫧" },
-  { id: "toner",       label: "Toner",            emoji: "💧" },
-  { id: "serum",       label: "Serum",            emoji: "✨" },
-  { id: "moisturizer", label: "Moisturizer",      emoji: "🌿" },
-  { id: "spf",         label: "SPF",              emoji: "☀️" },
-  { id: "eye_cream",   label: "Eye Cream",        emoji: "👁️" },
-  { id: "retinol",     label: "Retinol / AHA",    emoji: "🔬" },
-  { id: "mask",        label: "Face Mask",        emoji: "🎭" },
-  { id: "gua_sha",     label: "Gua Sha / Roller", emoji: "🪨" },
+  { id: "tretinoin",    label: "Tretinoin",          emoji: "🔬" },
+  { id: "spf",          label: "SPF",                emoji: "☀️" },
+  { id: "alpyn_serum",  label: "Alpyn Serum",        emoji: "🌿" },
+  { id: "el_serum",     label: "Estee Lauder Serum", emoji: "✨" },
+  { id: "sleeping_mask",label: "Sleeping Mask",      emoji: "🌙" },
+  { id: "lash_serum",   label: "Eyelash Serum",      emoji: "👁️" },
 ];
 const DEFAULT_HAIR = [
-  { id: "shampoo",      label: "Shampoo",           emoji: "🚿" },
-  { id: "conditioner",  label: "Conditioner",       emoji: "🫙" },
-  { id: "mask_hair",    label: "Hair Mask",         emoji: "💆" },
-  { id: "oil",          label: "Hair Oil",          emoji: "🌺" },
-  { id: "heat_protect", label: "Heat Protectant",   emoji: "🔥" },
-  { id: "scalp",        label: "Scalp Treatment",   emoji: "🌱" },
-  { id: "dry_shampoo",  label: "Dry Shampoo",       emoji: "☁️" },
-  { id: "leave_in",     label: "Leave-In / Styling",emoji: "💅" },
+  { id: "rosemary_oil", label: "Rosemary Oil", emoji: "🌿" },
+  { id: "minoxidil",    label: "Minoxidil",    emoji: "💊" },
+  { id: "biotin",       label: "Biotin",       emoji: "🌱" },
 ];
 const MOODS = ["✨ Glowing", "😊 Good", "😐 Okay", "😞 Bad"];
 const EMOJI_OPTIONS = [
@@ -496,18 +488,27 @@ function FreqModal({ allItems, tracked, period, onToggle, onPeriod, onClose }) {
 }
 
 function DayEditModal({ date, entry, skinRoutines, hairRoutines, onSave, onClose }) {
-  const [skin,setSkin]   = useState(entry.skin||[]);
-  const [hair,setHair]   = useState(entry.hair||[]);
-  const [mood,setMood]   = useState(entry.mood||"");
-  const [notes,setNotes] = useState(entry.notes||"");
-  const [photos,setPhotos]=useState(entry.photos||[]);
-  const [tab,setTab]     = useState("skin");
+  const [skin,setSkin]           = useState(entry.skin||[]);
+  const [hair,setHair]           = useState(entry.hair||[]);
+  const [skinMood,setSkinMood]   = useState(entry.skin_mood||"");
+  const [hairMood,setHairMood]   = useState(entry.hair_mood||"");
+  const [skinNotes,setSkinNotes] = useState(entry.skin_notes||"");
+  const [hairNotes,setHairNotes] = useState(entry.hair_notes||"");
+  const [skinPhotos,setSkinPhotos]=useState(entry.skin_photos||[]);
+  const [hairPhotos,setHairPhotos]=useState(entry.hair_photos||[]);
+  const [tab,setTab]             = useState("skin");
   const toggle = (type,id) => {
     if(type==="skin") setSkin(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
     else setHair(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
   };
   const list=tab==="skin"?skinRoutines:hairRoutines;
   const checked=tab==="skin"?skin:hair;
+  const mood=tab==="skin"?skinMood:hairMood;
+  const setMood=tab==="skin"?setSkinMood:setHairMood;
+  const notes=tab==="skin"?skinNotes:hairNotes;
+  const setNotes=tab==="skin"?setSkinNotes:setHairNotes;
+  const photos=tab==="skin"?skinPhotos:hairPhotos;
+  const setPhotos=tab==="skin"?setSkinPhotos:setHairPhotos;
   return (
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal">
@@ -528,25 +529,28 @@ function DayEditModal({ date, entry, skinRoutines, hairRoutines, onSave, onClose
             </div>
           );})}
         </div>
-        <div className="modal-sub">Mood</div>
+        <div className="modal-sub">How's your {tab} feeling?</div>
         <div className="mood-row" style={{marginBottom:14}}>
           {MOODS.map(m=><button key={m} className={`mood-chip ${mood===m?"on":""}`} onClick={()=>setMood(p=>p===m?"":m)}>{m}</button>)}
         </div>
         <div className="modal-sub">Notes & Photos</div>
-        <PhotoNotes notes={notes} photos={photos} onNotesChange={setNotes} onPhotosChange={setPhotos}/>
-        <button className="save-btn" onClick={()=>onSave({skin,hair,mood,notes,photos})}>Save Entry</button>
+        <PhotoNotes notes={notes} photos={photos} onNotesChange={setNotes} onPhotosChange={v=>setPhotos(typeof v==="function"?v(photos):v)}/>
+        <button className="save-btn" onClick={()=>onSave({skin,hair,skin_mood:skinMood,hair_mood:hairMood,skin_notes:skinNotes,hair_notes:hairNotes,skin_photos:skinPhotos,hair_photos:hairPhotos})}>Save Entry</button>
       </div>
     </div>
   );
 }
 
 function RangeApplyModal({ rangeStart, rangeEnd, skinRoutines, hairRoutines, onApply, onClose }) {
-  const [skin,setSkin]   = useState([]);
-  const [hair,setHair]   = useState([]);
-  const [mood,setMood]   = useState("");
-  const [notes,setNotes] = useState("");
-  const [photos,setPhotos]=useState([]);
-  const [tab,setTab]     = useState("skin");
+  const [skin,setSkin]           = useState([]);
+  const [hair,setHair]           = useState([]);
+  const [skinMood,setSkinMood]   = useState("");
+  const [hairMood,setHairMood]   = useState("");
+  const [skinNotes,setSkinNotes] = useState("");
+  const [hairNotes,setHairNotes] = useState("");
+  const [skinPhotos,setSkinPhotos]=useState([]);
+  const [hairPhotos,setHairPhotos]=useState([]);
+  const [tab,setTab]             = useState("skin");
   const days = dateRange(rangeStart, rangeEnd);
   const toggle = (type,id) => {
     if(type==="skin") setSkin(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
@@ -554,12 +558,18 @@ function RangeApplyModal({ rangeStart, rangeEnd, skinRoutines, hairRoutines, onA
   };
   const list=tab==="skin"?skinRoutines:hairRoutines;
   const checked=tab==="skin"?skin:hair;
+  const mood=tab==="skin"?skinMood:hairMood;
+  const setMood=tab==="skin"?setSkinMood:setHairMood;
+  const notes=tab==="skin"?skinNotes:hairNotes;
+  const setNotes=tab==="skin"?setSkinNotes:setHairNotes;
+  const photos=tab==="skin"?skinPhotos:hairPhotos;
+  const setPhotos=tab==="skin"?setSkinPhotos:setHairPhotos;
   const sD=parse(rangeStart), eD=parse(rangeEnd);
   const sameMonth=sD.getMonth()===eD.getMonth()&&sD.getFullYear()===eD.getFullYear();
   const label=sameMonth
     ?`${sD.toLocaleDateString("en-US",{month:"long",day:"numeric"})} – ${eD.getDate()}`
     :`${sD.toLocaleDateString("en-US",{month:"short",day:"numeric"})} – ${eD.toLocaleDateString("en-US",{month:"short",day:"numeric"})}`;
-  const hasAny=skin.length||hair.length||mood||notes||photos.length;
+  const hasAny=skin.length||hair.length||skinMood||hairMood||skinNotes||hairNotes||skinPhotos.length||hairPhotos.length;
   return (
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal">
@@ -584,14 +594,14 @@ function RangeApplyModal({ rangeStart, rangeEnd, skinRoutines, hairRoutines, onA
             </div>
           );})}
         </div>
-        <div className="modal-sub">Mood (applied to all days)</div>
+        <div className="modal-sub">How's your {tab} feeling?</div>
         <div className="mood-row" style={{marginBottom:14}}>
           {MOODS.map(m=><button key={m} className={`mood-chip ${mood===m?"on":""}`} onClick={()=>setMood(p=>p===m?"":m)}>{m}</button>)}
         </div>
-        <div className="modal-sub">Notes & Photos (applied to all days)</div>
-        <PhotoNotes notes={notes} photos={photos} onNotesChange={setNotes} onPhotosChange={setPhotos}/>
+        <div className="modal-sub">Notes & Photos</div>
+        <PhotoNotes notes={notes} photos={photos} onNotesChange={setNotes} onPhotosChange={v=>setPhotos(typeof v==="function"?v(photos):v)}/>
         <button className="save-btn" disabled={!hasAny} style={{opacity:hasAny?1:.4}}
-          onClick={()=>onApply({skin,hair,mood,notes,photos},days)}>
+          onClick={()=>onApply({skin,hair,skin_mood:skinMood,hair_mood:hairMood,skin_notes:skinNotes,hair_notes:hairNotes,skin_photos:skinPhotos,hair_photos:hairPhotos},days)}>
           Apply to {days.length} Day{days.length!==1?"s":""}
         </button>
       </div>
@@ -664,7 +674,7 @@ export default function App({ user }) {
   const [skinR,       setSkinR]       = useState(DEFAULT_SKIN);
   const [hairR,       setHairR]       = useState(DEFAULT_HAIR);
   const [schedules,   setSchedules]   = useState([]);
-  const [freqTracked, setFreqTracked] = useState(["retinol","spf","cleanser","shampoo"]);
+  const [freqTracked, setFreqTracked] = useState(["tretinoin","spf","alpyn_serum","rosemary_oil"]);
   const [freqPeriod,  setFreqPeriod]  = useState("year");
   const [modal,       setModal]       = useState(null);
   const [calMonth,    setCalMonth]    = useState({y:new Date().getFullYear(),m:new Date().getMonth()});
@@ -672,7 +682,7 @@ export default function App({ user }) {
   const [toast,       setToast]       = useState("");
   const [dismissed,   setDismissed]   = useState([]);
   const [rangeMode,   setRangeMode]   = useState(false);
-  const [rangeStart,  setRangeStart]  = useState(null);
+  const [rangeStart,  setRangeStart]  = useState(today);
   const [rangeEnd,    setRangeEnd]    = useState(null);
   const [hoverDay,    setHoverDay]    = useState(null);
   const [curPhotos,   setCurPhotos]   = useState([]);
@@ -689,7 +699,12 @@ export default function App({ user }) {
         const { data: entryRows } = await supabase.from("entries").select("*").eq("user_id", user.id);
         if (entryRows) {
           const map = {};
-          entryRows.forEach(r => { map[r.date] = { skin: r.skin||[], hair: r.hair||[], mood: r.mood||"", notes: r.notes||"", photos: r.photos||[] }; });
+          entryRows.forEach(r => { map[r.date] = {
+            skin: r.skin||[], hair: r.hair||[],
+            skin_mood: r.skin_mood||"", hair_mood: r.hair_mood||"",
+            skin_notes: r.skin_notes||"", hair_notes: r.hair_notes||"",
+            skin_photos: r.skin_photos||[], hair_photos: r.hair_photos||[]
+          }; });
           setEntries(map);
         }
         // Load routines
@@ -722,9 +737,9 @@ export default function App({ user }) {
     })();
   },[user]);
 
-  useEffect(()=>{ setCurPhotos(entries[activeDate]?.photos||[]); },[activeDate]);
+  useEffect(()=>{ const k=activeTab==="skin"?"skin_photos":"hair_photos"; setCurPhotos(entries[activeDate]?.[k]||[]); },[activeDate,activeTab]);
 
-  const getE = d => entries[d]||{skin:[],hair:[],notes:"",mood:"",photos:[]};
+  const getE = d => entries[d]||{skin:[],hair:[],skin_mood:"",hair_mood:"",skin_notes:"",hair_notes:"",skin_photos:[],hair_photos:[]};
   const allItems   = [...skinR,...hairR];
   const allSkinMap = Object.fromEntries([...DEFAULT_SKIN,...skinR].map(r=>[r.id,r]));
   const allHairMap = Object.fromEntries([...DEFAULT_HAIR,...hairR].map(r=>[r.id,r]));
@@ -770,7 +785,9 @@ export default function App({ user }) {
       await supabase.from("entries").upsert({
         user_id: user.id, date,
         skin: entryData.skin||[], hair: entryData.hair||[],
-        mood: entryData.mood||"", notes: entryData.notes||"", photos: entryData.photos||[],
+        skin_mood: entryData.skin_mood||"", hair_mood: entryData.hair_mood||"",
+        skin_notes: entryData.skin_notes||"", hair_notes: entryData.hair_notes||"",
+        skin_photos: entryData.skin_photos||[], hair_photos: entryData.hair_photos||[],
         updated_at: new Date().toISOString()
       }, { onConflict: "user_id,date" });
     } catch(e) { console.error("Entry save error", e); }
@@ -807,11 +824,12 @@ export default function App({ user }) {
     const e=getE(date); const cur=e[type]||[];
     setEntries(p=>({...p,[date]:{...e,[type]:cur.includes(id)?cur.filter(x=>x!==id):[...cur,id]}}));
   };
-  const setNotesVal=(date,v)=>setEntries(p=>({...p,[date]:{...getE(date),notes:v}}));
-  const setMoodVal=(date,v)=>{ const e=getE(date); setEntries(p=>({...p,[date]:{...e,mood:e.mood===v?"":v}})); };
-  const setPhotosVal=(date,v)=>{
-    const photos=typeof v==="function"?v(getE(date).photos||[]):v;
-    setEntries(p=>({...p,[date]:{...getE(date),photos}}));
+  const setNotesVal=(date,tab,v)=>setEntries(p=>({...p,[date]:{...getE(date),[tab==="skin"?"skin_notes":"hair_notes"]:v}}));
+  const setMoodVal=(date,tab,v)=>{ const e=getE(date); const k=tab==="skin"?"skin_mood":"hair_mood"; setEntries(p=>({...p,[date]:{...e,[k]:e[k]===v?"":v}})); };
+  const setPhotosVal=(date,tab,v)=>{
+    const k=tab==="skin"?"skin_photos":"hair_photos";
+    const photos=typeof v==="function"?v(getE(date)[k]||[]):v;
+    setEntries(p=>({...p,[date]:{...getE(date),[k]:photos}}));
     setCurPhotos(photos);
   };
 
@@ -883,7 +901,7 @@ export default function App({ user }) {
     for(let d=1;d<=days;d++) cells.push(fmt(new Date(y,m,d)));
     return cells;
   };
-  const hasEntry=d=>{ if(!d) return false; const e=entries[d]; return e&&(e.skin?.length||e.hair?.length||e.notes||e.mood||e.photos?.length); };
+  const hasEntry=d=>{ if(!d) return false; const e=entries[d]; return e&&(e.skin?.length||e.hair?.length||e.skin_notes||e.hair_notes||e.skin_mood||e.hair_mood||e.skin_photos?.length||e.hair_photos?.length); };
   const getSchedDow=d=>schedules.some(s=>s.days.includes(parse(d).getDay()));
 
   const effEnd=rangeEnd||(rangeStart&&hoverDay?hoverDay:null);
@@ -991,13 +1009,13 @@ export default function App({ user }) {
             </div>
             <div className="sec-title" style={{marginBottom:12}}>How's your {activeTab==="skin"?"skin":"hair"} feeling?</div>
             <div className="mood-row">
-              {MOODS.map(m=><button key={m} className={`mood-chip ${entry.mood===m?"on":""}`} onClick={()=>setMoodVal(activeDate,m)}>{m}</button>)}
+              {MOODS.map(m=><button key={m} className={`mood-chip ${(activeTab==="skin"?entry.skin_mood:entry.hair_mood)===m?"on":""}`} onClick={()=>setMoodVal(activeDate,activeTab,m)}>{m}</button>)}
             </div>
             <div className="sec-title" style={{marginBottom:10}}>Notes & Observations</div>
-            <PhotoNotes notes={entry.notes} photos={curPhotos}
-              onNotesChange={v=>setNotesVal(activeDate,v)}
-              onPhotosChange={v=>setPhotosVal(activeDate,v)}/>
-            {curPhotos.length>0&&curPhotos.map(p=>(
+            <PhotoNotes notes={activeTab==="skin"?entry.skin_notes:entry.hair_notes} photos={curPhotos}
+              onNotesChange={v=>setNotesVal(activeDate,activeTab,v)}
+              onPhotosChange={v=>setPhotosVal(activeDate,activeTab,v)}/>
+            {(activeTab==="skin"?entry.skin_photos:entry.hair_photos)?.length>0&&(activeTab==="skin"?entry.skin_photos:entry.hair_photos).map(p=>(
               <div key={p.id} className="photo-full"><img src={p.src} alt={p.name}/></div>
             ))}
             {activeTab==="hair"&&<HairLengthCard hairLengths={hairLengths} setHairLengths={setHairLengths} saveHairLength={saveHairLength}/>}
@@ -1049,7 +1067,9 @@ export default function App({ user }) {
               const si=(e.skin||[]).map(id=>allSkinMap[id]).filter(Boolean);
               const hi=(e.hair||[]).map(id=>allHairMap[id]).filter(Boolean);
               const hasSched=getSchedDow(selectedDay);
-              const hasAny=si.length||hi.length||e.notes||e.mood||e.photos?.length;
+              const hasSkin=si.length||e.skin_mood||e.skin_notes||e.skin_photos?.length;
+              const hasHair=hi.length||e.hair_mood||e.hair_notes||e.hair_photos?.length;
+              const hasAny=hasSkin||hasHair;
               return (
                 <div className="day-panel">
                   <div className="day-panel-header">
@@ -1061,13 +1081,20 @@ export default function App({ user }) {
                   </div>}
                   {hasAny?(
                     <>
-                      <div className="dp-pills">
-                        {si.map(r=><span key={r.id} className="dp-pill">{r.emoji} {r.label}</span>)}
-                        {hi.map(r=><span key={r.id} className="dp-pill h">{r.emoji} {r.label}</span>)}
-                      </div>
-                      {e.mood&&<div className="dp-mood">Mood: {e.mood}</div>}
-                      {e.notes&&<div className="dp-note">"{e.notes}"</div>}
-                      {e.photos?.length>0&&<div className="photo-thumbs" style={{marginTop:8}}>{e.photos.map(p=><div key={p.id} className="photo-thumb"><img src={p.src} alt={p.name}/></div>)}</div>}
+                      {hasSkin&&<>
+                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:6,marginTop:4}}>🌿 Skin</div>
+                        <div className="dp-pills">{si.map(r=><span key={r.id} className="dp-pill">{r.emoji} {r.label}</span>)}</div>
+                        {e.skin_mood&&<div className="dp-mood">Mood: {e.skin_mood}</div>}
+                        {e.skin_notes&&<div className="dp-note">"{e.skin_notes}"</div>}
+                        {e.skin_photos?.length>0&&<div className="photo-thumbs" style={{marginTop:6,marginBottom:4}}>{e.skin_photos.map(p=><div key={p.id} className="photo-thumb"><img src={p.src} alt={p.name}/></div>)}</div>}
+                      </>}
+                      {hasHair&&<>
+                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:6,marginTop:hasSkin?12:4}}>✨ Hair</div>
+                        <div className="dp-pills">{hi.map(r=><span key={r.id} className="dp-pill h">{r.emoji} {r.label}</span>)}</div>
+                        {e.hair_mood&&<div className="dp-mood">Mood: {e.hair_mood}</div>}
+                        {e.hair_notes&&<div className="dp-note">"{e.hair_notes}"</div>}
+                        {e.hair_photos?.length>0&&<div className="photo-thumbs" style={{marginTop:6}}>{e.hair_photos.map(p=><div key={p.id} className="photo-thumb"><img src={p.src} alt={p.name}/></div>)}</div>}
+                      </>}
                     </>
                   ):<div className="dp-empty">Nothing logged for this day yet</div>}
                 </div>
