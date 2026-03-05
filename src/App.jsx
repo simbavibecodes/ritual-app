@@ -490,7 +490,7 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
   );
 }
 
-function PlanModal({ allItems, schedules, treatments, onSave, onDelete, onSaveTreatment, onDeleteTreatment, onClose }) {
+function PlanModal({ allItems, schedules, treatments, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose }) {
   const [screen, setScreen]=useState("list"); // list | editPlan | editTreatment
   const [editing, setEditing]=useState(null);
   const [editTx, setEditTx]=useState(null);
@@ -507,11 +507,14 @@ function PlanModal({ allItems, schedules, treatments, onSave, onDelete, onSaveTr
 
   const savePlan=()=>{
     if(!editing.itemIds?.length||(editing.days.length===0&&editing.dates.length===0)) return;
-    // Create one plan per selected item
-    editing.itemIds.forEach(itemId=>{
-      const existing=schedules.find(s=>s.itemId===itemId&&s.id===editing.id);
-      onSave({...editing, id: editing.itemIds.length===1?editing.id:uid(), itemId, itemIds:undefined});
-    });
+    // Create one plan object per selected item, save all at once
+    const plans=editing.itemIds.map((itemId,i)=>({
+      ...editing,
+      id: i===0&&editing.itemIds.length===1 ? editing.id : uid(),
+      itemId,
+      itemIds: undefined
+    }));
+    onSaveMany(plans);
     setEditing(null); setScreen("list");
   };
   const saveTx=()=>{
@@ -1122,6 +1125,14 @@ export default function App({ user }) {
     await persistSchedules(newS);
     showT("✓ Plan saved");
   };
+  const saveSchedMany=async(plans)=>{
+    // Add all new plans at once, avoiding state overwrite on each iteration
+    const newS = [...schedules];
+    plans.forEach(s=>{ const idx=newS.findIndex(x=>x.id===s.id); if(idx>=0) newS[idx]=s; else newS.push(s); });
+    setSchedules(newS);
+    await persistSchedules(newS);
+    showT(`✓ ${plans.length} plan${plans.length!==1?"s":""} saved`);
+  };
   const deleteSched=async(id)=>{
     const newS = schedules.filter(s=>s.id!==id);
     setSchedules(newS);
@@ -1523,7 +1534,7 @@ export default function App({ user }) {
       </div>
 
       {modal==="manageItems"&&<ManageItemsModal type={activeTab} items={activeTab==="skin"?skinR:hairR} onAdd={item=>addItem(activeTab,item)} onRemove={id=>removeItem(activeTab,id)} onEdit={(id,changes)=>editItem(activeTab,id,changes)} onClose={()=>setModal(null)}/>}
-      {modal==="plan"&&<PlanModal allItems={allItems} schedules={schedules} treatments={treatments} onSave={saveSched} onDelete={deleteSched} onSaveTreatment={saveTreatment} onDeleteTreatment={deleteTreatment} onClose={()=>setModal(null)}/>}
+      {modal==="plan"&&<PlanModal allItems={allItems} schedules={schedules} treatments={treatments} onSave={saveSched} onSaveMany={saveSchedMany} onDelete={deleteSched} onSaveTreatment={saveTreatment} onDeleteTreatment={deleteTreatment} onClose={()=>setModal(null)}/>}
       {modal==="freq"&&<FreqModal allItems={allItems} tracked={freqTracked} period={freqPeriod} onToggle={id=>setFreqTracked(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id])} onPeriod={async p=>{ setFreqPeriod(p); await persist({freqPeriod:p}); }} onClose={()=>setModal(null)}/>}
       {modal==="dayEdit"&&selectedDay&&<DayEditModal date={selectedDay} entry={getE(selectedDay)} skinRoutines={skinR} hairRoutines={hairR} onSave={data=>saveDayEdit(selectedDay,data)} onClose={()=>setModal(null)}/>}
       {modal==="rangeApply"&&rangeStart&&rangeEnd&&<RangeApplyModal rangeStart={rangeStart} rangeEnd={rangeEnd} skinRoutines={skinR} hairRoutines={hairR} onApply={applyRange} onClose={()=>{ setModal(null); setRangeStart(null); setRangeEnd(null); }}/>}
