@@ -1044,14 +1044,21 @@ export default function App({ user }) {
   const persistSchedules = async (newSchedules) => {
     if (!user) return;
     try {
-      await supabase.from("schedules").delete().eq("user_id", user.id);
       if (newSchedules.length > 0) {
-        await supabase.from("schedules").insert(newSchedules.map(s => ({
+        // Upsert each schedule individually - safer than delete+insert
+        const rows = newSchedules.map(s => ({
           id: s.id, user_id: user.id, item_id: s.itemId,
-          days: s.days||[], dates: s.dates||[], reminder: s.reminder, time: s.time
-        })));
+          days: s.days||[], dates: s.dates||[], reminder: s.reminder, time: s.time||"08:00"
+        }));
+        const { error: upsertErr } = await supabase.from("schedules").upsert(rows, { onConflict: "id" });
+        if (upsertErr) { console.error("Schedule upsert error:", upsertErr); return; }
+        // Only delete ones that are no longer in the list
+        const ids = newSchedules.map(s=>s.id);
+        await supabase.from("schedules").delete().eq("user_id", user.id).not("id", "in", `(${ids.map(id=>`"${id}"`).join(",")})`);
+      } else {
+        await supabase.from("schedules").delete().eq("user_id", user.id);
       }
-    } catch(e) { console.error("Schedule save error", e); }
+    } catch(e) { console.error("Schedule save error:", e); }
   };
 
   const toggleItem=(date,type,id)=>{
