@@ -557,7 +557,12 @@ function PlanModal({ allItems, schedules, treatments, onSave, onSaveMany, onDele
             onRangeEnd={range=>{ setEditing(e=>({...e,dates:[...new Set([...(e.dates||[]),...range])]})); setCalRangeStart(null); }}
           />
           <div className="modal-sub">Repeat on (optional — leave blank for date-specific only)</div>
-          <div className="dow-row">
+          <div className="dow-row" style={{marginBottom:8}}>
+            <button className={`dow-chip ${editing.days.length===7?"on":""}`}
+              style={{fontWeight:500}}
+              onClick={()=>setEditing(e=>({...e,days:e.days.length===7?[]:[0,1,2,3,4,5,6]}))}>
+              Everyday
+            </button>
             {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d,i)=>{
               const dow=[1,2,3,4,5,6,0][i];
               return <button key={d} className={`dow-chip ${editing.days.includes(dow)?"on":""}`} onClick={()=>toggleDay(dow)}>{d}</button>;
@@ -633,7 +638,9 @@ function PlanModal({ allItems, schedules, treatments, onSave, onSaveMany, onDele
                   <div style={{flex:1}}>
                     <div className="sched-label">{it.label}</div>
                     <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
-                      {recurDays&&<span>{recurDays}</span>}
+                      {(s.days||[]).length===7
+                        ?<span>Everyday</span>
+                        :recurDays&&<span>{recurDays}</span>}
                       {recurDays&&dateCount>0&&<span> · </span>}
                       {dateCount>0&&<span>{dateCount} specific date{dateCount!==1?"s":""}</span>}
                     </div>
@@ -1380,7 +1387,7 @@ export default function App({ user }) {
                       onClick={()=>handleCalClick(d)}
                       onMouseEnter={()=>rangeStart&&!rangeEnd&&setHoverDay(d)}
                       onMouseLeave={()=>setHoverDay(null)}>
-                      {(ach?.heart||ach?.hasTreatment)&&<span style={{position:"absolute",top:0,left:1,fontSize:".52rem",lineHeight:1,display:"flex",gap:"1px"}}>
+                      {(ach?.heart||ach?.hasTreatment)&&<span style={{position:"absolute",top:0,right:1,fontSize:".52rem",lineHeight:1,display:"flex",gap:"1px"}}>
                         {ach.heart==="heart-star"&&<>❤️✨</>}
                         {ach.heart==="heart"&&<>❤️</>}
                         {ach.hasTreatment&&<>💉</>}
@@ -1454,7 +1461,9 @@ export default function App({ user }) {
                       <div style={{flex:1}}>
                         <div className="sched-label">{it.label}</div>
                         <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
-                          {recurDays&&<span>{recurDays}</span>}
+                          {(s.days||[]).length===7
+                            ?<span>Everyday</span>
+                            :recurDays&&<span>{recurDays}</span>}
                           {recurDays&&dateCount>0&&<span> · </span>}
                           {dateCount>0&&<span>{dateCount} specific date{dateCount!==1?"s":""}</span>}
                         </div>
