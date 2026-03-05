@@ -30,11 +30,16 @@ export default function Auth() {
   const [err, setErr]       = useState("");
   const [ok, setOk]         = useState("");
 
+  const [keepLoggedIn, setKeepLoggedIn] = useState(true);
+
   const handle = async () => {
     setErr(""); setOk(""); setLoading(true);
     try {
       if (tab === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+        const { error } = await supabase.auth.signInWithPassword({
+          email, password: pass,
+          options: { persistSession: keepLoggedIn }
+        });
         if (error) setErr(error.message);
       } else if (tab === "signup") {
         const { error } = await supabase.auth.signUp({ email, password: pass });
@@ -85,6 +90,13 @@ export default function Auth() {
               value={email} onChange={e=>setEmail(e.target.value)}/>
           )}
 
+          {tab==="login"&&(
+            <label style={{display:"flex",alignItems:"center",gap:9,marginBottom:12,cursor:"pointer",fontSize:".8rem",color:"#8a6858",fontFamily:"'DM Sans',sans-serif"}}>
+              <input type="checkbox" checked={keepLoggedIn} onChange={e=>setKeepLoggedIn(e.target.checked)}
+                style={{width:15,height:15,accentColor:"#b07a5e",cursor:"pointer"}}/>
+              Keep me logged in
+            </label>
+          )}
           <button className="auth-btn" onClick={handle} disabled={loading||!email||(tab!=="reset"&&!pass)}>
             {loading ? "…" : tab==="login" ? "Log In" : tab==="signup" ? "Create Account" : "Send Reset Email"}
           </button>
