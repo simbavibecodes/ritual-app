@@ -497,8 +497,8 @@ function PlanModal({ allItems, schedules, treatments, onSave, onDelete, onSaveTr
   const [showItemPick, setShowItemPick]=useState(false);
   const [calRangeStart, setCalRangeStart]=useState(null);
 
-  const startNewPlan=()=>{ setEditing({id:uid(),itemId:"",days:[],dates:[],reminder:false,time:"08:00"}); setScreen("editPlan"); };
-  const startEditPlan=s=>{ setEditing({...s,dates:s.dates||[]}); setScreen("editPlan"); };
+  const startNewPlan=()=>{ setEditing({id:uid(),itemIds:[],days:[],dates:[],reminder:false,time:"08:00"}); setScreen("editPlan"); };
+  const startEditPlan=s=>{ setEditing({...s,itemIds:s.itemIds||[s.itemId].filter(Boolean),dates:s.dates||[]}); setScreen("editPlan"); };
   const startNewTx=()=>{ setEditTx({id:uid(),name:"",type:"skin",dates:[]}); setScreen("editTreatment"); };
   const startEditTx=t=>{ setEditTx({...t}); setScreen("editTreatment"); };
 
@@ -506,8 +506,13 @@ function PlanModal({ allItems, schedules, treatments, onSave, onDelete, onSaveTr
   const getItem=id=>allItems.find(x=>x.id===id);
 
   const savePlan=()=>{
-    if(!editing.itemId||(editing.days.length===0&&editing.dates.length===0)) return;
-    onSave(editing); setEditing(null); setScreen("list");
+    if(!editing.itemIds?.length||(editing.days.length===0&&editing.dates.length===0)) return;
+    // Create one plan per selected item
+    editing.itemIds.forEach(itemId=>{
+      const existing=schedules.find(s=>s.itemId===itemId&&s.id===editing.id);
+      onSave({...editing, id: editing.itemIds.length===1?editing.id:uid(), itemId, itemIds:undefined});
+    });
+    setEditing(null); setScreen("list");
   };
   const saveTx=()=>{
     if(!editTx.name.trim()||!editTx.dates.length) return;
@@ -515,8 +520,8 @@ function PlanModal({ allItems, schedules, treatments, onSave, onDelete, onSaveTr
   };
 
   if(screen==="editPlan"&&editing){
-    const sel=getItem(editing.itemId);
-    const canSave=editing.itemId&&(editing.days.length>0||editing.dates.length>0);
+    const canSave=editing.itemIds?.length>0&&(editing.days.length>0||editing.dates.length>0);
+    const toggleItemSel=id=>setEditing(e=>({...e,itemIds:e.itemIds.includes(id)?e.itemIds.filter(x=>x!==id):[...e.itemIds,id]}));
     return (
       <div className="overlay" onClick={e=>e.target===e.currentTarget&&setScreen("list")}>
         <div className="modal">
@@ -524,18 +529,22 @@ function PlanModal({ allItems, schedules, treatments, onSave, onDelete, onSaveTr
             <div className="modal-title">{schedules.find(s=>s.id===editing.id)?"Edit":"New"} Plan</div>
             <button className="modal-x" onClick={()=>setScreen("list")}>×</button>
           </div>
-          <div className="modal-sub">Step</div>
-          <button style={{width:"100%",background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:10,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:10,fontSize:".86rem",color:"#3a2e27",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}
-            onClick={()=>setShowItemPick(p=>!p)}>
-            {sel?<>{sel.emoji} {sel.label}</>:<span style={{color:"#c0a898",fontStyle:"italic"}}>Select a step…</span>}
-          </button>
-          {showItemPick&&<div style={{marginBottom:14,maxHeight:200,overflowY:"auto"}}>{allItems.map(it=>(
-            <div key={it.id} className="m-item" style={{cursor:"pointer",marginBottom:6}}
-              onClick={()=>{setEditing(e=>({...e,itemId:it.id}));setShowItemPick(false);}}>
-              <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-              <span className="m-item-lbl">{it.label}</span>
-            </div>
-          ))}</div>}
+          <div className="modal-sub">Steps — select one or more</div>
+          <div style={{marginBottom:14,display:"flex",flexDirection:"column",gap:6}}>
+            {allItems.map(it=>{
+              const on=(editing.itemIds||[]).includes(it.id);
+              return (
+                <div key={it.id} className="m-item" style={{cursor:"pointer",background:on?"#f7ece4":"#fff8f3",border:on?"1.5px solid #b07a5e":"1px solid #e8d8cc",marginBottom:0}}
+                  onClick={()=>toggleItemSel(it.id)}>
+                  <span style={{fontSize:"1rem"}}>{it.emoji}</span>
+                  <span className="m-item-lbl" style={{color:on?"#5a3a27":"#3a2e27",fontWeight:on?500:400}}>{it.label}</span>
+                  <div style={{width:16,height:16,borderRadius:"50%",border:`1.5px solid ${on?"#b07a5e":"#d0b0a0"}`,background:on?"#b07a5e":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    {on&&<svg width="9" height="7" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
           <div className="modal-sub">Specific dates (tap to select, tap two for range)</div>
           <MiniCal
             selectedDates={editing.dates||[]}
