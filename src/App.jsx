@@ -422,6 +422,22 @@ function PlanDetailPage({ plan, type, allItems, schedules, treatments, onSave, o
     onClose={onBack} initialTreatment={plan}/>;
 }
 
+function ConfirmDialog({ message, onConfirm, onCancel }) {
+  return (
+    <div className="overlay" onClick={onCancel}>
+      <div className="modal" style={{maxWidth:320,textAlign:"center",padding:"32px 24px"}} onClick={e=>e.stopPropagation()}>
+        <div style={{fontSize:"1.5rem",marginBottom:12}}>🗑️</div>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",color:"#3a2e27",marginBottom:8}}>Are you sure?</div>
+        <div style={{fontSize:".84rem",color:"#a08070",marginBottom:24,lineHeight:1.5}}>{message}</div>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={onCancel} style={{flex:1,background:"none",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"11px",fontSize:".82rem",color:"#a08070",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+          <button onClick={onConfirm} style={{flex:1,background:"#c07060",border:"none",borderRadius:12,padding:"11px",fontSize:".82rem",color:"#fff",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".06em"}}>Delete</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SpendingSummary({ purchases, onGoToPurchases }) {
   const [period, setPeriod] = useState("month");
   const now = new Date();
@@ -500,9 +516,10 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
   const [editP, setEditP] = useState(null);
   const [filterCat, setFilterCat] = useState("all");
 
-  const blank = () => ({ id:crypto.randomUUID(), name:"", brand:"", category:"skin", price:"", quantity:"1", date:today, notes:"" });
+  const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, price:"", quantity:"1", date:today, notes:"", tags:[] });
+  const [chooseCat, setChooseCat] = useState(false);
 
-  const startAdd = () => { setEditP(blank()); setShowForm(true); };
+  const startAdd = () => { setChooseCat(true); };
   const startEdit = p => { setEditP({...p, price:String(p.price), quantity:String(p.quantity)}); setShowForm(true); };
   const save = () => { if(!editP.name.trim()||!editP.date) return; onSave(editP); setShowForm(false); setEditP(null); };
 
@@ -536,6 +553,21 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
         ))}
       </div>
 
+      {chooseCat&&(
+        <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:14}}>What did you purchase?</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {[["🌿","Skin","skin"],["✨","Hair","hair"]].map(([emoji,label,cat])=>(
+              <button key={cat} onClick={()=>{setEditP(blank(cat));setShowForm(true);setChooseCat(false);}}
+                style={{display:"flex",alignItems:"center",gap:12,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+                <span style={{fontSize:"1.3rem"}}>{emoji}</span>
+                <span style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>{label} Product</span>
+              </button>
+            ))}
+            <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".78rem",color:"#a08070",cursor:"pointer",marginTop:4,fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+          </div>
+        </div>
+      )}
       {showForm&&editP&&(
         <div className="purch-form">
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
@@ -721,8 +753,8 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
   );
 }
 
-function PlanModal({ allItems, schedules, treatments, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose, initialPlan, initialTreatment }) {
-  const [screen, setScreen]=useState(initialPlan?"editPlan":initialTreatment?"editTreatment":"editPlan"); // editPlan | editTreatment
+function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsProp, schedules, treatments, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose, initialPlan, initialTreatment }) {
+  const [screen, setScreen]=useState(initialPlan?"editPlan":initialTreatment?"editTreatment":"chooseType"); // chooseType | editPlan | editTreatment
   const [editing, setEditing]=useState(initialPlan?{...initialPlan,itemIds:initialPlan.itemIds||[initialPlan.itemId].filter(Boolean),dates:initialPlan.dates||[],startDate:initialPlan.startDate||fmt(new Date())}:{id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),reminder:false,time:"08:00"});
   const [editTx, setEditTx]=useState(initialTreatment?{...initialTreatment}:{id:uid(),name:"",type:"skin",dates:[]});
   const [showItemPick, setShowItemPick]=useState(false);
@@ -734,6 +766,8 @@ function PlanModal({ allItems, schedules, treatments, onSave, onSaveMany, onDele
   const startEditTx=t=>{ setEditTx({...t}); setScreen("editTreatment"); };
 
   const toggleDay=d=>setEditing(e=>({...e,days:e.days.includes(d)?e.days.filter(x=>x!==d):[...e.days,d]}));
+  const skinItems=skinItemsProp||allItems;
+  const hairItems=hairItemsProp||allItems;
   const getItem=id=>allItems.find(x=>x.id===id);
 
   const savePlan=()=>{
@@ -754,6 +788,34 @@ function PlanModal({ allItems, schedules, treatments, onSave, onSaveMany, onDele
     onSaveTreatment(editTx); setEditTx(null); setScreen("list");
   };
 
+  if(screen==="chooseType"){
+    return (
+      <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+        <div className="modal" style={{textAlign:"center"}}>
+          <div className="modal-top" style={{justifyContent:"flex-end"}}>
+            <button className="modal-x" onClick={onClose}>×</button>
+          </div>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.5rem",fontStyle:"italic",color:"#3a2e27",marginBottom:6}}>What are you planning?</div>
+          <div style={{fontSize:".78rem",color:"#a08070",marginBottom:28}}>Choose a category to get started</div>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {[["🌿","Skin Routine","Plan your skin care steps","skin"],["✨","Hair Routine","Plan your hair care steps","hair"],["💉","Treatment","Schedule a treatment session","treatment"]].map(([emoji,label,sub,type])=>(
+              <button key={type} onClick={()=>{
+                if(type==="treatment"){ setEditTx({id:uid(),name:"",type:"skin",dates:[]}); setScreen("editTreatment"); }
+                else { setEditing(e=>({...e,itemIds:[],_category:type})); setScreen("editPlan"); }
+              }} style={{display:"flex",alignItems:"center",gap:14,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",transition:"all .15s",fontFamily:"'DM Sans',sans-serif"}}>
+                <span style={{fontSize:"1.6rem"}}>{emoji}</span>
+                <div>
+                  <div style={{fontSize:".9rem",color:"#3a2e27",fontWeight:500}}>{label}</div>
+                  <div style={{fontSize:".74rem",color:"#a08070",marginTop:2}}>{sub}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if(screen==="editPlan"&&editing){
     const canSave=editing.itemIds?.length>0&&(editing.days.length>0||editing.dates.length>0);
     const toggleItemSel=id=>setEditing(e=>({...e,itemIds:e.itemIds.includes(id)?e.itemIds.filter(x=>x!==id):[...e.itemIds,id]}));
@@ -769,7 +831,7 @@ function PlanModal({ allItems, schedules, treatments, onSave, onSaveMany, onDele
           </div>
           <div className="modal-sub">Steps — select one or more</div>
           <div style={{marginBottom:14,display:"flex",flexDirection:"column",gap:6}}>
-            {allItems.map(it=>{
+            {(editing._category==="hair"?hairItems:editing._category==="skin"?skinItems:allItems).map(it=>{
               const on=(editing.itemIds||[]).includes(it.id);
               return (
                 <div key={it.id} className="m-item" style={{cursor:"pointer",background:on?"#f7ece4":"#fff8f3",border:on?"1.5px solid #b07a5e":"1px solid #e8d8cc",marginBottom:0}}
@@ -1096,7 +1158,8 @@ export default function App({ user }) {
   const [purchases,     setPurchases]     = useState([]);
   const [sideMenu,      setSideMenu]      = useState(false);
   const [pageView,      setPageView]      = useState(null); // null=main, "purchases", "account"
-  const [selectedPlan,  setSelectedPlan]  = useState(null); // plan/treatment being viewed // { "2026-03": "12cm" }
+  const [selectedPlan,  setSelectedPlan]  = useState(null); // plan/treatment being viewed
+  const [confirmDelete, setConfirmDelete] = useState(null); // {message, onConfirm} // { "2026-03": "12cm" }
   const [treatments,    setTreatments]    = useState([]); // [{id, name, type(skin/hair), dates:[], completedDates:[]}]
 
   // Load all data from Supabase on mount
@@ -1327,6 +1390,7 @@ export default function App({ user }) {
       showT("Purchase removed");
     } catch(e) { console.error(e); }
   };
+  const confirmDeletePurchase=(id)=>setConfirmDelete({message:"This purchase will be permanently deleted.",onConfirm:()=>deletePurchase(id)});
 
   const saveTreatment = async (tx) => {
     const updated = [...treatments.filter(t=>t.id!==tx.id), tx];
@@ -1339,6 +1403,7 @@ export default function App({ user }) {
     await deleteTreatmentFromDB(id);
     showT("Treatment removed");
   };
+  const confirmDeleteTreatment=(id)=>setConfirmDelete({message:"This treatment will be permanently deleted.",onConfirm:()=>deleteTreatment(id)});
   const completeTreatment = async (txId, date) => {
     const tx = treatments.find(t=>t.id===txId); if(!tx) return;
     const already = tx.completedDates.includes(date);
@@ -1367,6 +1432,7 @@ export default function App({ user }) {
     await persistSchedules(newS);
     showT("Plan removed");
   };
+  const confirmDeleteSched=(id)=>setConfirmDelete({message:"This plan will be permanently deleted.",onConfirm:()=>deleteSched(id)});
   const saveDayEdit=async(date,data)=>{
     const ne={...entries,[date]:data};
     setEntries(ne);
@@ -1481,7 +1547,7 @@ export default function App({ user }) {
   const done=checked.filter(id=>routines.find(r=>r.id===id)).length;
 
   if (pageView==="purchases") return (
-    <div><style>{STYLES}</style><PurchasesPage purchases={purchases} onSave={savePurchase} onDelete={deletePurchase} onBack={()=>setPageView(null)}/></div>
+    <div><style>{STYLES}</style><PurchasesPage purchases={purchases} onSave={savePurchase} onDelete={confirmDeletePurchase} onBack={()=>setPageView(null)}/></div>
   );
   if (pageView==="account") return (
     <div className="app">
@@ -1797,16 +1863,16 @@ export default function App({ user }) {
       </div>
 
       {modal==="manageItems"&&<ManageItemsModal type={activeTab} items={activeTab==="skin"?skinR:hairR} onAdd={item=>addItem(activeTab,item)} onRemove={id=>removeItem(activeTab,id)} onEdit={(id,changes)=>editItem(activeTab,id,changes)} onClose={()=>setModal(null)}/>}
-      {selectedPlan&&<PlanModal allItems={allItems} schedules={schedules} treatments={treatments}
+      {selectedPlan&&<PlanModal allItems={allItems} skinItems={skinR} hairItems={hairR} schedules={schedules} treatments={treatments}
         onSave={async s=>{ await saveSched(s); setSelectedPlan(null); }}
         onSaveMany={async plans=>{ await saveSchedMany(plans); setSelectedPlan(null); }}
-        onDelete={async id=>{ await deleteSched(id); setSelectedPlan(null); }}
+        onDelete={id=>{ confirmDeleteSched(id); setSelectedPlan(null); }}
         onSaveTreatment={async tx=>{ await saveTreatment(tx); setSelectedPlan(null); }}
-        onDeleteTreatment={async id=>{ await deleteTreatment(id); setSelectedPlan(null); }}
+        onDeleteTreatment={id=>{ confirmDeleteTreatment(id); setSelectedPlan(null); }}
         onClose={()=>setSelectedPlan(null)}
         initialPlan={selectedPlan.type==="plan"?selectedPlan.data:null}
         initialTreatment={selectedPlan.type==="treatment"?selectedPlan.data:null}/>}
-      {modal==="plan"&&<PlanModal allItems={allItems} schedules={schedules} treatments={treatments} onSave={saveSched} onSaveMany={saveSchedMany} onDelete={deleteSched} onSaveTreatment={saveTreatment} onDeleteTreatment={deleteTreatment} onClose={()=>setModal(null)}/>}
+      {modal==="plan"&&<PlanModal allItems={allItems} skinItems={skinR} hairItems={hairR} schedules={schedules} treatments={treatments} onSave={saveSched} onSaveMany={saveSchedMany} onDelete={deleteSched} onSaveTreatment={saveTreatment} onDeleteTreatment={deleteTreatment} onClose={()=>setModal(null)}/>}
       {modal==="freq"&&<FreqModal allItems={allItems} tracked={freqTracked} period={freqPeriod} onToggle={id=>setFreqTracked(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id])} onPeriod={async p=>{ setFreqPeriod(p); await persist({freqPeriod:p}); }} onClose={()=>setModal(null)}/>}
       {modal==="dayEdit"&&selectedDay&&<DayEditModal date={selectedDay} entry={getE(selectedDay)} skinRoutines={skinR} hairRoutines={hairR} onSave={data=>saveDayEdit(selectedDay,data)} onClose={()=>setModal(null)}/>}
       {modal==="rangeApply"&&rangeStart&&rangeEnd&&<RangeApplyModal rangeStart={rangeStart} rangeEnd={rangeEnd} skinRoutines={skinR} hairRoutines={hairR} onApply={applyRange} onClose={()=>{ setModal(null); setRangeStart(null); setRangeEnd(null); }}/>}
@@ -1830,6 +1896,7 @@ export default function App({ user }) {
         </div>
       )}
       {toast&&<div className="toast">{toast}</div>}
+      {confirmDelete&&<ConfirmDialog message={confirmDelete.message} onConfirm={()=>{confirmDelete.onConfirm();setConfirmDelete(null);}} onCancel={()=>setConfirmDelete(null)}/>}
 
       {sideMenu&&<div className="side-menu-overlay" onClick={()=>setSideMenu(false)}/>}
       <div className={`side-menu ${sideMenu?"open":""}`}>
