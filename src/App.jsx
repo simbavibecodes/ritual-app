@@ -408,6 +408,20 @@ function ManageItemsModal({ type, items, onAdd, onRemove, onEdit, onClose }) {
   );
 }
 
+function PlanDetailPage({ plan, type, allItems, schedules, treatments, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onBack }) {
+  // Reuse PlanModal internals but as a full page
+  if (type==="plan") {
+    return <PlanModal allItems={allItems} schedules={schedules} treatments={treatments}
+      onSave={onSave} onSaveMany={onSaveMany} onDelete={onDelete}
+      onSaveTreatment={onSaveTreatment} onDeleteTreatment={onDeleteTreatment}
+      onClose={onBack} initialPlan={plan}/>;
+  }
+  return <PlanModal allItems={allItems} schedules={schedules} treatments={treatments}
+    onSave={onSave} onSaveMany={onSaveMany} onDelete={onDelete}
+    onSaveTreatment={onSaveTreatment} onDeleteTreatment={onDeleteTreatment}
+    onClose={onBack} initialTreatment={plan}/>;
+}
+
 function SpendingSummary({ purchases, onGoToPurchases }) {
   const [period, setPeriod] = useState("month");
   const now = new Date();
@@ -707,10 +721,10 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
   );
 }
 
-function PlanModal({ allItems, schedules, treatments, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose }) {
-  const [screen, setScreen]=useState("list"); // list | editPlan | editTreatment
-  const [editing, setEditing]=useState(null);
-  const [editTx, setEditTx]=useState(null);
+function PlanModal({ allItems, schedules, treatments, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose, initialPlan, initialTreatment }) {
+  const [screen, setScreen]=useState(initialPlan?"editPlan":initialTreatment?"editTreatment":"editPlan"); // editPlan | editTreatment
+  const [editing, setEditing]=useState(initialPlan?{...initialPlan,itemIds:initialPlan.itemIds||[initialPlan.itemId].filter(Boolean),dates:initialPlan.dates||[],startDate:initialPlan.startDate||fmt(new Date())}:{id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),reminder:false,time:"08:00"});
+  const [editTx, setEditTx]=useState(initialTreatment?{...initialTreatment}:{id:uid(),name:"",type:"skin",dates:[]});
   const [showItemPick, setShowItemPick]=useState(false);
   const [calRangeStart, setCalRangeStart]=useState(null);
 
@@ -744,11 +758,14 @@ function PlanModal({ allItems, schedules, treatments, onSave, onSaveMany, onDele
     const canSave=editing.itemIds?.length>0&&(editing.days.length>0||editing.dates.length>0);
     const toggleItemSel=id=>setEditing(e=>({...e,itemIds:e.itemIds.includes(id)?e.itemIds.filter(x=>x!==id):[...e.itemIds,id]}));
     return (
-      <div className="overlay" onClick={e=>e.target===e.currentTarget&&setScreen("list")}>
+      <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
         <div className="modal">
           <div className="modal-top">
-            <div className="modal-title">{schedules.find(s=>s.id===editing.id)?"Edit":"New"} Plan</div>
-            <button className="modal-x" onClick={()=>setScreen("list")}>×</button>
+            <div className="modal-title">{schedules.find(s=>s.id===editing.id)?"Edit Plan":"New Plan"}</div>
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              {schedules.find(s=>s.id===editing.id)&&<button className="del-btn" onClick={()=>{onDelete(editing.id);onClose();}}>Delete</button>}
+              <button className="modal-x" onClick={onClose}>×</button>
+            </div>
           </div>
           <div className="modal-sub">Steps — select one or more</div>
           <div style={{marginBottom:14,display:"flex",flexDirection:"column",gap:6}}>
@@ -805,11 +822,14 @@ function PlanModal({ allItems, schedules, treatments, onSave, onSaveMany, onDele
   if(screen==="editTreatment"&&editTx){
     const canSave=editTx.name.trim()&&editTx.dates.length>0;
     return (
-      <div className="overlay" onClick={e=>e.target===e.currentTarget&&setScreen("list")}>
+      <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
         <div className="modal">
           <div className="modal-top">
-            <div className="modal-title">Plan a Treatment</div>
-            <button className="modal-x" onClick={()=>setScreen("list")}>×</button>
+            <div className="modal-title">{editTx.name?"Edit Treatment":"New Treatment"}</div>
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              {treatments.find(t=>t.id===editTx.id)&&<button className="del-btn" onClick={()=>{onDeleteTreatment(editTx.id);onClose();}}>Delete</button>}
+              <button className="modal-x" onClick={onClose}>×</button>
+            </div>
           </div>
           <div className="modal-sub">Treatment name</div>
           <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Facial, Microneedling…"
@@ -837,67 +857,8 @@ function PlanModal({ allItems, schedules, treatments, onSave, onSaveMany, onDele
     );
   }
 
-  // List screen
-  const getItem2=id=>allItems.find(x=>x.id===id);
-  return (
-    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div className="modal">
-        <div className="modal-top">
-          <div className="modal-title">Plans</div>
-          <button className="modal-x" onClick={onClose}>×</button>
-        </div>
-        {schedules.length>0&&<>
-          <div className="modal-sub" style={{marginBottom:8}}>Routine Plans</div>
-          {schedules.map(s=>{
-            const it=getItem2(s.itemId); if(!it) return null;
-            const recurDays=(s.days||[]).map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
-            const dateCount=(s.dates||[]).length;
-            return (
-              <div key={s.id} className="sched-card" style={{marginBottom:8}}>
-                <div className="sched-top">
-                  <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-                  <div style={{flex:1}}>
-                    <div className="sched-label">{it.label}</div>
-                    <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
-                      {(s.days||[]).length===7
-                        ?<span>Everyday</span>
-                        :recurDays&&<span>{recurDays}</span>}
-                      {recurDays&&dateCount>0&&<span> · </span>}
-                      {dateCount>0&&<span>{dateCount} specific date{dateCount!==1?"s":""}</span>}
-                    </div>
-                  </div>
-                  <button className="ghost-btn" style={{fontSize:".7rem",padding:"3px 9px"}} onClick={()=>startEditPlan(s)}>Edit</button>
-                  <button className="del-btn" onClick={()=>onDelete(s.id)}>✕</button>
-                </div>
-                {s.reminder&&<div className="sched-reminder">🔔 at {s.time}</div>}
-              </div>
-            );
-          })}
-        </>}
-        {treatments.length>0&&<>
-          <div className="modal-sub" style={{marginTop:16,marginBottom:8}}>Treatments</div>
-          {treatments.map(tx=>(
-            <div key={tx.id} className="sched-card treatment-card" style={{marginBottom:8}}>
-              <div className="sched-top">
-                <span style={{fontSize:"1rem"}}>💉</span>
-                <div style={{flex:1}}>
-                  <div className="sched-label">{tx.name}</div>
-                  <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>{tx.type==="skin"?"🌿 Skin":"✨ Hair"} · {tx.dates.length} date{tx.dates.length!==1?"s":""} · {tx.completedDates?.length||0} completed</div>
-                </div>
-                <button className="ghost-btn" style={{fontSize:".7rem",padding:"3px 9px"}} onClick={()=>startEditTx(tx)}>Edit</button>
-                <button className="del-btn" onClick={()=>onDeleteTreatment(tx.id)}>✕</button>
-              </div>
-            </div>
-          ))}
-        </>}
-        {!schedules.length&&!treatments.length&&<div style={{textAlign:"center",color:"#b09080",fontStyle:"italic",padding:"16px 0",fontSize:".86rem"}}>No plans yet</div>}
-        <div style={{display:"flex",gap:8,marginTop:8}}>
-          <button className="add-sched-btn" style={{flex:1}} onClick={startNewPlan}>+ Add Plan</button>
-          <button className="add-sched-btn" style={{flex:1,borderColor:"#e8a898",color:"#c07060"}} onClick={startNewTx}>💉 Treatment</button>
-        </div>
-      </div>
-    </div>
-  );
+  // Fallback - just close if somehow on list screen
+  return null;
 }
 
 function FreqModal({ allItems, tracked, period, onToggle, onPeriod, onClose }) {
@@ -1134,7 +1095,8 @@ export default function App({ user }) {
   const [hairLengths,   setHairLengths]   = useState({});
   const [purchases,     setPurchases]     = useState([]);
   const [sideMenu,      setSideMenu]      = useState(false);
-  const [pageView,      setPageView]      = useState(null); // null=main, "purchases", "account" // { "2026-03": "12cm" }
+  const [pageView,      setPageView]      = useState(null); // null=main, "purchases", "account"
+  const [selectedPlan,  setSelectedPlan]  = useState(null); // plan/treatment being viewed // { "2026-03": "12cm" }
   const [treatments,    setTreatments]    = useState([]); // [{id, name, type(skin/hair), dates:[], completedDates:[]}]
 
   // Load all data from Supabase on mount
@@ -1736,7 +1698,7 @@ export default function App({ user }) {
                 const dateCount=(s.dates||[]).length;
                 const isToday=(s.days||[]).includes(new Date().getDay())||(s.dates||[]).includes(today);
                 return (
-                  <div key={s.id} className="sched-card" onClick={()=>setModal("plan")}>
+                  <div key={s.id} className="sched-card" style={{cursor:"pointer"}} onClick={()=>setSelectedPlan({type:"plan",data:s})}>
                     <div className="sched-top">
                       <span style={{fontSize:"1rem"}}>{it.emoji}</span>
                       <div style={{flex:1}}>
@@ -1762,7 +1724,7 @@ export default function App({ user }) {
                 const upcoming=tx.dates.filter(d=>d>=today).sort();
                 const next=upcoming[0];
                 return (
-                  <div key={tx.id} className="sched-card treatment-card" onClick={()=>setModal("plan")}>
+                  <div key={tx.id} className="sched-card treatment-card" style={{cursor:"pointer"}} onClick={()=>setSelectedPlan({type:"treatment",data:tx})}>
                     <div className="sched-top">
                       <span style={{fontSize:"1rem"}}>💉</span>
                       <div style={{flex:1}}>
@@ -1835,6 +1797,15 @@ export default function App({ user }) {
       </div>
 
       {modal==="manageItems"&&<ManageItemsModal type={activeTab} items={activeTab==="skin"?skinR:hairR} onAdd={item=>addItem(activeTab,item)} onRemove={id=>removeItem(activeTab,id)} onEdit={(id,changes)=>editItem(activeTab,id,changes)} onClose={()=>setModal(null)}/>}
+      {selectedPlan&&<PlanModal allItems={allItems} schedules={schedules} treatments={treatments}
+        onSave={async s=>{ await saveSched(s); setSelectedPlan(null); }}
+        onSaveMany={async plans=>{ await saveSchedMany(plans); setSelectedPlan(null); }}
+        onDelete={async id=>{ await deleteSched(id); setSelectedPlan(null); }}
+        onSaveTreatment={async tx=>{ await saveTreatment(tx); setSelectedPlan(null); }}
+        onDeleteTreatment={async id=>{ await deleteTreatment(id); setSelectedPlan(null); }}
+        onClose={()=>setSelectedPlan(null)}
+        initialPlan={selectedPlan.type==="plan"?selectedPlan.data:null}
+        initialTreatment={selectedPlan.type==="treatment"?selectedPlan.data:null}/>}
       {modal==="plan"&&<PlanModal allItems={allItems} schedules={schedules} treatments={treatments} onSave={saveSched} onSaveMany={saveSchedMany} onDelete={deleteSched} onSaveTreatment={saveTreatment} onDeleteTreatment={deleteTreatment} onClose={()=>setModal(null)}/>}
       {modal==="freq"&&<FreqModal allItems={allItems} tracked={freqTracked} period={freqPeriod} onToggle={id=>setFreqTracked(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id])} onPeriod={async p=>{ setFreqPeriod(p); await persist({freqPeriod:p}); }} onClose={()=>setModal(null)}/>}
       {modal==="dayEdit"&&selectedDay&&<DayEditModal date={selectedDay} entry={getE(selectedDay)} skinRoutines={skinR} hairRoutines={hairR} onSave={data=>saveDayEdit(selectedDay,data)} onClose={()=>setModal(null)}/>}
