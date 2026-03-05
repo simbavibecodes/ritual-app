@@ -932,7 +932,8 @@ export default function App({ user }) {
           if (ha) setHairR(ha.items);
         }
         // Load schedules
-        const { data: schedRows } = await supabase.from("schedules").select("*").eq("user_id", user.id);
+        const { data: schedRows, error: schedErr } = await supabase.from("schedules").select("*").eq("user_id", user.id);
+        console.log("LOAD schedules:", schedRows, "error:", schedErr);
         if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days||[], dates:r.dates||[], reminder:r.reminder, time:r.time })));
         // Load freq settings
         const { data: freqRows } = await supabase.from("freq_settings").select("*").eq("user_id", user.id).single();
