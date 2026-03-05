@@ -439,6 +439,10 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
     return d>lo&&d<hi;
   };
   const handleClick=d=>{
+    // If already individually selected, deselect it
+    if(selectedDates.includes(d)&&!rangeStart){
+      onToggleDate(d); return;
+    }
     if(!rangeStart){onRangeStart(d);}
     else if(d===rangeStart){onRangeStart(null);}
     else{
@@ -1459,10 +1463,6 @@ export default function App({ user }) {
             {!schedules.length&&!treatments.length&&(
               <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No plans yet — tap + Add to start</div>
             )}
-            <div style={{display:"flex",gap:8,marginTop:8}}>
-              <button className="add-sched-btn" style={{flex:1}} onClick={()=>setModal("plan")}>+ Add Plan</button>
-              <button className="add-sched-btn" style={{flex:1,borderColor:"#e8a898",color:"#c07060"}} onClick={()=>setModal("plan")}>💉 Treatment</button>
-            </div>
           </>
         )}
 
