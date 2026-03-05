@@ -1410,8 +1410,8 @@ export default function App({ user }) {
               const si=(e.skin||[]).map(id=>allSkinMap[id]).filter(Boolean);
               const hi=(e.hair||[]).map(id=>allHairMap[id]).filter(Boolean);
               const hasSched=getSchedDow(selectedDay);
-              const hasSkin=si.length||e.skin_mood||e.skin_notes||e.skin_photos?.length;
-              const hasHair=hi.length||e.hair_mood||e.hair_notes||e.hair_photos?.length;
+              const hasSkin=!!(si.length||e.skin_mood||e.skin_notes||e.skin_photos?.length);
+              const hasHair=!!(hi.length||e.hair_mood||e.hair_notes||e.hair_photos?.length);
               const hasAny=hasSkin||hasHair;
               return (
                 <div className="day-panel">
