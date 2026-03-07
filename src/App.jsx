@@ -513,15 +513,44 @@ function SpendingSummary({ purchases, period, onGoToPurchases }) {
 }
 
 function ProductSearch({ category, onSelect }) {
+  const [mode, setMode] = useState("link"); // link | search
   const [query, setQuery] = useState("");
+  const [url, setUrl] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [fetchStatus, setFetchStatus] = useState(""); // "", "fetching", "found", "failed"
+
+  const fetchFromUrl = async () => {
+    if (!url.trim()) return;
+    setFetchStatus("fetching");
+    try {
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url.trim())}`;
+      const res = await fetch(proxyUrl);
+      const data = await res.json();
+      const html = data.contents || "";
+      const getMeta = (prop) => {
+        const m = html.match(new RegExp(`<meta[^>]*(?:property|name)=["']${prop}["'][^>]*content=["']([^"']+)["']`, "i"))
+                || html.match(new RegExp(`<meta[^>]*content=["']([^"']+)["'][^>]*(?:property|name)=["']${prop}["']`, "i"));
+        return m ? m[1] : "";
+      };
+      const name = getMeta("og:title") || getMeta("twitter:title") || "";
+      const image = getMeta("og:image") || getMeta("twitter:image") || "";
+      const siteName = getMeta("og:site_name") || "";
+      if (name) {
+        onSelect({ name: name.replace(/\s*[-|].*$/, "").trim(), brand: siteName, image, link: url.trim() });
+        setFetchStatus("found");
+      } else {
+        setFetchStatus("failed");
+      }
+    } catch(e) {
+      setFetchStatus("failed");
+    }
+  };
 
   const search = async () => {
     if (!query.trim()) return;
-    setLoading(true);
-    setSearched(true);
+    setLoading(true); setSearched(true);
     try {
       const res = await fetch(`https://world.openbeautyfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=8`);
       const data = await res.json();
@@ -532,33 +561,62 @@ function ProductSearch({ category, onSelect }) {
 
   return (
     <div style={{marginBottom:12}}>
-      <div style={{fontSize:".7rem",color:"#a08070",marginBottom:6,letterSpacing:".08em",textTransform:"uppercase"}}>Search Product Database</div>
-      <div style={{display:"flex",gap:8,marginBottom:8}}>
-        <input className="ifield" style={{flex:1}} placeholder="Search by product name…" value={query}
-          onChange={e=>setQuery(e.target.value)}
-          onKeyDown={e=>e.key==="Enter"&&search()}/>
-        <button onClick={search} style={{background:"#b07a5e",border:"none",borderRadius:10,padding:"8px 14px",color:"#fff",cursor:"pointer",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>
-          {loading?"…":"Search"}
-        </button>
+      <div style={{display:"flex",gap:0,marginBottom:10,borderRadius:10,overflow:"hidden",border:"1.5px solid #e8d8cc"}}>
+        {[["link","🔗 Paste Link"],["search","🔍 Search"]].map(([m,l])=>(
+          <button key={m} onClick={()=>setMode(m)}
+            style={{flex:1,padding:"8px",fontSize:".76rem",cursor:"pointer",border:"none",fontFamily:"'DM Sans',sans-serif",
+              background:mode===m?"#b07a5e":"#fff8f3",color:mode===m?"#fff":"#a08070",transition:"all .15s"}}>
+            {l}
+          </button>
+        ))}
       </div>
-      {searched&&results.length===0&&!loading&&<div style={{fontSize:".78rem",color:"#a08070",fontStyle:"italic",marginBottom:8}}>No results — fill in manually below</div>}
-      {results.length>0&&(
-        <div style={{maxHeight:220,overflowY:"auto",border:"1px solid #e8d8cc",borderRadius:12,marginBottom:8}}>
-          {results.map((p,i)=>(
-            <div key={i} onClick={()=>onSelect({name:p.product_name||"",brand:p.brands||"",image:p.image_small_url||""})}
-              style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderBottom:"1px solid #f0e0d4",cursor:"pointer",background:"#fff8f3",transition:"background .15s"}}
-              onMouseEnter={e=>e.currentTarget.style.background="#fdf0e8"}
-              onMouseLeave={e=>e.currentTarget.style.background="#fff8f3"}>
-              {p.image_small_url
-                ?<img src={p.image_small_url} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:8,flexShrink:0}}/>
-                :<div style={{width:36,height:36,borderRadius:8,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",flexShrink:0}}>{category==="skin"?"🌿":category==="treatment"?"💉":"✨"}</div>
-              }
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:".82rem",color:"#3a2e27",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.product_name}</div>
-                {p.brands&&<div style={{fontSize:".72rem",color:"#a08070"}}>{p.brands}</div>}
-              </div>
+
+      {mode==="link"&&(
+        <div>
+          <div style={{display:"flex",gap:8,marginBottom:6}}>
+            <input className="ifield" style={{flex:1,fontSize:".8rem"}} placeholder="Paste Sephora, LOOKFANTASTIC, any product URL…"
+              value={url} onChange={e=>{setUrl(e.target.value);setFetchStatus("");}}
+              onKeyDown={e=>e.key==="Enter"&&fetchFromUrl()}/>
+            <button onClick={fetchFromUrl}
+              style={{background:"#b07a5e",border:"none",borderRadius:10,padding:"8px 12px",color:"#fff",cursor:"pointer",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>
+              {fetchStatus==="fetching"?"…":"Import"}
+            </button>
+          </div>
+          {fetchStatus==="found"&&<div style={{fontSize:".76rem",color:"#2d6a2d",marginBottom:6}}>✓ Product imported — check fields below</div>}
+          {fetchStatus==="failed"&&<div style={{fontSize:".76rem",color:"#a08070",fontStyle:"italic",marginBottom:6}}>Couldn't auto-import — fill in manually below</div>}
+        </div>
+      )}
+
+      {mode==="search"&&(
+        <div>
+          <div style={{display:"flex",gap:8,marginBottom:8}}>
+            <input className="ifield" style={{flex:1}} placeholder="Search product name…" value={query}
+              onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&search()}/>
+            <button onClick={search}
+              style={{background:"#b07a5e",border:"none",borderRadius:10,padding:"8px 14px",color:"#fff",cursor:"pointer",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif"}}>
+              {loading?"…":"Search"}
+            </button>
+          </div>
+          {searched&&results.length===0&&!loading&&<div style={{fontSize:".78rem",color:"#a08070",fontStyle:"italic",marginBottom:8}}>No results — try paste link or fill manually</div>}
+          {results.length>0&&(
+            <div style={{maxHeight:200,overflowY:"auto",border:"1px solid #e8d8cc",borderRadius:12,marginBottom:8}}>
+              {results.map((p,i)=>(
+                <div key={i} onClick={()=>onSelect({name:p.product_name||"",brand:p.brands||"",image:p.image_small_url||"",link:""})}
+                  style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderBottom:"1px solid #f0e0d4",cursor:"pointer",background:"#fff8f3"}}
+                  onMouseEnter={e=>e.currentTarget.style.background="#fdf0e8"}
+                  onMouseLeave={e=>e.currentTarget.style.background="#fff8f3"}>
+                  {p.image_small_url
+                    ?<img src={p.image_small_url} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:8,flexShrink:0}}/>
+                    :<div style={{width:36,height:36,borderRadius:8,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",flexShrink:0}}>{category==="skin"?"🌿":category==="treatment"?"💉":"✨"}</div>
+                  }
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:".82rem",color:"#3a2e27",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.product_name}</div>
+                    {p.brands&&<div style={{fontSize:".72rem",color:"#a08070"}}>{p.brands}</div>}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       )}
       <div style={{fontSize:".7rem",color:"#c0b0a8",textAlign:"center",marginBottom:4}}>or fill in manually ↓</div>
@@ -566,7 +624,7 @@ function ProductSearch({ category, onSelect }) {
   );
 }
 
-function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
+function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, onBack }) {
   const today = fmt(new Date());
   const thisYear = new Date().getFullYear().toString();
   const [showForm, setShowForm] = useState(false);
@@ -578,6 +636,11 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
 
   const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, price:"", quantity:"1", date:today, notes:"", tags:[], image:"" });
   const startAdd = () => { setChooseCat(true); };
+
+  // Handle prefill from wishlist
+  useEffect(()=>{
+    if (prefill) { setEditP(prefill); setShowForm(true); setChooseCat(false); onClearPrefill&&onClearPrefill(); }
+  }, [prefill]);
   const startEdit = p => { setEditP({...p, price:String(p.price), quantity:String(p.quantity)}); setShowForm(true); setChooseCat(false); };
   const save = () => { if(!editP.name.trim()||!editP.date) return; onSave(editP); setShowForm(false); setEditP(null); };
   const toggleMonth = m => setOpenMonths(s=>({...s,[m]:!s[m]}));
@@ -622,7 +685,8 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
       </div>
       <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}}>
         <div className="purch-price">${((parseFloat(p.price)||0)*(parseInt(p.quantity)||1)).toFixed(2)}</div>
-        <div style={{display:"flex",gap:4}}>
+        <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
+          {p.link&&<button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px",color:"#b07a5e"}} onClick={()=>window.open(p.link,"_blank")}>Buy Now</button>}
           <button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px"}} onClick={()=>startEdit(p)}>Edit</button>
           <button className="del-btn" style={{fontSize:".68rem"}} onClick={()=>onDelete(p.id)}>✕</button>
         </div>
@@ -668,12 +732,12 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
       </div>
 
       {grandTotal>0&&(
-        <div className="grand-total">
-          <div>
-            <div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:2}}>All Time</div>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.4rem",color:"#3a2e27"}}>${grandTotal.toFixed(2)}</div>
+        <div style={{marginBottom:20}}>
+          <div style={{fontSize:".68rem",letterSpacing:".12em",textTransform:"uppercase",color:"#a08070",marginBottom:4}}>All Time Spending</div>
+          <div style={{display:"flex",alignItems:"baseline",gap:10}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"2.4rem",color:"#3a2e27",lineHeight:1}}>${grandTotal.toFixed(2)}</div>
+            <div style={{fontSize:".76rem",color:"#b07a5e"}}>{filtered.length} product{filtered.length!==1?"s":""}</div>
           </div>
-          <div style={{fontSize:".76rem",color:"#b07a5e"}}>{filtered.length} item{filtered.length!==1?"s":""}</div>
         </div>
       )}
 
@@ -708,6 +772,7 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
           <ProductSearch category={editP.category} onSelect={({name,brand,image})=>setEditP(p=>({...p,name,brand,image:image||""}))}/>
           <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editP.name} onChange={e=>setEditP(p=>({...p,name:e.target.value}))}/>
           <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand (optional)" value={editP.brand} onChange={e=>setEditP(p=>({...p,brand:e.target.value}))}/>
+          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL (optional — enables Buy Now)" value={editP.link||""} onChange={e=>setEditP(p=>({...p,link:e.target.value}))}/>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             {["skin","hair","treatment"].map(cat=>(
               <button key={cat} className={`dow-chip ${editP.category===cat?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".74rem"}}
@@ -758,9 +823,9 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
         return (
           <div key={m} style={{marginBottom:8}}>
             <div className="purch-month-header" onClick={()=>toggleMonth(m)}>
-              <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#7a5c48"}}>{label}</span>
+              <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",fontStyle:"italic",color:"#5a3a27"}}>{label}</span>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <span style={{fontSize:".82rem",color:"#b07a5e",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>${mTotal.toFixed(2)}</span>
+                <span style={{fontSize:"1.1rem",color:"#b07a5e",fontFamily:"'Cormorant Garamond',serif",fontStyle:"italic"}}>${mTotal.toFixed(2)}</span>
                 <span style={{color:"#b07a5e",fontSize:".8rem"}}>{isOpen?"▲":"▼"}</span>
               </div>
             </div>
@@ -816,6 +881,298 @@ function PurchasesPage({ purchases, onSave, onDelete, onBack }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+
+// ── WISHLIST PAGE ──────────────────────────────────────────────
+function WishlistPage({ wishlist, products, onSave, onDelete, onMoveToCart, onBack }) {
+  const [showForm, setShowForm] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [chooseCat, setChooseCat] = useState(false);
+  const today = fmt(new Date());
+
+  const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, image:"", link:"", notes:"", tags:[], priority:0 });
+  const save = () => { if(!editItem.name.trim()) return; onSave(editItem); setShowForm(false); setEditItem(null); };
+
+  const sorted = [...wishlist].sort((a,b)=>(b.priority||0)-(a.priority||0));
+
+  return (
+    <div className="app">
+      <style>{`
+        .wish-card{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
+        .wish-card:hover{background:#fdf0e8}
+        .wish-name{font-size:.9rem;font-weight:500;color:#3a2e27;margin-bottom:2px}
+        .wish-meta{font-size:.72rem;color:#a08070}
+      `}</style>
+      <div className="header" style={{position:"relative"}}>
+        <button onClick={onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1.2rem",padding:"8px"}}>←</button>
+        <div className="header-title">My <span>Wishlist</span></div>
+        <div className="header-sub">{wishlist.length} item{wishlist.length!==1?"s":""} saved</div>
+      </div>
+
+      {chooseCat&&(
+        <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:14}}>What are you wishing for?</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
+              <button key={cat} onClick={()=>{setEditItem(blank(cat));setShowForm(true);setChooseCat(false);}}
+                style={{display:"flex",alignItems:"center",gap:12,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+                <span style={{fontSize:"1.3rem"}}>{emoji}</span>
+                <span style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>{label} Product</span>
+              </button>
+            ))}
+            <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".78rem",color:"#a08070",cursor:"pointer",marginTop:4,fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {showForm&&editItem&&(
+        <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{wishlist.find(w=>w.id===editItem.id)?"Edit":"Add to"} Wishlist</div>
+            <button onClick={()=>{setShowForm(false);setEditItem(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+          </div>
+          <ProductSearch category={editItem.category} onSelect={({name,brand,image,link})=>setEditItem(p=>({...p,name,brand,image:image||"",link:link||""}))}/>
+          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editItem.name} onChange={e=>setEditItem(p=>({...p,name:e.target.value}))}/>
+          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand (optional)" value={editItem.brand} onChange={e=>setEditItem(p=>({...p,brand:e.target.value}))}/>
+          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={editItem.link||""} onChange={e=>setEditItem(p=>({...p,link:e.target.value}))}/>
+          <div style={{display:"flex",gap:8,marginBottom:12}}>
+            {["skin","hair","treatment"].map(cat=>(
+              <button key={cat} className={`dow-chip ${editItem.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
+                onClick={()=>setEditItem(p=>({...p,category:cat}))}>
+                {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
+              </button>
+            ))}
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+            {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
+              <button key={tag} className={`dow-chip ${(editItem.tags||[]).includes(tag)?"on":""}`}
+                style={{fontSize:".74rem",padding:"4px 10px"}}
+                onClick={()=>setEditItem(p=>({...p,tags:(p.tags||[]).includes(tag)?(p.tags||[]).filter(t=>t!==tag):[...(p.tags||[]),tag]}))}>
+                {tag}
+              </button>
+            ))}
+          </div>
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:".7rem",color:"#a08070",marginBottom:6,letterSpacing:".08em",textTransform:"uppercase"}}>Priority</div>
+            <div style={{display:"flex",gap:8}}>
+              {[["0","Low"],["1","Medium"],["2","High 🔥"]].map(([v,l])=>(
+                <button key={v} className={`dow-chip ${String(editItem.priority||0)===v?"on":""}`}
+                  style={{flex:1,fontSize:".74rem",textAlign:"center"}}
+                  onClick={()=>setEditItem(p=>({...p,priority:parseInt(v)}))}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes (optional)" value={editItem.notes||""} onChange={e=>setEditItem(p=>({...p,notes:e.target.value}))}/>
+          <button className="save-btn" onClick={save} disabled={!editItem.name.trim()} style={{opacity:editItem.name.trim()?1:.4}}>Save to Wishlist</button>
+        </div>
+      )}
+
+      {!showForm&&!chooseCat&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>setChooseCat(true)}>+ Add to Wishlist</button>}
+
+      {sorted.length===0&&!showForm&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Your wishlist is empty ✨</div>}
+
+      {sorted.map(item=>(
+        <div key={item.id} className="wish-card">
+          {item.image
+            ?<img src={item.image} alt="" style={{width:52,height:52,objectFit:"cover",borderRadius:10,flexShrink:0}}/>
+            :<div style={{width:52,height:52,borderRadius:10,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{item.category==="skin"?"🌿":item.category==="treatment"?"💉":"✨"}</div>
+          }
+          <div style={{flex:1,minWidth:0}}>
+            <div className="wish-name">{item.name}</div>
+            <div className="wish-meta">{item.brand&&`${item.brand} · `}{item.category}{item.priority>0&&<span style={{color:item.priority===2?"#c06050":"#b07a5e",marginLeft:4}}>{item.priority===2?"🔥 High":"Medium"}</span>}</div>
+            {item.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>{item.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 8px",color:"#8a6858"}}>{t}</span>)}</div>}
+            {item.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:4,fontStyle:"italic"}}>{item.notes}</div>}
+            <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+              {item.link&&<button onClick={()=>window.open(item.link,"_blank")} style={{background:"#b07a5e",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
+              <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>onMoveToCart(item)}>✓ Mark Purchased</button>
+              <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setEditItem({...item});setShowForm(true);}}>Edit</button>
+              <button className="del-btn" style={{fontSize:".74rem"}} onClick={()=>onDelete(item.id)}>✕</button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── MY PRODUCTS PAGE ───────────────────────────────────────────
+function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onRemoveFromSnapshot, onBack }) {
+  const [tab, setTab] = useState("current"); // current | history
+  const [showForm, setShowForm] = useState(false);
+  const [editProd, setEditProd] = useState(null);
+  const [chooseCat, setChooseCat] = useState(false);
+
+  const currentSnap = snapshots.find(s=>!s.ended_at);
+  const pastSnaps = snapshots.filter(s=>s.ended_at).sort((a,b)=>b.started_at.localeCompare(a.started_at));
+
+  const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, image:"", link:"", notes:"", tags:[] });
+  const save = async () => {
+    if (!editProd.name.trim()) return;
+    await onSaveProduct(editProd);
+    // Auto-add to current snapshot
+    if (currentSnap && !currentSnap.products.find(p=>p.product_id===editProd.id)) {
+      await onAddToSnapshot(currentSnap.id, editProd.id);
+    } else if (!currentSnap) {
+      const newSnapId = await onOpenSnapshot();
+      if (newSnapId) await onAddToSnapshot(newSnapId, editProd.id);
+    }
+    setShowForm(false); setEditProd(null);
+  };
+
+  const removeFromCurrent = async (snapProdId) => {
+    if (!currentSnap) return;
+    await onRemoveFromSnapshot(currentSnap.id, snapProdId);
+  };
+
+  const snapProducts = currentSnap
+    ? currentSnap.products.map(sp=>({ snapProdId:sp.id, ...products.find(p=>p.id===sp.product_id) })).filter(p=>p.id)
+    : [];
+
+  const skinProds = snapProducts.filter(p=>p.category==="skin");
+  const hairProds = snapProducts.filter(p=>p.category==="hair");
+  const txProds = snapProducts.filter(p=>p.category==="treatment");
+
+  const ProductCard = ({p, showRemove}) => (
+    <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"12px 14px",marginBottom:8,display:"flex",gap:12,alignItems:"flex-start"}}>
+      {p.image
+        ?<img src={p.image} alt="" style={{width:46,height:46,objectFit:"cover",borderRadius:10,flexShrink:0}}/>
+        :<div style={{width:46,height:46,borderRadius:10,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.2rem",flexShrink:0}}>{p.category==="skin"?"🌿":p.category==="treatment"?"💉":"✨"}</div>
+      }
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:".88rem",fontWeight:500,color:"#3a2e27"}}>{p.name}</div>
+        {p.brand&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:1}}>{p.brand}</div>}
+        {p.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>{p.tags.map(t=><span key={t} style={{fontSize:".66rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 7px",color:"#8a6858"}}>{t}</span>)}</div>}
+        <div style={{display:"flex",gap:6,marginTop:8}}>
+          {p.link&&<button onClick={()=>window.open(p.link,"_blank")} style={{background:"#b07a5e",border:"none",borderRadius:8,padding:"4px 10px",color:"#fff",cursor:"pointer",fontSize:".72rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
+          {showRemove&&<button className="ghost-btn" style={{fontSize:".72rem",padding:"3px 8px",color:"#c07060"}} onClick={()=>removeFromCurrent(p.snapProdId)}>Remove</button>}
+        </div>
+      </div>
+    </div>
+  );
+
+  const SnapCard = ({snap}) => {
+    const [open, setOpen] = useState(false);
+    const prods = snap.products.map(sp=>products.find(p=>p.id===sp.product_id)).filter(Boolean);
+    const skinP=prods.filter(p=>p.category==="skin");
+    const hairP=prods.filter(p=>p.category==="hair");
+    const txP=prods.filter(p=>p.category==="treatment");
+    const startLabel = new Date(snap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
+    const endLabel = snap.ended_at ? new Date(snap.ended_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}) : "Present";
+    return (
+      <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"16px 18px",marginBottom:12,cursor:"pointer"}} onClick={()=>setOpen(o=>!o)}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>{startLabel} — {endLabel}</div>
+            <div style={{fontSize:".72rem",color:"#a08070",marginTop:3}}>{prods.length} product{prods.length!==1?"s":""} · {skinP.length} skin · {hairP.length} hair{txP.length>0?` · ${txP.length} treatment`:""}</div>
+          </div>
+          <span style={{color:"#b07a5e",fontSize:".8rem",marginLeft:8}}>{open?"▲":"▼"}</span>
+        </div>
+        {open&&<div style={{marginTop:14,borderTop:"1px solid #f0e0d4",paddingTop:12}} onClick={e=>e.stopPropagation()}>
+          {skinP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8}}>🌿 Skin</div>{skinP.map(p=><ProductCard key={p.id} p={p} showRemove={false}/>)}</>}
+          {hairP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8,marginTop:hairP.length?12:0}}>✨ Hair</div>{hairP.map(p=><ProductCard key={p.id} p={p} showRemove={false}/>)}</>}
+          {txP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8,marginTop:12}}>💉 Treatments</div>{txP.map(p=><ProductCard key={p.id} p={p} showRemove={false}/>)}</>}
+        </div>}
+      </div>
+    );
+  };
+
+  return (
+    <div className="app">
+      <div className="header" style={{position:"relative"}}>
+        <button onClick={onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1.2rem",padding:"8px"}}>←</button>
+        <div className="header-title">My <span>Products</span></div>
+        <div className="header-sub">{products.length} in library</div>
+      </div>
+
+      <div style={{display:"flex",gap:0,marginBottom:20,borderRadius:12,overflow:"hidden",border:"1.5px solid #e8d8cc"}}>
+        {[["current","Current Routine"],["history","Snapshot History"]].map(([v,l])=>(
+          <button key={v} onClick={()=>setTab(v)}
+            style={{flex:1,padding:"10px",fontSize:".78rem",cursor:"pointer",border:"none",fontFamily:"'DM Sans',sans-serif",
+              background:tab===v?"#b07a5e":"#fff8f3",color:tab===v?"#fff":"#a08070",transition:"all .15s"}}>
+            {l}
+          </button>
+        ))}
+      </div>
+
+      {tab==="current"&&(
+        <>
+          {chooseCat&&(
+            <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:14}}>Add a product</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
+                  <button key={cat} onClick={()=>{setEditProd(blank(cat));setShowForm(true);setChooseCat(false);}}
+                    style={{display:"flex",alignItems:"center",gap:12,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+                    <span style={{fontSize:"1.3rem"}}>{emoji}</span>
+                    <span style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>{label} Product</span>
+                  </button>
+                ))}
+                <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".78rem",color:"#a08070",cursor:"pointer",marginTop:4,fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+              </div>
+            </div>
+          )}
+
+          {showForm&&editProd&&(
+            <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>Add Product</div>
+                <button onClick={()=>{setShowForm(false);setEditProd(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+              </div>
+              <ProductSearch category={editProd.category} onSelect={({name,brand,image,link})=>setEditProd(p=>({...p,name,brand,image:image||"",link:link||""}))}/>
+              <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editProd.name} onChange={e=>setEditProd(p=>({...p,name:e.target.value}))}/>
+              <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand (optional)" value={editProd.brand||""} onChange={e=>setEditProd(p=>({...p,brand:e.target.value}))}/>
+              <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={editProd.link||""} onChange={e=>setEditProd(p=>({...p,link:e.target.value}))}/>
+              <div style={{display:"flex",gap:8,marginBottom:10}}>
+                {["skin","hair","treatment"].map(cat=>(
+                  <button key={cat} className={`dow-chip ${editProd.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
+                    onClick={()=>setEditProd(p=>({...p,category:cat}))}>
+                    {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
+                  </button>
+                ))}
+              </div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+                {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
+                  <button key={tag} className={`dow-chip ${(editProd.tags||[]).includes(tag)?"on":""}`}
+                    style={{fontSize:".74rem",padding:"4px 10px"}}
+                    onClick={()=>setEditProd(p=>({...p,tags:(p.tags||[]).includes(tag)?(p.tags||[]).filter(t=>t!==tag):[...(p.tags||[]),tag]}))}>
+                    {tag}
+                  </button>
+                ))}
+              </div>
+              <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes (optional)" value={editProd.notes||""} onChange={e=>setEditProd(p=>({...p,notes:e.target.value}))}/>
+              <button className="save-btn" onClick={save} disabled={!editProd.name.trim()} style={{opacity:editProd.name.trim()?1:.4}}>Add to My Routine</button>
+            </div>
+          )}
+
+          {!showForm&&!chooseCat&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>setChooseCat(true)}>+ Add Product</button>}
+
+          {snapProducts.length===0&&!showForm&&(
+            <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No products in your current routine yet</div>
+          )}
+
+          {currentSnap&&snapProducts.length>0&&(
+            <div style={{fontSize:".68rem",color:"#a08070",marginBottom:14,letterSpacing:".06em"}}>
+              Current routine since {new Date(currentSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}
+            </div>
+          )}
+
+          {skinProds.length>0&&<><div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10}}>🌿 Skin</div>{skinProds.map(p=><ProductCard key={p.id} p={p} showRemove={true}/>)}</>}
+          {hairProds.length>0&&<><div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,marginTop:skinProds.length?16:0}}>✨ Hair</div>{hairProds.map(p=><ProductCard key={p.id} p={p} showRemove={true}/>)}</>}
+          {txProds.length>0&&<><div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,marginTop:(skinProds.length||hairProds.length)?16:0}}>💉 Treatments</div>{txProds.map(p=><ProductCard key={p.id} p={p} showRemove={true}/>)}</>}
+        </>
+      )}
+
+      {tab==="history"&&(
+        <>
+          {pastSnaps.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No past snapshots yet — they appear here when your routine changes</div>}
+          {pastSnaps.map(snap=><SnapCard key={snap.id} snap={snap}/>)}
+        </>
+      )}
     </div>
   );
 }
@@ -1324,10 +1681,14 @@ export default function App({ user }) {
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [hairLengths,   setHairLengths]   = useState({});
   const [purchases,     setPurchases]     = useState([]);
+  const [products,      setProducts]      = useState([]);
+  const [wishlist,      setWishlist]      = useState([]);
+  const [snapshots,     setSnapshots]     = useState([]);
   const [sideMenu,      setSideMenu]      = useState(false);
-  const [pageView,      setPageView]      = useState(null); // null=main, "purchases", "account"
+  const [pageView,      setPageView]      = useState(null); // null=main, "purchases", "account", "products", "wishlist"
   const [selectedPlan,  setSelectedPlan]  = useState(null); // plan/treatment being viewed
-  const [confirmDelete, setConfirmDelete] = useState(null); // {message, onConfirm} // { "2026-03": "12cm" }
+  const [confirmDelete, setConfirmDelete] = useState(null); // {message, onConfirm}
+  const [prefillPurchase, setPrefillPurchase] = useState(null); // when moving wishlist item to purchases
   const [treatments,    setTreatments]    = useState([]); // [{id, name, type(skin/hair), dates:[], completedDates:[]}]
 
   // Load all data from Supabase on mount
@@ -1371,10 +1732,19 @@ export default function App({ user }) {
         }
         // Load purchases
         const { data: purchRows } = await supabase.from("purchases").select("*").eq("user_id", user.id).order("date", {ascending:false});
-        if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[], image:r.image||'' })));
+        if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[], image:r.image||'', link:r.link||'' })));
         // Load treatments
         const { data: txRows } = await supabase.from("treatments").select("*").eq("user_id", user.id);
         if (txRows) setTreatments(txRows.map(r=>({ id:r.id, name:r.name, type:r.type, dates:r.dates||[], completedDates:r.completed_dates||[] })));
+        // Load products library
+        const { data: prodRows } = await supabase.from("products").select("*").eq("user_id", user.id).order("created_at", {ascending:false});
+        if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[] })));
+        // Load wishlist
+        const { data: wishRows } = await supabase.from("wishlist").select("*").eq("user_id", user.id).order("created_at", {ascending:false});
+        if (wishRows) setWishlist(wishRows.map(r=>({ id:r.id, product_id:r.product_id||null, name:r.name||"", brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], priority:r.priority||0 })));
+        // Load snapshots
+        const { data: snapRows } = await supabase.from("snapshots").select("*, snapshot_products(*)").eq("user_id", user.id).order("started_at", {ascending:false});
+        if (snapRows) setSnapshots(snapRows.map(r=>({ id:r.id, label:r.label||"", started_at:r.started_at, ended_at:r.ended_at||null, products:r.snapshot_products||[] })));
         // Load user name from profile metadata
         const { data: { user: freshUser } } = await supabase.auth.getUser();
         const name = freshUser?.user_metadata?.display_name || "";
@@ -1543,7 +1913,7 @@ export default function App({ user }) {
         id: p.id, user_id: user.id, name: p.name, brand: p.brand||"",
         category: p.category, price: parseFloat(p.price)||0,
         quantity: parseInt(p.quantity)||1, date: p.date, notes: p.notes||"",
-        tags: p.tags||[], image: p.image||'',
+        tags: p.tags||[], image: p.image||'', link: p.link||'',
         updated_at: new Date().toISOString()
       }, { onConflict: "id" });
       setPurchases(prev => { const f=prev.filter(x=>x.id!==p.id); return [p,...f].sort((a,b)=>b.date.localeCompare(a.date)); });
@@ -1559,6 +1929,66 @@ export default function App({ user }) {
     } catch(e) { console.error(e); }
   };
   const confirmDeletePurchase=(id)=>setConfirmDelete({message:"This purchase will be permanently deleted.",onConfirm:()=>deletePurchase(id)});
+
+  // ── Products CRUD ──
+  const saveProduct = async (p) => {
+    if (!user) return;
+    const row = { id:p.id, user_id:user.id, name:p.name, brand:p.brand||"", category:p.category||"skin", image:p.image||"", link:p.link||"", notes:p.notes||"", tags:p.tags||[] };
+    await supabase.from("products").upsert(row, {onConflict:"id"});
+    setProducts(prev => { const idx=prev.findIndex(x=>x.id===p.id); return idx>=0?prev.map(x=>x.id===p.id?p:x):[p,...prev]; });
+  };
+  const deleteProduct = async (id) => {
+    await supabase.from("products").delete().eq("id",id).eq("user_id",user.id);
+    setProducts(prev=>prev.filter(p=>p.id!==id));
+    showT("Product removed");
+  };
+  const confirmDeleteProduct = (id) => setConfirmDelete({message:"Remove this product from your library?", onConfirm:()=>deleteProduct(id)});
+
+  // ── Wishlist CRUD ──
+  const saveWishlistItem = async (item) => {
+    if (!user) return;
+    const row = { id:item.id, user_id:user.id, name:item.name, brand:item.brand||"", category:item.category||"skin", image:item.image||"", link:item.link||"", notes:item.notes||"", tags:item.tags||[], priority:item.priority||0 };
+    await supabase.from("wishlist").upsert(row, {onConflict:"id"});
+    setWishlist(prev => { const idx=prev.findIndex(x=>x.id===item.id); return idx>=0?prev.map(x=>x.id===item.id?item:x):[item,...prev]; });
+    showT("Saved to wishlist");
+  };
+  const deleteWishlistItem = async (id) => {
+    await supabase.from("wishlist").delete().eq("id",id).eq("user_id",user.id);
+    setWishlist(prev=>prev.filter(w=>w.id!==id));
+    showT("Removed from wishlist");
+  };
+  const confirmDeleteWishlistItem = (id) => setConfirmDelete({message:"Remove this item from your wishlist?", onConfirm:()=>deleteWishlistItem(id)});
+  const moveWishlistToPurchase = async (item) => {
+    // Create a purchase from wishlist item
+    const newPurchase = { id:crypto.randomUUID(), name:item.name, brand:item.brand||"", category:item.category||"skin", price:"", quantity:"1", date:fmt(new Date()), notes:item.notes||"", tags:item.tags||[], image:item.image||"", link:item.link||"" };
+    await deleteWishlistItem(item.id);
+    return newPurchase; // caller opens purchase form pre-filled
+  };
+
+  // ── Snapshots ──
+  const openNewSnapshot = async () => {
+    // Close current open snapshot
+    const current = snapshots.find(s=>!s.ended_at);
+    if (current) {
+      const updated = {...current, ended_at: fmt(new Date())};
+      await supabase.from("snapshots").update({ended_at:updated.ended_at}).eq("id",current.id);
+      setSnapshots(prev=>prev.map(s=>s.id===current.id?updated:s));
+    }
+    // Open new snapshot
+    const newSnap = { id:crypto.randomUUID(), label:"", started_at:fmt(new Date()), ended_at:null, products:[] };
+    await supabase.from("snapshots").insert({id:newSnap.id, user_id:user.id, started_at:newSnap.started_at, label:newSnap.label});
+    setSnapshots(prev=>[newSnap,...prev]);
+    return newSnap.id;
+  };
+  const addProductToSnapshot = async (snapId, productId) => {
+    const id = crypto.randomUUID();
+    await supabase.from("snapshot_products").insert({id, snapshot_id:snapId, product_id:productId});
+    setSnapshots(prev=>prev.map(s=>s.id===snapId?{...s,products:[...s.products,{id,snapshot_id:snapId,product_id:productId}]}:s));
+  };
+  const removeProductFromSnapshot = async (snapId, snapProdId) => {
+    await supabase.from("snapshot_products").delete().eq("id",snapProdId);
+    setSnapshots(prev=>prev.map(s=>s.id===snapId?{...s,products:s.products.filter(p=>p.id!==snapProdId)}:s));
+  };
 
   const saveTreatment = async (tx) => {
     const updated = [...treatments.filter(t=>t.id!==tx.id), tx];
@@ -1715,7 +2145,27 @@ export default function App({ user }) {
   const done=checked.filter(id=>routines.find(r=>r.id===id)).length;
 
   if (pageView==="purchases") return (
-    <div><style>{STYLES}</style><PurchasesPage purchases={purchases} onSave={savePurchase} onDelete={confirmDeletePurchase} onBack={()=>setPageView(null)}/></div>
+    <div><style>{STYLES}</style><PurchasesPage purchases={purchases} prefill={prefillPurchase} onClearPrefill={()=>setPrefillPurchase(null)} onSave={savePurchase} onDelete={confirmDeletePurchase} onBack={()=>setPageView(null)}/></div>
+  );
+  if (pageView==="products") return (
+    <div><style>{STYLES}</style><MyProductsPage
+      products={products}
+      snapshots={snapshots}
+      onSaveProduct={saveProduct}
+      onDeleteProduct={confirmDeleteProduct}
+      onOpenSnapshot={openNewSnapshot}
+      onAddToSnapshot={addProductToSnapshot}
+      onRemoveFromSnapshot={removeProductFromSnapshot}
+      onBack={()=>setPageView(null)}/></div>
+  );
+  if (pageView==="wishlist") return (
+    <div><style>{STYLES}</style><WishlistPage
+      wishlist={wishlist}
+      products={products}
+      onSave={saveWishlistItem}
+      onDelete={confirmDeleteWishlistItem}
+      onMoveToCart={async(item)=>{ const prefill=await moveWishlistToPurchase(item); setPrefillPurchase(prefill); setPageView("purchases"); }}
+      onBack={()=>setPageView(null)}/></div>
   );
   if (pageView==="account") return (
     <div className="app">
@@ -1733,8 +2183,8 @@ export default function App({ user }) {
       <style>{STYLES}</style>
       <div className="app">
         <div className="header" style={{position:"relative"}}>
-          <div className="header-title">{userName ? userName+"'s" : "My"} <span>Ritual</span></div>
-          <div className="header-sub">Skin · Hair</div>
+          <div className="header-title" style={{cursor:"pointer"}} onClick={()=>{setView("log");setPageView(null);}}>{userName ? userName+"'s" : "My"} <span>Ritual</span></div>
+          <div className="header-sub">Your Beauty HQ</div>
           <button className="hamburger-btn" onClick={()=>setSideMenu(true)}>
             <span/><span/><span/>
           </button>
@@ -2089,6 +2539,12 @@ export default function App({ user }) {
           <span>👤</span> My Account
         </button>
         <hr style={{border:"none",borderTop:"1px solid #f0e0d4",margin:"8px 0"}}/>
+        <button className="side-menu-item" onClick={()=>{setPageView("products");setSideMenu(false);}}>
+          <span>💄</span> My Products
+        </button>
+        <button className="side-menu-item" onClick={()=>{setPageView("wishlist");setSideMenu(false);}}>
+          <span>💝</span> Wishlist
+        </button>
         <button className="side-menu-item" onClick={()=>{setPageView("purchases");setSideMenu(false);}}>
           <span>💳</span> Purchases
         </button>
