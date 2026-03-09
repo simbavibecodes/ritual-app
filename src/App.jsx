@@ -1379,25 +1379,46 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
               <button className="modal-x" onClick={onClose}>×</button>
             </div>
           </div>
-          <div className="modal-sub">Steps — select one or more</div>
-          <div style={{marginBottom:14,display:"flex",flexDirection:"column",gap:6}}>
-            {(editing._category==="hair"?hairItems:editing._category==="skin"?skinItems:allItems).map(it=>{
-              const on=(editing.itemIds||[]).includes(it.id);
-              return (
-                <div key={it.id} className="m-item" style={{cursor:"pointer",background:on?"#f7ece4":"#fff8f3",border:on?"1.5px solid #b07a5e":"1px solid #e8d8cc",marginBottom:0}}
-                  onClick={()=>toggleItemSel(it.id)}>
-                  <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-                  <span className="m-item-lbl" style={{color:on?"#5a3a27":"#3a2e27",fontWeight:on?500:400}}>{it.label}</span>
-                  <div style={{width:16,height:16,borderRadius:"50%",border:`1.5px solid ${on?"#b07a5e":"#d0b0a0"}`,background:on?"#b07a5e":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                    {on&&<svg width="9" height="7" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+          {schedules.find(s=>s.id===editing.id)?(
+            // Editing existing — show step name only, not selectable
+            <div style={{marginBottom:14}}>
+              {(editing.itemIds||[]).map(id=>{
+                const it=allItems.find(x=>x.id===id);
+                if(!it) return null;
+                return (
+                  <div key={id} className="m-item" style={{background:"#f7ece4",border:"1.5px solid #b07a5e",marginBottom:0,cursor:"default"}}>
+                    <span style={{fontSize:"1rem"}}>{it.emoji}</span>
+                    <span className="m-item-lbl" style={{color:"#5a3a27",fontWeight:500}}>{it.label}</span>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="modal-sub" style={{marginBottom:6}}>📍 Location <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional)</span></div>
-          <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Glow Clinic, Miami"
-            value={editing.location||""} onChange={e=>setEditing(ed=>({...ed,location:e.target.value}))}/>
+                );
+              })}
+            </div>
+          ):(
+            // New plan — full selectable list
+            <>
+              <div className="modal-sub">Steps — select one or more</div>
+              <div style={{marginBottom:14,display:"flex",flexDirection:"column",gap:6}}>
+                {(editing._category==="hair"?hairItems:editing._category==="skin"?skinItems:allItems).map(it=>{
+                  const on=(editing.itemIds||[]).includes(it.id);
+                  return (
+                    <div key={it.id} className="m-item" style={{cursor:"pointer",background:on?"#f7ece4":"#fff8f3",border:on?"1.5px solid #b07a5e":"1px solid #e8d8cc",marginBottom:0}}
+                      onClick={()=>toggleItemSel(it.id)}>
+                      <span style={{fontSize:"1rem"}}>{it.emoji}</span>
+                      <span className="m-item-lbl" style={{color:on?"#5a3a27":"#3a2e27",fontWeight:on?500:400}}>{it.label}</span>
+                      <div style={{width:16,height:16,borderRadius:"50%",border:`1.5px solid ${on?"#b07a5e":"#d0b0a0"}`,background:on?"#b07a5e":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                        {on&&<svg width="9" height="7" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+          {editing._category==="treatment"&&<>
+            <div className="modal-sub" style={{marginBottom:6}}>📍 Location <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional)</span></div>
+            <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Glow Clinic, Miami"
+              value={editing.location||""} onChange={e=>setEditing(ed=>({...ed,location:e.target.value}))}/>
+          </>}
           <div className="modal-sub">Start date</div>
           <input type="date" className="time-input" style={{width:"100%",marginBottom:14}}
             value={editing.startDate||fmt(new Date())}
