@@ -549,19 +549,10 @@ function SpendingSummary({ purchases, period, onGoToPurchases }) {
 }
 
 function ProductSearch({ category, onSelect }) {
-  const [mode, setMode] = useState("link"); // link | search
   const [query, setQuery] = useState("");
-  const [url, setUrl] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
-  const [fetchStatus, setFetchStatus] = useState(""); // "", "fetching", "found", "failed"
-
-  const saveUrl = () => {
-    if (!url.trim()) return;
-    onSelect({ name: "", brand: "", image: "", link: url.trim() });
-    setFetchStatus("saved");
-  };
 
   const search = async () => {
     if (!query.trim()) return;
@@ -576,62 +567,33 @@ function ProductSearch({ category, onSelect }) {
 
   return (
     <div style={{marginBottom:12}}>
-      <div style={{display:"flex",gap:0,marginBottom:10,borderRadius:10,overflow:"hidden",border:"1.5px solid #e8d8cc"}}>
-        {[["link","🔗 Paste Link"],["search","🔍 Search"]].map(([m,l])=>(
-          <button key={m} onClick={()=>setMode(m)}
-            style={{flex:1,padding:"8px",fontSize:".76rem",cursor:"pointer",border:"none",fontFamily:"'DM Sans',sans-serif",
-              background:mode===m?"#b07a5e":"#fff8f3",color:mode===m?"#fff":"#a08070",transition:"all .15s"}}>
-            {l}
-          </button>
-        ))}
+      <div style={{fontSize:".7rem",color:"#a08070",marginBottom:6,letterSpacing:".08em",textTransform:"uppercase"}}>Search Product Database</div>
+      <div style={{display:"flex",gap:8,marginBottom:8}}>
+        <input className="ifield" style={{flex:1}} placeholder="Search by product name…" value={query}
+          onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&search()}/>
+        <button onClick={search}
+          style={{background:"#b07a5e",border:"none",borderRadius:10,padding:"8px 14px",color:"#fff",cursor:"pointer",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>
+          {loading?"…":"Search"}
+        </button>
       </div>
-
-      {mode==="link"&&(
-        <div>
-          <div style={{display:"flex",gap:8,marginBottom:6}}>
-            <input className="ifield" style={{flex:1,fontSize:".8rem"}} placeholder="Paste product URL (Sephora, LOOKFANTASTIC, any site)…"
-              value={url} onChange={e=>{setUrl(e.target.value);setFetchStatus("");}}
-              onKeyDown={e=>e.key==="Enter"&&saveUrl()}/>
-            <button onClick={saveUrl}
-              style={{background:"#b07a5e",border:"none",borderRadius:10,padding:"8px 12px",color:"#fff",cursor:"pointer",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>
-              Save
-            </button>
-          </div>
-          {fetchStatus==="saved"&&<div style={{fontSize:".76rem",color:"#2d6a2d",marginBottom:6}}>✓ URL saved — fill in name & details below, Buy Now will work</div>}
-          <div style={{fontSize:".72rem",color:"#b0a0a0",fontStyle:"italic",marginBottom:6}}>URL is saved for Buy Now — fill in product details manually below</div>
-        </div>
-      )}
-
-      {mode==="search"&&(
-        <div>
-          <div style={{display:"flex",gap:8,marginBottom:8}}>
-            <input className="ifield" style={{flex:1}} placeholder="Search product name…" value={query}
-              onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&search()}/>
-            <button onClick={search}
-              style={{background:"#b07a5e",border:"none",borderRadius:10,padding:"8px 14px",color:"#fff",cursor:"pointer",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif"}}>
-              {loading?"…":"Search"}
-            </button>
-          </div>
-          {searched&&results.length===0&&!loading&&<div style={{fontSize:".78rem",color:"#a08070",fontStyle:"italic",marginBottom:8}}>No results — try paste link or fill manually</div>}
-          {results.length>0&&(
-            <div style={{maxHeight:200,overflowY:"auto",border:"1px solid #e8d8cc",borderRadius:12,marginBottom:8}}>
-              {results.map((p,i)=>(
-                <div key={i} onClick={()=>onSelect({name:p.product_name||"",brand:p.brands||"",image:p.image_small_url||"",link:""})}
-                  style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderBottom:"1px solid #f0e0d4",cursor:"pointer",background:"#fff8f3"}}
-                  onMouseEnter={e=>e.currentTarget.style.background="#fdf0e8"}
-                  onMouseLeave={e=>e.currentTarget.style.background="#fff8f3"}>
-                  {p.image_small_url
-                    ?<img src={p.image_small_url} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:8,flexShrink:0}}/>
-                    :<div style={{width:36,height:36,borderRadius:8,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",flexShrink:0}}>{category==="skin"?"🌿":category==="treatment"?"💉":"✨"}</div>
-                  }
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:".82rem",color:"#3a2e27",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.product_name}</div>
-                    {p.brands&&<div style={{fontSize:".72rem",color:"#a08070"}}>{p.brands}</div>}
-                  </div>
-                </div>
-              ))}
+      {searched&&results.length===0&&!loading&&<div style={{fontSize:".78rem",color:"#a08070",fontStyle:"italic",marginBottom:8}}>No results — fill in manually below</div>}
+      {results.length>0&&(
+        <div style={{maxHeight:200,overflowY:"auto",border:"1px solid #e8d8cc",borderRadius:12,marginBottom:8}}>
+          {results.map((p,i)=>(
+            <div key={i} onClick={()=>onSelect({name:p.product_name||"",brand:p.brands||"",image:p.image_small_url||"",link:""})}
+              style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderBottom:"1px solid #f0e0d4",cursor:"pointer",background:"#fff8f3"}}
+              onMouseEnter={e=>e.currentTarget.style.background="#fdf0e8"}
+              onMouseLeave={e=>e.currentTarget.style.background="#fff8f3"}>
+              {p.image_small_url
+                ?<img src={p.image_small_url} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:8,flexShrink:0}}/>
+                :<div style={{width:36,height:36,borderRadius:8,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",flexShrink:0}}>{category==="skin"?"🌿":category==="treatment"?"💉":"✨"}</div>
+              }
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:".82rem",color:"#3a2e27",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.product_name}</div>
+                {p.brands&&<div style={{fontSize:".72rem",color:"#a08070"}}>{p.brands}</div>}
+              </div>
             </div>
-          )}
+          ))}
         </div>
       )}
       <div style={{fontSize:".7rem",color:"#c0b0a8",textAlign:"center",marginBottom:4}}>or fill in manually ↓</div>
