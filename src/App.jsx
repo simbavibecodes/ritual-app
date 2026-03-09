@@ -1402,14 +1402,16 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
           <input type="date" className="time-input" style={{width:"100%",marginBottom:14}}
             value={editing.startDate||fmt(new Date())}
             onChange={e=>setEditing(ed=>({...ed,startDate:e.target.value}))}/>
-          <div className="modal-sub">Specific dates (tap to select, tap two for range)</div>
-          <MiniCal
-            selectedDates={editing.dates||[]}
-            onToggleDate={d=>setEditing(e=>({...e,dates:e.dates.includes(d)?e.dates.filter(x=>x!==d):[...e.dates,d]}))}
-            rangeStart={calRangeStart}
-            onRangeStart={d=>setCalRangeStart(d)}
-            onRangeEnd={range=>{ setEditing(e=>({...e,dates:[...new Set([...(e.dates||[]),...range])]})); setCalRangeStart(null); }}
-          />
+          {editing.days.length!==7&&<>
+            <div className="modal-sub">Specific dates (tap to select, tap two for range)</div>
+            <MiniCal
+              selectedDates={editing.dates||[]}
+              onToggleDate={d=>setEditing(e=>({...e,dates:e.dates.includes(d)?e.dates.filter(x=>x!==d):[...e.dates,d]}))}
+              rangeStart={calRangeStart}
+              onRangeStart={d=>setCalRangeStart(d)}
+              onRangeEnd={range=>{ setEditing(e=>({...e,dates:[...new Set([...(e.dates||[]),...range])]})); setCalRangeStart(null); }}
+            />
+          </>}
           <div className="modal-sub" style={{marginBottom:8}}>Every <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional — leave blank for one-off)</span></div>
           <div className="toggle-row" style={{marginBottom:8}}>
             <div><div className="toggle-lbl">Every day</div></div>
