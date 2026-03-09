@@ -1295,12 +1295,12 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
 
 function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsProp, schedules, treatments, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose, initialPlan, initialTreatment }) {
   const [screen, setScreen]=useState(initialPlan?"editPlan":initialTreatment?"editTreatment":"chooseType"); // chooseType | editPlan | editTreatment
-  const [editing, setEditing]=useState(initialPlan?{...initialPlan,itemIds:initialPlan.itemIds||[initialPlan.itemId].filter(Boolean),dates:initialPlan.dates||[],startDate:initialPlan.startDate||fmt(new Date())}:{id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),reminder:false,time:"08:00"});
+  const [editing, setEditing]=useState(initialPlan?{...initialPlan,itemIds:initialPlan.itemIds||[initialPlan.itemId].filter(Boolean),dates:initialPlan.dates||[],startDate:initialPlan.startDate||fmt(new Date())}:{id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),reminder:false,time:"08:00",location:""});
   const [editTx, setEditTx]=useState(initialTreatment?{...initialTreatment}:{id:uid(),name:"",type:"skin",dates:[]});
   const [showItemPick, setShowItemPick]=useState(false);
   const [calRangeStart, setCalRangeStart]=useState(null);
 
-  const startNewPlan=()=>{ setEditing({id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),reminder:false,time:"08:00"}); setScreen("editPlan"); };
+  const startNewPlan=()=>{ setEditing({id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),reminder:false,time:"08:00",location:""}); setScreen("editPlan"); };
   const startEditPlan=s=>{ setEditing({...s,itemIds:s.itemIds||[s.itemId].filter(Boolean),dates:s.dates||[],startDate:s.startDate||fmt(new Date())}); setScreen("editPlan"); };
   const startNewTx=()=>{ setEditTx({id:uid(),name:"",type:"skin",dates:[]}); setScreen("editTreatment"); };
   const startEditTx=t=>{ setEditTx({...t}); setScreen("editTreatment"); };
@@ -1397,9 +1397,9 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             onRangeStart={d=>setCalRangeStart(d)}
             onRangeEnd={range=>{ setEditing(e=>({...e,dates:[...new Set([...(e.dates||[]),...range])]})); setCalRangeStart(null); }}
           />
-          <div className="modal-sub" style={{marginBottom:8}}>Repeat on <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional)</span></div>
+          <div className="modal-sub" style={{marginBottom:8}}>Every <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional — leave blank for one-off)</span></div>
           <div className="toggle-row" style={{marginBottom:8}}>
-            <div><div className="toggle-lbl">Everyday</div></div>
+            <div><div className="toggle-lbl">Every day</div></div>
             <Toggle on={editing.days.length===7} onChange={v=>setEditing(e=>({...e,days:v?[0,1,2,3,4,5,6]:[]}))}/>
           </div>
           {editing.days.length!==7&&<div className="dow-row" style={{marginBottom:10}}>
@@ -1408,6 +1408,9 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
               return <button key={d} className={`dow-chip ${editing.days.includes(dow)?"on":""}`} onClick={()=>toggleDay(dow)}>{d}</button>;
             })}
           </div>}
+          <div className="modal-sub" style={{marginBottom:6}}>📍 Location <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional)</span></div>
+          <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Glow Clinic, Miami"
+            value={editing.location||""} onChange={e=>setEditing(ed=>({...ed,location:e.target.value}))}/>
           <div className="toggle-row">
             <div><div className="toggle-lbl">🔔 Remind me</div><div className="toggle-sub">Browser notification</div></div>
             <Toggle on={editing.reminder} onChange={v=>setEditing(e=>({...e,reminder:v}))}/>
@@ -1453,6 +1456,9 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             onRangeStart={d=>setCalRangeStart(d)}
             onRangeEnd={range=>{ setEditTx(t=>({...t,dates:[...new Set([...t.dates,...range])]})); setCalRangeStart(null); }}
           />
+          <div className="modal-sub" style={{marginBottom:6}}>📍 Location <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional)</span></div>
+          <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Glow Clinic, Miami"
+            value={editTx.location||""} onChange={e=>setEditTx(t=>({...t,location:e.target.value}))}/>
           <button className="save-btn" onClick={saveTx} disabled={!canSave} style={{opacity:canSave?1:.4}}>Schedule Treatment</button>
         </div>
       </div>
@@ -1735,7 +1741,7 @@ export default function App({ user }) {
         // Load schedules
         const { data: schedRows, error: schedErr } = await supabase.from("schedules").select("*").eq("user_id", user.id);
         console.log("LOAD schedules:", schedRows, "error:", schedErr);
-        if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days||[], dates:r.dates||[], startDate:r.start_date||null, reminder:r.reminder, time:r.time })));
+        if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days||[], dates:r.dates||[], startDate:r.start_date||null, reminder:r.reminder, time:r.time, location:r.location||'' })));
         // Load freq settings
         const { data: freqRows } = await supabase.from("freq_settings").select("*").eq("user_id", user.id).single();
         if (freqRows) { setFreqTracked(freqRows.tracked||[]); setFreqPeriod(freqRows.period||"year"); }
@@ -1751,7 +1757,7 @@ export default function App({ user }) {
         if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[], image:r.image||'', link:r.link||'' })));
         // Load treatments
         const { data: txRows } = await supabase.from("treatments").select("*").eq("user_id", user.id);
-        if (txRows) setTreatments(txRows.map(r=>({ id:r.id, name:r.name, type:r.type, dates:r.dates||[], completedDates:r.completed_dates||[] })));
+        if (txRows) setTreatments(txRows.map(r=>({ id:r.id, name:r.name, type:r.type, dates:r.dates||[], completedDates:r.completed_dates||[], location:r.location||'' })));
         // Load products library
         const { data: prodRows } = await supabase.from("products").select("*").eq("user_id", user.id).order("created_at", {ascending:false});
         if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[] })));
@@ -1845,7 +1851,7 @@ export default function App({ user }) {
     try {
       await supabase.from("treatments").upsert({
         id: tx.id, user_id: user.id, name: tx.name, type: tx.type,
-        dates: tx.dates, completed_dates: tx.completedDates, updated_at: new Date().toISOString()
+        dates: tx.dates, completed_dates: tx.completedDates, location: tx.location||'', updated_at: new Date().toISOString()
       }, { onConflict: "id" });
     } catch(e) { console.error("Treatment save error", e); }
   };
@@ -1863,7 +1869,7 @@ export default function App({ user }) {
         const rows = newSchedules.map(s => ({
           id: s.id, user_id: user.id, item_id: s.itemId,
           days: s.days||[], dates: s.dates||[], start_date: s.startDate||null,
-          reminder: s.reminder, time: s.time||"08:00"
+          reminder: s.reminder, time: s.time||"08:00", location: s.location||''
         }));
         const { error: upsertErr } = await supabase.from("schedules").upsert(rows, { onConflict: "id" });
         if (upsertErr) { console.error("Schedule upsert error:", upsertErr); return; }
@@ -2402,10 +2408,11 @@ export default function App({ user }) {
                       <div style={{flex:1}}>
                         <div className="sched-label">{it.label}</div>
                         <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
-                          {(s.days||[]).length===7?<span>Everyday</span>:recurDays&&<span>{recurDays}</span>}
+                          {(s.days||[]).length===7?<span>Every day</span>:recurDays&&<span>Every {recurDays}</span>}
                           {recurDays&&dateCount>0&&<span> · </span>}
                           {dateCount>0&&<span>{dateCount} date{dateCount!==1?"s":""}</span>}
-                          {s.startDate&&<span style={{color:"#b8a090"}}> · from {parse(s.startDate).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
+                          {s.startDate&&(s.days||[]).length===0&&dateCount===0&&<span style={{color:"#b8a090"}}>from {parse(s.startDate).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
+                          {s.location&&<span> · <span style={{cursor:"pointer",color:"#b07a5e",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();window.open(`https://www.google.com/maps/search/${encodeURIComponent(s.location)}`,'_blank');}}>📍 {s.location}</span></span>}
                         </div>
                       </div>
                       {isToday&&<span style={{fontSize:".68rem",background:"#b07a5e",color:"#fff",borderRadius:20,padding:"2px 8px",whiteSpace:"nowrap"}}>Today</span>}
@@ -2425,7 +2432,7 @@ export default function App({ user }) {
                       <div style={{flex:1}}>
                         <div className="sched-label">{tx.name}</div>
                         <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
-                          {tx.dates.length} date{tx.dates.length!==1?"s":""} · {tx.completedDates?.length||0} done
+                          {tx.dates.length} date{tx.dates.length!==1?"s":""} · {tx.completedDates?.length||0} done{tx.location?<span> · <span style={{cursor:"pointer",color:"#b07a5e",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();window.open(`https://www.google.com/maps/search/${encodeURIComponent(tx.location)}`,"_blank");}}>📍 {tx.location}</span></span>:null}
                           {next&&<span> · Next: {parse(next).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
                         </div>
                       </div>
