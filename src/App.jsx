@@ -2194,6 +2194,21 @@ export default function App({ user }) {
               <button className={`sub-tab ${activeTab==="skin"?"active":""}`} onClick={()=>setActiveTab("skin")}>🌿 Skin</button>
               <button className={`sub-tab ${activeTab==="hair"?"active":""}`} onClick={()=>setActiveTab("hair")}>✨ Hair</button>
             </div>
+            {(()=>{
+              const todayPlanned=schedules.filter(s=>s.days.includes(todayDow)&&(!s.startDate||today>=s.startDate)&&(activeTab==="skin"?skinR:hairR).find(r=>r.id===s.itemId));
+              const plannedIds=todayPlanned.map(s=>s.itemId);
+              const plannedDone=checked.filter(id=>plannedIds.includes(id)).length;
+              const hasPlanned=plannedIds.length>0;
+              return hasPlanned?(
+                <div style={{marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:".73rem",color:"#a08070",marginBottom:5}}>
+                    <span>Planned for today</span>
+                    <span style={{color:plannedDone===plannedIds.length?"#2d4a2d":"#a08070",fontWeight:plannedDone===plannedIds.length?600:400}}>{plannedDone} / {plannedIds.length} done{plannedDone===plannedIds.length?" ✓":""}</span>
+                  </div>
+                  <div className="prog-wrap"><div className="prog-bar" style={{width:`${(plannedDone/plannedIds.length)*100}%`,background:plannedDone===plannedIds.length?"#2d4a2d":"#b07a5e"}}/></div>
+                </div>
+              ):null;
+            })()}
             {visibleReminders.filter(s=>{
                 const itemTab=skinR.find(r=>r.id===s.itemId)?"skin":"hair";
                 return itemTab===activeTab;
@@ -2217,30 +2232,12 @@ export default function App({ user }) {
                 </div>
               );
             })}
-            <div style={{marginBottom:18}}>
-              {(()=>{
-                const todayPlanned=schedules.filter(s=>s.days.includes(todayDow)&&(!s.startDate||today>=s.startDate)&&(activeTab==="skin"?skinR:hairR).find(r=>r.id===s.itemId));
-                const plannedIds=todayPlanned.map(s=>s.itemId);
-                const plannedDone=checked.filter(id=>plannedIds.includes(id)).length;
-                const hasPlanned=plannedIds.length>0;
-                return hasPlanned?(
-                  <>
-                    <div style={{display:"flex",justifyContent:"space-between",fontSize:".73rem",color:"#a08070",marginBottom:5}}>
-                      <span>Planned for today</span>
-                      <span style={{color:plannedDone===plannedIds.length?"#2d4a2d":"#a08070",fontWeight:plannedDone===plannedIds.length?600:400}}>{plannedDone} / {plannedIds.length} done{plannedDone===plannedIds.length?" ✓":""}</span>
-                    </div>
-                    <div className="prog-wrap"><div className="prog-bar" style={{width:`${(plannedDone/plannedIds.length)*100}%`,background:plannedDone===plannedIds.length?"#2d4a2d":"#b07a5e"}}/></div>
-                  </>
-                ):(
-                  <>
-                    <div style={{display:"flex",justifyContent:"space-between",fontSize:".73rem",color:"#a08070",marginBottom:5}}>
-                      <span>{activeTab==="skin"?"Skin Routine":"Hair Routine"}</span>
-                      <span>{done} / {routines.length} steps</span>
-                    </div>
-                    <div className="prog-wrap"><div className="prog-bar" style={{width:routines.length?`${(done/routines.length)*100}%`:"0%"}}/></div>
-                  </>
-                );
-              })()}
+            <div style={{marginBottom:14}}>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:".73rem",color:"#a08070",marginBottom:5}}>
+                <span>{activeTab==="skin"?"Skin Routine":"Hair Routine"}</span>
+                <span>{done} / {routines.length} steps</span>
+              </div>
+              <div className="prog-wrap"><div className="prog-bar" style={{width:routines.length?`${(done/routines.length)*100}%`:"0%"}}/></div>
             </div>
             <div className="sec-head">
               <div className="sec-title">{activeTab==="skin"?"Skin Steps":"Hair Steps"}</div>
@@ -2314,7 +2311,6 @@ export default function App({ user }) {
               const e=getE(selectedDay);
               const si=(e.skin||[]).map(id=>allSkinMap[id]).filter(Boolean);
               const hi=(e.hair||[]).map(id=>allHairMap[id]).filter(Boolean);
-              const hasSched=getSchedDow(selectedDay);
               const hasSkin=!!(si.length||e.skin_mood||e.skin_notes||e.skin_photos?.length);
               const hasHair=!!(hi.length||e.hair_mood||e.hair_notes||e.hair_photos?.length);
               const hasAny=hasSkin||hasHair;
@@ -2324,9 +2320,7 @@ export default function App({ user }) {
                     <div className="day-panel-date">{selectedDay===today?"Today — ":""}{dispLong(selectedDay)}</div>
                     <button className="day-edit-btn" onClick={()=>setModal("dayEdit")}>{hasAny?"✏️ Edit":"+ Log"}</button>
                   </div>
-                  {hasSched&&<div className="dp-scheduled">
-                    🗓 {schedules.filter(s=>s.days.includes(parse(selectedDay).getDay())).map(s=>{ const it=allItems.find(x=>x.id===s.itemId); return it?`${it.emoji} ${it.label}`:null; }).filter(Boolean).join(", ")} planned
-                  </div>}
+
                   {hasAny?(
                     <>
                       {hasSkin&&<>
