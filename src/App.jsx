@@ -124,6 +124,7 @@ body{font-family:'DM Sans',sans-serif;background:#fdf6f0;min-height:100vh;color:
 .cal-cell.has-entry{font-weight:600}
 .cal-cell.today-cell{color:#b07a5e;font-weight:600}
 .cal-cell.selected-cell{background:#b07a5e !important;color:#fff !important}
+.cal-cell.range-mode-cell{background:#b07a5e !important;color:#fff !important;box-shadow:0 0 0 2px #fff,0 0 0 4px #b07a5e;border-radius:50%}
 .cal-cell.future-cell{color:#c8b0a0}
 .cal-cell.in-range{background:#f7e8de;border-radius:0}
 .cal-cell.range-start{background:#b07a5e !important;color:#fff !important;border-radius:50% 0 0 50%}
@@ -280,6 +281,36 @@ function Toggle({ on, onChange }) {
     <button className={`toggle-switch ${on?"on":"off"}`} onClick={()=>onChange(!on)}>
       <div className="toggle-knob"/>
     </button>
+  );
+}
+
+function Lightbox({ photo, onClose, onDelete }) {
+  const download = () => {
+    const a = document.createElement("a");
+    a.href = photo.src;
+    a.download = photo.name || "photo.jpg";
+    a.click();
+  };
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:9999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:500,display:"flex",flexDirection:"column",gap:12}}>
+        <img src={photo.src} alt={photo.name} style={{width:"100%",maxHeight:"70vh",objectFit:"contain",borderRadius:14}}/>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={download}
+            style={{flex:1,background:"#b07a5e",border:"none",borderRadius:12,padding:"13px",color:"#fff",fontSize:".86rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".04em"}}>
+            ↓ Download
+          </button>
+          <button onClick={()=>{onDelete(photo.id);onClose();}}
+            style={{flex:1,background:"#c07060",border:"none",borderRadius:12,padding:"13px",color:"#fff",fontSize:".86rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".04em"}}>
+            Delete
+          </button>
+          <button onClick={onClose}
+            style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:12,padding:"13px 18px",color:"#fff",fontSize:".86rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+            ✕
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1659,6 +1690,7 @@ export default function App({ user }) {
   const [rangeMode,   setRangeMode]   = useState(false);
   const [rangeStart,  setRangeStart]  = useState(today);
   const [rangeEnd,    setRangeEnd]    = useState(null);
+  const [rangeMode,   setRangeMode]   = useState(false); // true = waiting for 2nd tap to form range
   const [hoverDay,    setHoverDay]    = useState(null);
   const [curPhotos,   setCurPhotos]   = useState([]);
   const [userName,    setUserName]    = useState("");
@@ -1671,7 +1703,8 @@ export default function App({ user }) {
   const [sideMenu,      setSideMenu]      = useState(false);
   const [pageView,      setPageView]      = useState(null); // null=main, "purchases", "account", "products", "wishlist"
   const [selectedPlan,  setSelectedPlan]  = useState(null); // plan/treatment being viewed
-  const [confirmDelete, setConfirmDelete] = useState(null); // {message, onConfirm}
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [lightboxPhoto, setLightboxPhoto] = useState(null); // {message, onConfirm}
   const [prefillPurchase, setPrefillPurchase] = useState(null); // when moving wishlist item to purchases
   const [treatments,    setTreatments]    = useState([]); // [{id, name, type(skin/hair), dates:[], completedDates:[]}]
 
@@ -2026,7 +2059,7 @@ export default function App({ user }) {
     setEntries(ne);
     // Save each day to Supabase
     await Promise.all(days.map(d => persistEntry(d, data)));
-    setModal(null); setRangeStart(null); setRangeEnd(null);
+    setModal(null); setRangeStart(null); setRangeEnd(null); setRangeMode(false);
     showT(`✓ Applied to ${days.length} days`);
   };
 
@@ -2069,24 +2102,29 @@ export default function App({ user }) {
 
   const effEnd=rangeEnd||(rangeStart&&hoverDay?hoverDay:null);
   const inRange=d=>{ if(!rangeStart||!effEnd||!d) return false; const [lo,hi]=rangeStart<=effEnd?[rangeStart,effEnd]:[effEnd,rangeStart]; return d>lo&&d<hi; };
-  const isRangeStart=d=>d===rangeStart;
+  const isRangeStart=d=>d===rangeStart&&rangeEnd;
   const isRangeEnd=d=>rangeEnd?d===rangeEnd:(rangeStart&&hoverDay&&d===hoverDay&&hoverDay!==rangeStart);
 
   const handleCalClick=d=>{
     if(rangeStart&&rangeEnd){
-      // Reset after a completed range — start fresh
-      setRangeStart(d); setRangeEnd(null); setSelectedDay(d);
-    } else if(!rangeStart){
-      // Nothing selected — select this day
-      setRangeStart(d); setSelectedDay(d);
-    } else if(d===rangeStart){
-      // Tapped the already-selected day — deselect it (clear selection)
-      setRangeStart(null); setSelectedDay(null);
+      // Completed range — reset, select new day as single
+      setRangeStart(d); setRangeEnd(null); setSelectedDay(d); setRangeMode(false);
+    } else if(rangeMode){
+      // We're in range mode — this tap is the end date
+      if(d===rangeStart){
+        // Tapped same date again — cancel range mode, stay on that day
+        setRangeMode(false);
+      } else {
+        const [lo,hi]=d>=rangeStart?[rangeStart,d]:[d,rangeStart];
+        setRangeStart(lo); setRangeEnd(hi); setSelectedDay(lo);
+        setRangeMode(false); setModal("rangeApply");
+      }
+    } else if(d===selectedDay){
+      // Tapped already-selected day — enter range mode
+      setRangeMode(true); setRangeStart(d);
     } else {
-      // Second tap on a different day — open range modal
-      const [lo,hi]=d>=rangeStart?[rangeStart,d]:[d,rangeStart];
-      setRangeStart(lo); setRangeEnd(hi); setSelectedDay(lo);
-      setModal("rangeApply");
+      // First tap on a new day — just select it
+      setSelectedDay(d); setRangeStart(d); setRangeEnd(null); setRangeMode(false);
     }
   };
 
@@ -2232,13 +2270,7 @@ export default function App({ user }) {
                 </div>
               );
             })}
-            <div style={{marginBottom:14}}>
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:".73rem",color:"#a08070",marginBottom:5}}>
-                <span>{activeTab==="skin"?"Skin Routine":"Hair Routine"}</span>
-                <span>{done} / {routines.length} steps</span>
-              </div>
-              <div className="prog-wrap"><div className="prog-bar" style={{width:routines.length?`${(done/routines.length)*100}%`:"0%"}}/></div>
-            </div>
+
             <div className="sec-head">
               <div className="sec-title">{activeTab==="skin"?"Skin Steps":"Hair Steps"}</div>
               <button className="ghost-btn" onClick={()=>setModal("manageItems")}>✏️ Edit</button>
@@ -2287,7 +2319,7 @@ export default function App({ user }) {
                   if(isRangeStart(d)) cls.push("range-start");
                   else if(isRangeEnd(d)) cls.push("range-end");
                   else if(inRange(d)) cls.push("in-range");
-                  else if(d===selectedDay&&!rangeStart) cls.push("selected-cell");
+                  else if(d===selectedDay) cls.push(rangeMode?"range-mode-cell":"selected-cell");
                   const ach=getDayAchievement(d);
                   return (
                     <div key={d} className={cls.join(" ")}
@@ -2305,6 +2337,7 @@ export default function App({ user }) {
                   );
                 })}
               </div>
+              {rangeMode&&<div style={{textAlign:"center",fontSize:".72rem",color:"#b07a5e",marginTop:8,fontStyle:"italic"}}>Tap another date to select a range</div>}
             </div>
 
             {selectedDay&&rangeStart&&!rangeEnd&&(()=>{
@@ -2328,14 +2361,14 @@ export default function App({ user }) {
                         {si.length>0&&<div className="dp-pills">{si.map(r=><span key={r.id} className="dp-pill">{r.emoji} {r.label}</span>)}</div>}
                         {e.skin_mood&&<div className="dp-mood">Feeling: {e.skin_mood}</div>}
                         {e.skin_notes&&<div className="dp-note">"{e.skin_notes}"</div>}
-                        {e.skin_photos?.length>0&&<div className="photo-thumbs" style={{marginTop:6,marginBottom:4}}>{e.skin_photos.map(p=><div key={p.id} className="photo-thumb"><img src={p.src} alt={p.name}/></div>)}</div>}
+                        {e.skin_photos?.length>0&&<div className="photo-thumbs" style={{marginTop:6,marginBottom:4}}>{e.skin_photos.map(p=><div key={p.id} className="photo-thumb" style={{cursor:"pointer"}} onClick={()=>setLightboxPhoto({...p,_type:"skin",_date:selectedDay})}><img src={p.src} alt={p.name}/></div>)}</div>}
                       </>}
                       {hasHair&&<>
                         <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:6,marginTop:hasSkin?12:4}}>✨ Hair</div>
                         {hi.length>0&&<div className="dp-pills">{hi.map(r=><span key={r.id} className="dp-pill h">{r.emoji} {r.label}</span>)}</div>}
                         {e.hair_mood&&<div className="dp-mood">Feeling: {e.hair_mood}</div>}
                         {e.hair_notes&&<div className="dp-note">"{e.hair_notes}"</div>}
-                        {e.hair_photos?.length>0&&<div className="photo-thumbs" style={{marginTop:6}}>{e.hair_photos.map(p=><div key={p.id} className="photo-thumb"><img src={p.src} alt={p.name}/></div>)}</div>}
+                        {e.hair_photos?.length>0&&<div className="photo-thumbs" style={{marginTop:6}}>{e.hair_photos.map(p=><div key={p.id} className="photo-thumb" style={{cursor:"pointer"}} onClick={()=>setLightboxPhoto({...p,_type:"hair",_date:selectedDay})}><img src={p.src} alt={p.name}/></div>)}</div>}
                       </>}
                     </>
                   ):<div className="dp-empty">Nothing logged for this day yet</div>}
@@ -2486,7 +2519,7 @@ export default function App({ user }) {
       {modal==="plan"&&<PlanModal allItems={allItems} skinItems={skinR} hairItems={hairR} schedules={schedules} treatments={treatments} onSave={saveSched} onSaveMany={saveSchedMany} onDelete={deleteSched} onSaveTreatment={saveTreatment} onDeleteTreatment={deleteTreatment} onClose={()=>setModal(null)}/>}
       {modal==="freq"&&<FreqModal allItems={allItems} tracked={freqTracked} period={freqPeriod} onToggle={id=>setFreqTracked(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id])} onPeriod={async p=>{ setFreqPeriod(p); await persist({freqPeriod:p}); }} onClose={()=>setModal(null)}/>}
       {modal==="dayEdit"&&selectedDay&&<DayEditModal date={selectedDay} entry={getE(selectedDay)} skinRoutines={skinR} hairRoutines={hairR} onSave={data=>saveDayEdit(selectedDay,data)} onClose={()=>setModal(null)}/>}
-      {modal==="rangeApply"&&rangeStart&&rangeEnd&&<RangeApplyModal rangeStart={rangeStart} rangeEnd={rangeEnd} skinRoutines={skinR} hairRoutines={hairR} onApply={applyRange} onClose={()=>{ setModal(null); setRangeStart(null); setRangeEnd(null); }}/>}
+      {modal==="rangeApply"&&rangeStart&&rangeEnd&&<RangeApplyModal rangeStart={rangeStart} rangeEnd={rangeEnd} skinRoutines={skinR} hairRoutines={hairR} onApply={applyRange} onClose={()=>{ setModal(null); setRangeStart(null); setRangeEnd(null); setRangeMode(false); }}/>}
 
       {showNamePrompt&&(
         <div className="name-prompt-overlay">
@@ -2507,6 +2540,17 @@ export default function App({ user }) {
         </div>
       )}
       {toast&&<div className="toast">{toast}</div>}
+      {lightboxPhoto&&<Lightbox
+        photo={lightboxPhoto}
+        onClose={()=>setLightboxPhoto(null)}
+        onDelete={(photoId)=>{
+          const date=lightboxPhoto._date;
+          const type=lightboxPhoto._type;
+          const e=getE(date);
+          const key=type==="skin"?"skin_photos":"hair_photos";
+          const updated={...e,[key]:(e[key]||[]).filter(p=>p.id!==photoId)};
+          saveDayEdit(date,updated);
+        }}/>}
       {confirmDelete&&<ConfirmDialog message={confirmDelete.message} onConfirm={()=>{confirmDelete.onConfirm();setConfirmDelete(null);}} onCancel={()=>setConfirmDelete(null)}/>}
 
       {sideMenu&&<div className="side-menu-overlay" onClick={()=>setSideMenu(false)}/>}
