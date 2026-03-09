@@ -1690,7 +1690,6 @@ export default function App({ user }) {
   const [rangeMode,   setRangeMode]   = useState(false);
   const [rangeStart,  setRangeStart]  = useState(today);
   const [rangeEnd,    setRangeEnd]    = useState(null);
-  const [rangeMode,   setRangeMode]   = useState(false); // true = waiting for 2nd tap to form range
   const [hoverDay,    setHoverDay]    = useState(null);
   const [curPhotos,   setCurPhotos]   = useState([]);
   const [userName,    setUserName]    = useState("");
