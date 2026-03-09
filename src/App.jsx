@@ -283,7 +283,7 @@ function Toggle({ on, onChange }) {
   );
 }
 
-function PhotoNotes({ notes, photos, onNotesChange, onPhotosChange }) {
+function PhotoNotes({ notes, photos, onNotesChange, onPhotosChange, hidePhotos }) {
   const fileRef = useRef();
   const handleFiles = (files) => {
     Array.from(files).forEach(file => {
@@ -308,7 +308,7 @@ function PhotoNotes({ notes, photos, onNotesChange, onPhotosChange }) {
           onChange={e=>handleFiles(e.target.files)}/>
         {photos.length>0&&<span style={{fontSize:".72rem",color:"#a08070"}}>{photos.length} photo{photos.length!==1?"s":""}</span>}
       </div>
-      {photos.length>0&&(
+      {photos.length>0&&!hidePhotos&&(
         <div className="photo-thumbs">
           {photos.map(p=>(
             <div key={p.id} className="photo-thumb">
@@ -316,6 +316,11 @@ function PhotoNotes({ notes, photos, onNotesChange, onPhotosChange }) {
               <button className="photo-remove" onClick={()=>removePhoto(p.id)}>×</button>
             </div>
           ))}
+        </div>
+      )}
+      {photos.length>0&&hidePhotos&&(
+        <div style={{fontSize:".72rem",color:"#a08070",marginTop:6,fontStyle:"italic"}}>
+          📎 {photos.length} photo{photos.length!==1?"s":""} attached — visible in history
         </div>
       )}
     </div>
@@ -521,31 +526,10 @@ function ProductSearch({ category, onSelect }) {
   const [searched, setSearched] = useState(false);
   const [fetchStatus, setFetchStatus] = useState(""); // "", "fetching", "found", "failed"
 
-  const fetchFromUrl = async () => {
+  const saveUrl = () => {
     if (!url.trim()) return;
-    setFetchStatus("fetching");
-    try {
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url.trim())}`;
-      const res = await fetch(proxyUrl);
-      const data = await res.json();
-      const html = data.contents || "";
-      const getMeta = (prop) => {
-        const m = html.match(new RegExp(`<meta[^>]*(?:property|name)=["']${prop}["'][^>]*content=["']([^"']+)["']`, "i"))
-                || html.match(new RegExp(`<meta[^>]*content=["']([^"']+)["'][^>]*(?:property|name)=["']${prop}["']`, "i"));
-        return m ? m[1] : "";
-      };
-      const name = getMeta("og:title") || getMeta("twitter:title") || "";
-      const image = getMeta("og:image") || getMeta("twitter:image") || "";
-      const siteName = getMeta("og:site_name") || "";
-      if (name) {
-        onSelect({ name: name.replace(/\s*[-|].*$/, "").trim(), brand: siteName, image, link: url.trim() });
-        setFetchStatus("found");
-      } else {
-        setFetchStatus("failed");
-      }
-    } catch(e) {
-      setFetchStatus("failed");
-    }
+    onSelect({ name: "", brand: "", image: "", link: url.trim() });
+    setFetchStatus("saved");
   };
 
   const search = async () => {
@@ -574,16 +558,16 @@ function ProductSearch({ category, onSelect }) {
       {mode==="link"&&(
         <div>
           <div style={{display:"flex",gap:8,marginBottom:6}}>
-            <input className="ifield" style={{flex:1,fontSize:".8rem"}} placeholder="Paste Sephora, LOOKFANTASTIC, any product URL…"
+            <input className="ifield" style={{flex:1,fontSize:".8rem"}} placeholder="Paste product URL (Sephora, LOOKFANTASTIC, any site)…"
               value={url} onChange={e=>{setUrl(e.target.value);setFetchStatus("");}}
-              onKeyDown={e=>e.key==="Enter"&&fetchFromUrl()}/>
-            <button onClick={fetchFromUrl}
+              onKeyDown={e=>e.key==="Enter"&&saveUrl()}/>
+            <button onClick={saveUrl}
               style={{background:"#b07a5e",border:"none",borderRadius:10,padding:"8px 12px",color:"#fff",cursor:"pointer",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>
-              {fetchStatus==="fetching"?"…":"Import"}
+              Save
             </button>
           </div>
-          {fetchStatus==="found"&&<div style={{fontSize:".76rem",color:"#2d6a2d",marginBottom:6}}>✓ Product imported — check fields below</div>}
-          {fetchStatus==="failed"&&<div style={{fontSize:".76rem",color:"#a08070",fontStyle:"italic",marginBottom:6}}>Couldn't auto-import — fill in manually below</div>}
+          {fetchStatus==="saved"&&<div style={{fontSize:".76rem",color:"#2d6a2d",marginBottom:6}}>✓ URL saved — fill in name & details below, Buy Now will work</div>}
+          <div style={{fontSize:".72rem",color:"#b0a0a0",fontStyle:"italic",marginBottom:6}}>URL is saved for Buy Now — fill in product details manually below</div>
         </div>
       )}
 
@@ -1296,7 +1280,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
   const getItem=id=>allItems.find(x=>x.id===id);
 
   const savePlan=()=>{
-    if(!editing.itemIds?.length||(editing.days.length===0&&editing.dates.length===0)) return;
+    if(!editing.itemIds?.length) return;
     // Create one plan object per selected item, save all at once
     const plans=editing.itemIds.map((itemId,i)=>({
       ...editing,
@@ -1342,7 +1326,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
   }
 
   if(screen==="editPlan"&&editing){
-    const canSave=editing.itemIds?.length>0&&(editing.days.length>0||editing.dates.length>0);
+    const canSave=editing.itemIds?.length>0&&(editing.days.length>0||editing.dates.length>0||!!editing.startDate);
     const toggleItemSel=id=>setEditing(e=>({...e,itemIds:e.itemIds.includes(id)?e.itemIds.filter(x=>x!==id):[...e.itemIds,id]}));
     return (
       <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
@@ -1382,12 +1366,12 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             onRangeStart={d=>setCalRangeStart(d)}
             onRangeEnd={range=>{ setEditing(e=>({...e,dates:[...new Set([...(e.dates||[]),...range])]})); setCalRangeStart(null); }}
           />
-          <div className="modal-sub">Repeat on (optional — leave blank for date-specific only)</div>
-          <div className="toggle-row" style={{marginBottom:10}}>
+          <div className="modal-sub" style={{marginBottom:8}}>Repeat on <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional)</span></div>
+          <div className="toggle-row" style={{marginBottom:8}}>
             <div><div className="toggle-lbl">Everyday</div></div>
             <Toggle on={editing.days.length===7} onChange={v=>setEditing(e=>({...e,days:v?[0,1,2,3,4,5,6]:[]}))}/>
           </div>
-          {editing.days.length!==7&&<div className="dow-row">
+          {editing.days.length!==7&&<div className="dow-row" style={{marginBottom:10}}>
             {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d,i)=>{
               const dow=[1,2,3,4,5,6,0][i];
               return <button key={d} className={`dow-chip ${editing.days.includes(dow)?"on":""}`} onClick={()=>toggleDay(dow)}>{d}</button>;
@@ -2277,11 +2261,10 @@ export default function App({ user }) {
             </div>
             <div className="sec-title" style={{marginBottom:10}}>Notes & Observations</div>
             <PhotoNotes notes={activeTab==="skin"?entry.skin_notes:entry.hair_notes} photos={curPhotos}
+              hidePhotos={true}
               onNotesChange={v=>setNotesVal(activeDate,activeTab,v)}
               onPhotosChange={v=>setPhotosVal(activeDate,activeTab,v)}/>
-            {(activeTab==="skin"?entry.skin_photos:entry.hair_photos)?.length>0&&(activeTab==="skin"?entry.skin_photos:entry.hair_photos).map(p=>(
-              <div key={p.id} className="photo-full"><img src={p.src} alt={p.name}/></div>
-            ))}
+
             {activeTab==="hair"&&<HairLengthCard hairLengths={hairLengths} setHairLengths={setHairLengths} saveHairLength={saveHairLength}/>}
             <button className="save-btn" onClick={saveEntry}>Save Entry</button>
           </>
@@ -2348,15 +2331,15 @@ export default function App({ user }) {
                     <>
                       {hasSkin&&<>
                         <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:6,marginTop:4}}>🌿 Skin</div>
-                        <div className="dp-pills">{si.map(r=><span key={r.id} className="dp-pill">{r.emoji} {r.label}</span>)}</div>
-                        {e.skin_mood&&<div className="dp-mood">Mood: {e.skin_mood}</div>}
+                        {si.length>0&&<div className="dp-pills">{si.map(r=><span key={r.id} className="dp-pill">{r.emoji} {r.label}</span>)}</div>}
+                        {e.skin_mood&&<div className="dp-mood">Feeling: {e.skin_mood}</div>}
                         {e.skin_notes&&<div className="dp-note">"{e.skin_notes}"</div>}
                         {e.skin_photos?.length>0&&<div className="photo-thumbs" style={{marginTop:6,marginBottom:4}}>{e.skin_photos.map(p=><div key={p.id} className="photo-thumb"><img src={p.src} alt={p.name}/></div>)}</div>}
                       </>}
                       {hasHair&&<>
                         <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:6,marginTop:hasSkin?12:4}}>✨ Hair</div>
-                        <div className="dp-pills">{hi.map(r=><span key={r.id} className="dp-pill h">{r.emoji} {r.label}</span>)}</div>
-                        {e.hair_mood&&<div className="dp-mood">Mood: {e.hair_mood}</div>}
+                        {hi.length>0&&<div className="dp-pills">{hi.map(r=><span key={r.id} className="dp-pill h">{r.emoji} {r.label}</span>)}</div>}
+                        {e.hair_mood&&<div className="dp-mood">Feeling: {e.hair_mood}</div>}
                         {e.hair_notes&&<div className="dp-note">"{e.hair_notes}"</div>}
                         {e.hair_photos?.length>0&&<div className="photo-thumbs" style={{marginTop:6}}>{e.hair_photos.map(p=><div key={p.id} className="photo-thumb"><img src={p.src} alt={p.name}/></div>)}</div>}
                       </>}
