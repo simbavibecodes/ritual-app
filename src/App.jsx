@@ -1221,6 +1221,8 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
   const today=fmt(new Date());
   const [calM, setCalM]=useState({y:new Date().getFullYear(),m:new Date().getMonth()});
   const [hov, setHov]=useState(null);
+  const [rangeMode, setRangeMode]=useState(false); // true = waiting for 2nd tap
+  const [pendingStart, setPendingStart]=useState(null); // the first tapped date in range mode
   function daysInM(y,m){return new Date(y,m+1,0).getDate();}
   function getCells(){
     const {y,m}=calM;
@@ -1234,27 +1236,33 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
   }
   const cells=getCells();
   const monthLabel=new Date(calM.y,calM.m,1).toLocaleDateString("en-US",{month:"long",year:"numeric"});
-  // For range selection preview
-  const effEnd=rangeStart&&hov&&hov!==rangeStart?hov:null;
   const inPreview=d=>{
-    if(!rangeStart||!effEnd||!d) return false;
-    const [lo,hi]=rangeStart<effEnd?[rangeStart,effEnd]:[effEnd,rangeStart];
+    if(!rangeMode||!pendingStart||!hov||hov===pendingStart||!d) return false;
+    const [lo,hi]=pendingStart<hov?[pendingStart,hov]:[hov,pendingStart];
     return d>lo&&d<hi;
   };
   const handleClick=d=>{
-    // If already individually selected, deselect it
-    if(selectedDates.includes(d)&&!rangeStart){
-      onToggleDate(d); return;
-    }
-    if(!rangeStart){onRangeStart(d);}
-    else if(d===rangeStart){onRangeStart(null);}
-    else{
-      const [lo,hi]=d>rangeStart?[rangeStart,d]:[d,rangeStart];
-      const range=[];
-      const cur=parse(lo);
-      const end=parse(hi);
-      while(cur<=end){range.push(fmt(new Date(cur)));cur.setDate(cur.getDate()+1);}
-      onRangeEnd(range);
+    if(rangeMode){
+      if(d===pendingStart){
+        // Tap same date again — cancel range mode, just select it
+        setRangeMode(false); setPendingStart(null);
+        if(!selectedDates.includes(d)) onToggleDate(d);
+      } else {
+        // Second tap on different date — complete the range
+        const [lo,hi]=d>pendingStart?[pendingStart,d]:[d,pendingStart];
+        const range=[];
+        const cur=parse(lo); const end=parse(hi);
+        while(cur<=end){range.push(fmt(new Date(cur)));cur.setDate(cur.getDate()+1);}
+        onRangeEnd(range);
+        setRangeMode(false); setPendingStart(null);
+      }
+    } else if(selectedDates.includes(d)){
+      // Already selected — second tap on selected date enters range mode
+      setRangeMode(true); setPendingStart(d);
+      onRangeStart&&onRangeStart(d);
+    } else {
+      // First tap — just select/toggle the date
+      onToggleDate(d);
     }
   };
   return (
@@ -1271,22 +1279,24 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
         {cells.map((d,i)=>{
           if(!d) return <div key={`e${i}`} style={{aspectRatio:1}}/>;
           const sel=selectedDates.includes(d);
-          const isRS=d===rangeStart;
+          const isPending=d===pendingStart&&rangeMode;
           const prev=inPreview(d);
           return (
             <div key={d} onClick={()=>handleClick(d)}
-              onMouseEnter={()=>rangeStart&&setHov(d)}
+              onMouseEnter={()=>rangeMode&&setHov(d)}
               onMouseLeave={()=>setHov(null)}
               style={{aspectRatio:1,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:"50%",fontSize:".78rem",cursor:"pointer",
-                background:sel?"#b07a5e":isRS?"#e8b090":prev?"#f7e8de":"transparent",
-                color:sel?"#fff":isRS?"#fff":"#3a2e27",fontWeight:sel?600:400,
-                border:d===today?"1.5px solid #b07a5e":"none"}}>
+                background:sel?"#b07a5e":isPending?"#c08870":prev?"#f7e8de":"transparent",
+                color:sel||isPending?"#fff":"#3a2e27",fontWeight:sel?600:400,
+                border:d===today&&!sel?"1.5px solid #b07a5e":"none",
+                boxShadow:isPending?"0 0 0 2px #fff,0 0 0 4px #b07a5e":"none"}}>
               {parse(d).getDate()}
             </div>
           );
         })}
       </div>
-      {selectedDates.length>0&&<div style={{padding:"6px 14px 10px",fontSize:".72rem",color:"#b07a5e"}}>
+      {rangeMode&&<div style={{padding:"4px 14px 8px",fontSize:".72rem",color:"#b07a5e",fontStyle:"italic"}}>Tap another date to select a range</div>}
+      {selectedDates.length>0&&!rangeMode&&<div style={{padding:"6px 14px 10px",fontSize:".72rem",color:"#b07a5e"}}>
         {selectedDates.length} date{selectedDates.length!==1?"s":""} selected
       </div>}
     </div>
@@ -1385,6 +1395,9 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
               );
             })}
           </div>
+          <div className="modal-sub" style={{marginBottom:6}}>📍 Location <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional)</span></div>
+          <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Glow Clinic, Miami"
+            value={editing.location||""} onChange={e=>setEditing(ed=>({...ed,location:e.target.value}))}/>
           <div className="modal-sub">Start date</div>
           <input type="date" className="time-input" style={{width:"100%",marginBottom:14}}
             value={editing.startDate||fmt(new Date())}
@@ -1408,9 +1421,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
               return <button key={d} className={`dow-chip ${editing.days.includes(dow)?"on":""}`} onClick={()=>toggleDay(dow)}>{d}</button>;
             })}
           </div>}
-          <div className="modal-sub" style={{marginBottom:6}}>📍 Location <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional)</span></div>
-          <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Glow Clinic, Miami"
-            value={editing.location||""} onChange={e=>setEditing(ed=>({...ed,location:e.target.value}))}/>
+
           <div className="toggle-row">
             <div><div className="toggle-lbl">🔔 Remind me</div><div className="toggle-sub">Browser notification</div></div>
             <Toggle on={editing.reminder} onChange={v=>setEditing(e=>({...e,reminder:v}))}/>
@@ -1439,6 +1450,9 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
           <div className="modal-sub">Treatment name</div>
           <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Facial, Microneedling…"
             value={editTx.name} onChange={e=>setEditTx(t=>({...t,name:e.target.value}))} autoFocus/>
+          <div className="modal-sub" style={{marginBottom:6}}>📍 Location <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional)</span></div>
+          <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Glow Clinic, Miami"
+            value={editTx.location||""} onChange={e=>setEditTx(t=>({...t,location:e.target.value}))}/>
           <div className="modal-sub">Skin or Hair</div>
           <div style={{display:"flex",gap:8,marginBottom:14}}>
             {["skin","hair"].map(tp=>(
@@ -1456,9 +1470,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             onRangeStart={d=>setCalRangeStart(d)}
             onRangeEnd={range=>{ setEditTx(t=>({...t,dates:[...new Set([...t.dates,...range])]})); setCalRangeStart(null); }}
           />
-          <div className="modal-sub" style={{marginBottom:6}}>📍 Location <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional)</span></div>
-          <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Glow Clinic, Miami"
-            value={editTx.location||""} onChange={e=>setEditTx(t=>({...t,location:e.target.value}))}/>
+
           <button className="save-btn" onClick={saveTx} disabled={!canSave} style={{opacity:canSave?1:.4}}>Schedule Treatment</button>
         </div>
       </div>
