@@ -1079,6 +1079,9 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
     const freshSkin = freshList.filter(p => p.category === "skin");
     const freshHair = freshList.filter(p => p.category === "hair");
     const freshTx   = freshList.filter(p => p.category === "treatment");
+    console.log("=== ANALYSIS DEBUG ===");
+    console.log("Total products:", freshList.length, freshList.map(p => p.name + " [" + p.category + "]"));
+    console.log("Skin:", freshSkin.length, "Hair:", freshHair.length, "Treatments:", freshTx.length);
 
     const allHaveIngredients = freshList.every(p => p.ingredients?.length > 0);
     const notes = useNotes ? getNotes() : "";
