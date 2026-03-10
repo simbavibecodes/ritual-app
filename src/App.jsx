@@ -1463,30 +1463,32 @@ function CompareRoutines({ snapshots, products, entries, onClose }) {
   );
 }
 
-function ProductForm({ editProd, setEditProd, isEditingProd, onSave, onClose }) {
+function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
+  // Own internal state — never re-mounts on parent re-render, so focus is never lost
+  const [p, setP] = useState(initialData);
   return (
     <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
         <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{isEditingProd?"Edit Product":"Add Product"}</div>
         <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
       </div>
-      {!isEditingProd&&<ProductSearch category={editProd.category} onSelect={({name,brand,image,link,global_product_id,ingredients})=>setEditProd(p=>({...p,name,brand,image:image||"",link:link||"",global_product_id:global_product_id||null,ingredients:ingredients||[]}))}/>}
-      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editProd.name} onChange={e=>setEditProd(p=>({...p,name:e.target.value}))} autoFocus/>
-      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand (optional)" value={editProd.brand||""} onChange={e=>setEditProd(p=>({...p,brand:e.target.value}))}/>
-      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={editProd.link||""} onChange={e=>setEditProd(p=>({...p,link:e.target.value}))}/>
+      {!isEditingProd&&<ProductSearch category={p.category} onSelect={({name,brand,image,link,global_product_id,ingredients})=>setP(prev=>({...prev,name,brand,image:image||"",link:link||"",global_product_id:global_product_id||null,ingredients:ingredients||[]}))}/>}
+      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={p.name} onChange={e=>setP(prev=>({...prev,name:e.target.value}))} autoFocus/>
+      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand (optional)" value={p.brand||""} onChange={e=>setP(prev=>({...prev,brand:e.target.value}))}/>
+      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={p.link||""} onChange={e=>setP(prev=>({...prev,link:e.target.value}))}/>
       <div style={{display:"flex",gap:8,marginBottom:10}}>
         {["skin","hair","treatment"].map(cat=>(
-          <button key={cat} className={`dow-chip ${editProd.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
-            onClick={()=>setEditProd(p=>({...p,category:cat}))}>
+          <button key={cat} className={`dow-chip ${p.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
+            onClick={()=>setP(prev=>({...prev,category:cat}))}>
             {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
           </button>
         ))}
       </div>
       <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
         {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
-          <button key={tag} className={`dow-chip ${(editProd.tags||[]).includes(tag)?"on":""}`}
+          <button key={tag} className={`dow-chip ${(p.tags||[]).includes(tag)?"on":""}`}
             style={{fontSize:".74rem",padding:"4px 10px"}}
-            onClick={()=>setEditProd(p=>({...p,tags:(p.tags||[]).includes(tag)?(p.tags||[]).filter(t=>t!==tag):[...(p.tags||[]),tag]}))}>
+            onClick={()=>setP(prev=>({...prev,tags:(prev.tags||[]).includes(tag)?(prev.tags||[]).filter(t=>t!==tag):[...(prev.tags||[]),tag]}))}>
             {tag}
           </button>
         ))}
@@ -1494,43 +1496,40 @@ function ProductForm({ editProd, setEditProd, isEditingProd, onSave, onClose }) 
       <div style={{marginBottom:12}}>
         <div style={{fontSize:".7rem",color:"#a08070",marginBottom:8,letterSpacing:".08em",textTransform:"uppercase"}}>Frequency <span style={{textTransform:"none",letterSpacing:0,color:"#c0b0a8"}}>(optional)</span></div>
         <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-          <button className={`dow-chip ${editProd.frequency==="Daily"?"on":""}`}
-            style={{fontSize:".74rem",padding:"5px 14px",fontWeight:editProd.frequency==="Daily"?600:400}}
-            onClick={()=>setEditProd(p=>({...p,frequency:p.frequency==="Daily"?"":"Daily"}))}>
+          <button className={`dow-chip ${p.frequency==="Daily"?"on":""}`}
+            style={{fontSize:".74rem",padding:"5px 14px",fontWeight:p.frequency==="Daily"?600:400}}
+            onClick={()=>setP(prev=>({...prev,frequency:prev.frequency==="Daily"?"":"Daily"}))}>
             Daily
           </button>
           <span style={{color:"#d0b8a8",fontSize:".8rem"}}>or</span>
           <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
             {[2,3,4,5,6,7].map(n=>{
-              const unit = editProd._freqUnit||"week";
+              const unit = p._freqUnit||"week";
               const val = n+"x "+unit;
-              const active = editProd.frequency===val;
+              const active = p.frequency===val;
               return <button key={n} className={"dow-chip "+(active?"on":"")}
                 style={{fontSize:".78rem",padding:"5px 10px",minWidth:36}}
-                onClick={()=>setEditProd(p=>({...p,frequency:active?"":val,_freqUnit:unit}))}>
+                onClick={()=>setP(prev=>({...prev,frequency:active?"":val,_freqUnit:unit}))}>
                 {n}x
               </button>;
             })}
           </div>
           <div style={{display:"flex",gap:4}}>
             {["week","month"].map(u=>{
-              const n = editProd.frequency?.match(/^(\d+)x /)?.[1];
-              const active = editProd._freqUnit===u||(editProd.frequency&&editProd.frequency.endsWith(u)&&!editProd._freqUnit);
-              return <button key={u} className={"dow-chip "+((active&&editProd.frequency!=="Daily")?"on":"")}
+              const n = p.frequency?.match(/^(\d+)x /)?.[1];
+              const active = p._freqUnit===u||(p.frequency&&p.frequency.endsWith(u)&&!p._freqUnit);
+              return <button key={u} className={"dow-chip "+((active&&p.frequency!=="Daily")?"on":"")}
                 style={{fontSize:".74rem",padding:"5px 12px"}}
-                onClick={()=>{
-                  const num = n||2;
-                  setEditProd(p=>({...p,_freqUnit:u,frequency:num+"x "+u}));
-                }}>
+                onClick={()=>{ const num=n||2; setP(prev=>({...prev,_freqUnit:u,frequency:num+"x "+u})); }}>
                 {u}
               </button>;
             })}
           </div>
         </div>
-        {editProd.frequency&&<div style={{marginTop:6,fontSize:".72rem",color:"#b07a5e",fontStyle:"italic"}}>→ {editProd.frequency}</div>}
+        {p.frequency&&<div style={{marginTop:6,fontSize:".72rem",color:"#b07a5e",fontStyle:"italic"}}>→ {p.frequency}</div>}
       </div>
-      <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes (optional)" value={editProd.notes||""} onChange={e=>setEditProd(p=>({...p,notes:e.target.value}))}/>
-      <button className="save-btn" onClick={onSave} disabled={!editProd.name.trim()} style={{opacity:editProd.name.trim()?1:.4}}>
+      <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes (optional)" value={p.notes||""} onChange={e=>setP(prev=>({...prev,notes:e.target.value}))}/>
+      <button className="save-btn" onClick={()=>onSave(p)} disabled={!p.name.trim()} style={{opacity:p.name.trim()?1:.4}}>
         {isEditingProd?"Save Changes":"Add to My Routine"}
       </button>
     </div>
@@ -1565,6 +1564,9 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   const txProds   = snapProducts.filter(p=>p.category==="treatment");
 
   const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, image:"", link:"", notes:"", tags:[], frequency:"" });
+
+  const handleCloseForm = useCallback(() => { setShowForm(false); setEditProd(null); setIsEditingProd(false); }, []);
+  const handleSetEditProd = useCallback((fn) => setEditProd(fn), []);
 
   const hasChanges = draftChanges && (draftChanges.added.length>0 || draftChanges.removed.length>0 || draftChanges.edited.length>0);
 
@@ -1609,22 +1611,22 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
     setChooseCat(false);
   };
 
-  const save = async () => {
-    if (!editProd.name.trim()) return;
-    await onSaveProduct(editProd);
+  const save = async (prodData) => {
+    const data = prodData || editProd;
+    if (!data.name.trim()) return;
+    await onSaveProduct(data);
     if (!isEditingProd) {
-      // New product
       if (activeSnap) {
-        if (!activeSnap.products.find(p=>p.product_id===editProd.id)) {
-          await onAddToSnapshot(activeSnap.id, editProd.id);
-          if (draftChanges) setDraftChanges(prev=>({...prev, added:[...prev.added, editProd.name]}));
+        if (!activeSnap.products.find(p=>p.product_id===data.id)) {
+          await onAddToSnapshot(activeSnap.id, data.id);
+          if (draftChanges) setDraftChanges(prev=>({...prev, added:[...prev.added, data.name]}));
         }
       } else {
         const newSnapId = await onOpenSnapshot(true);
-        if (newSnapId) await onAddToSnapshot(newSnapId, editProd.id);
+        if (newSnapId) await onAddToSnapshot(newSnapId, data.id);
       }
     } else {
-      if (draftChanges) setDraftChanges(prev=>({...prev, edited:[...prev.edited, editProd.name]}));
+      if (draftChanges) setDraftChanges(prev=>({...prev, edited:[...prev.edited, data.name]}));
     }
     setShowForm(false); setEditProd(null); setIsEditingProd(false);
   };
@@ -1818,7 +1820,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
               )}
 
               {/* Add product form — inside the card */}
-              {showForm&&editProd&&<ProductForm editProd={editProd} setEditProd={setEditProd} isEditingProd={isEditingProd} onSave={save} onClose={()=>{setShowForm(false);setEditProd(null);setIsEditingProd(false);}}/>}
+              {showForm&&editProd&&<ProductForm key={editProd.id} initialData={editProd} isEditingProd={isEditingProd} onSave={save} onClose={handleCloseForm}/>}
 
               {/* Add product button — always visible in draft mode */}
               {!showForm&&isDraft&&!chooseCat&&(
