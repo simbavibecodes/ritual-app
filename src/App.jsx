@@ -1012,8 +1012,7 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
       })
       .filter(Boolean)
       .slice(0, 30)
-      .join("
-");
+      .join("\n");
   };
 
   const journalEntryCount = () => {
