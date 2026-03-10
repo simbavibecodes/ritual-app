@@ -557,11 +557,38 @@ function ProductSearch({ category, onSelect }) {
   const search = async () => {
     if (!query.trim()) return;
     setLoading(true); setSearched(true);
+    const q = query.trim().toLowerCase();
     try {
-      const res = await fetch(`https://world.openbeautyfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=8`);
-      const data = await res.json();
-      setResults((data.products || []).filter(p => p.product_name));
-    } catch(e) { setResults([]); }
+      // 1. Search our global DB first (Supabase REST)
+      const supaUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supaKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const dbRes = await fetch(
+        supaUrl + "/rest/v1/global_products?or=(name.ilike.*" + encodeURIComponent(q) + "*,brand.ilike.*" + encodeURIComponent(q) + "*)&limit=5&order=search_count.desc",
+        { headers: { apikey: supaKey, Authorization: "Bearer " + supaKey } }
+      );
+      const dbData = dbRes.ok ? await dbRes.json() : [];
+      const globalResults = (dbData || []).map(p => ({
+        product_name: p.name,
+        brands: p.brand,
+        image_small_url: "",
+        global_product_id: p.id,
+        ingredients: p.ingredients || [],
+        _source: "global"
+      }));
+
+      // 2. Also search OpenBeautyFacts
+      let openResults = [];
+      try {
+        const res = await fetch("https://world.openbeautyfacts.org/cgi/search.pl?search_terms=" + encodeURIComponent(query) + "&search_simple=1&action=process&json=1&page_size=6");
+        const data = await res.json();
+        openResults = (data.products || []).filter(p => p.product_name).map(p => ({...p, _source:"open"}));
+      } catch(e) {}
+
+      // Merge — global results first, deduplicate by name+brand
+      const seen = new Set(globalResults.map(p => (p.product_name + "|" + p.brands).toLowerCase()));
+      const deduped = openResults.filter(p => !seen.has((p.product_name + "|" + (p.brands||"")).toLowerCase()));
+      setResults([...globalResults, ...deduped]);
+    } catch(e) { console.error(e); setResults([]); }
     setLoading(false);
   };
 
@@ -578,9 +605,17 @@ function ProductSearch({ category, onSelect }) {
       </div>
       {searched&&results.length===0&&!loading&&<div style={{fontSize:".78rem",color:"#a08070",fontStyle:"italic",marginBottom:8}}>No results — fill in manually below</div>}
       {results.length>0&&(
-        <div style={{maxHeight:200,overflowY:"auto",border:"1px solid #e8d8cc",borderRadius:12,marginBottom:8}}>
+        <div style={{maxHeight:220,overflowY:"auto",border:"1px solid #e8d8cc",borderRadius:12,marginBottom:8}}>
           {results.map((p,i)=>(
-            <div key={i} onClick={()=>onSelect({name:p.product_name||"",brand:p.brands||"",image:p.image_small_url||"",link:""})}
+            <div key={i}
+              onClick={()=>onSelect({
+                name:p.product_name||"",
+                brand:p.brands||"",
+                image:p.image_small_url||"",
+                link:"",
+                global_product_id:p.global_product_id||null,
+                ingredients:p.ingredients||[]
+              })}
               style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderBottom:"1px solid #f0e0d4",cursor:"pointer",background:"#fff8f3"}}
               onMouseEnter={e=>e.currentTarget.style.background="#fdf0e8"}
               onMouseLeave={e=>e.currentTarget.style.background="#fff8f3"}>
@@ -590,7 +625,10 @@ function ProductSearch({ category, onSelect }) {
               }
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:".82rem",color:"#3a2e27",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.product_name}</div>
-                {p.brands&&<div style={{fontSize:".72rem",color:"#a08070"}}>{p.brands}</div>}
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  {p.brands&&<span style={{fontSize:".72rem",color:"#a08070"}}>{p.brands}</span>}
+                  {p._source==="global"&&<span style={{fontSize:".62rem",background:p.ingredients?.length?"#e8f4e8":"#f0e8e0",color:p.ingredients?.length?"#5a8a5a":"#a08070",borderRadius:6,padding:"1px 6px"}}>{p.ingredients?.length?"✓ ingredients known":"in our DB"}</span>}
+                </div>
               </div>
             </div>
           ))}
@@ -1023,21 +1061,29 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
 
   const buildPrompt = (useNotes) => {
     const notes = useNotes ? getNotes() : "";
+    const hasIngredients = productList.some(p => p.ingredients?.length > 0);
+    const needsSearch = productList.some(p => !p.ingredients?.length);
+    const formatWithIngredients = (arr) => arr.map(p => {
+      const base = p.name + (p.brand ? " by " + p.brand : "") + (p.frequency ? " (" + p.frequency + ")" : "");
+      return p.ingredients?.length ? base + " [ingredients: " + p.ingredients.slice(0,15).join(", ") + "]" : base;
+    }).join("\n  ");
     const parts = [
-      "You are a skincare and haircare expert. Analyze this beauty routine. Be concise and practical.",
+      "You are a skincare and haircare formulation expert. Analyze this beauty routine based on actual ingredients.",
+      hasIngredients ? "Ingredient data is provided — analyze ingredient-level interactions, actives, and conflicts." : "",
+      needsSearch ? "For products without ingredients listed, look them up via web search." : "All ingredients are provided — no web search needed.",
       "",
-      skinProds.length > 0 ? "SKIN PRODUCTS: " + formatList(skinProds) : "",
-      hairProds.length > 0 ? "HAIR PRODUCTS: " + formatList(hairProds) : "",
-      txProds.length > 0 ? "TREATMENTS: " + formatList(txProds) : "",
-      notes ? "\nJOURNAL NOTES FROM THIS PERIOD:\n" + notes : "",
+      skinProds.length > 0 ? "SKIN PRODUCTS:\n  " + formatWithIngredients(skinProds) : "",
+      hairProds.length > 0 ? "HAIR PRODUCTS:\n  " + formatWithIngredients(hairProds) : "",
+      txProds.length > 0 ? "TREATMENTS:\n  " + formatWithIngredients(txProds) : "",
+      notes ? "\nJOURNAL NOTES:\n" + notes : "",
       "",
       "Respond ONLY with this exact JSON (no markdown, no citations, no extra text):",
       JSON.stringify({
-        strengths: "2-3 sentences on what this routine excels at",
-        cautions: "2-3 sentences on conflicts or risks. If none, say so briefly.",
+        strengths: "2-3 sentences on what this routine excels at, citing specific ingredients or actives",
+        cautions: "2-3 sentences on ingredient conflicts or over-exfoliation risks. If none, say so briefly.",
         synergies: skinProds.length > 0 && hairProds.length > 0
-          ? "Separate with SKIN SYNERGIES: and HAIR SYNERGIES: labels. 1-2 sentences each."
-          : "1-2 sentences on products working especially well together",
+          ? "SKIN SYNERGIES: [1-2 sentences] HAIR SYNERGIES: [1-2 sentences]"
+          : "1-2 sentences on ingredients that work especially well together",
         journal_insights: notes ? "1-2 sentences on what the journal reveals about real-world performance" : null,
         recommendation: "1-2 sentences on the single most impactful change"
       }, null, 2)
@@ -1048,15 +1094,19 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
   const doAnalyze = async (useNotes) => {
     setStatus("loading");
     try {
+      const allHaveIngredients = productList.every(p => p.ingredients?.length > 0);
+      const body = {
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: buildPrompt(useNotes) }],
+        userId: undefined,
+        action: "analysis"
+      };
+      if (!allHaveIngredients) body.tools = [{ type: "web_search_20250305", name: "web_search" }];
       const res = await fetch("/api/claude", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          tools: [{ type: "web_search_20250305", name: "web_search" }],
-          messages: [{ role: "user", content: buildPrompt(useNotes) }]
-        })
+        body: JSON.stringify(body)
       });
       if (!res.ok) { console.error("API error", res.status, await res.text()); setStatus("error"); return; }
       const data = await res.json();
@@ -1110,7 +1160,7 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
       const res = await fetch("/api/claude", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 600, messages })
+        body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 600, messages })
       });
       if (!res.ok) {
         const errText = await res.text();
@@ -1629,7 +1679,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
         <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{isEditingProd?"Edit Product":"Add Product"}</div>
         <button onClick={()=>{setShowForm(false);setEditProd(null);setIsEditingProd(false);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
       </div>
-      {!isEditingProd&&<ProductSearch category={editProd.category} onSelect={({name,brand,image,link})=>setEditProd(p=>({...p,name,brand,image:image||"",link:link||""}))}/>}
+      {!isEditingProd&&<ProductSearch category={editProd.category} onSelect={({name,brand,image,link,global_product_id,ingredients})=>setEditProd(p=>({...p,name,brand,image:image||"",link:link||"",global_product_id:global_product_id||null,ingredients:ingredients||[]}))}/>}
       <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editProd.name} onChange={e=>setEditProd(p=>({...p,name:e.target.value}))}/>
       <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand (optional)" value={editProd.brand||""} onChange={e=>setEditProd(p=>({...p,brand:e.target.value}))}/>
       <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={editProd.link||""} onChange={e=>setEditProd(p=>({...p,link:e.target.value}))}/>
@@ -2674,9 +2724,28 @@ export default function App({ user }) {
   // ── Products CRUD ──
   const saveProduct = async (p) => {
     if (!user) return;
-    const row = { id:p.id, user_id:user.id, name:p.name, brand:p.brand||"", category:p.category||"skin", image:p.image||"", link:p.link||"", notes:p.notes||"", tags:p.tags||[] };
+    const row = { id:p.id, user_id:user.id, name:p.name, brand:p.brand||"", category:p.category||"skin", image:p.image||"", link:p.link||"", notes:p.notes||"", tags:p.tags||[], frequency:p.frequency||"", global_product_id:p.global_product_id||null, ingredients:p.ingredients||[] };
     await supabase.from("products").upsert(row, {onConflict:"id"});
     setProducts(prev => { const idx=prev.findIndex(x=>x.id===p.id); return idx>=0?prev.map(x=>x.id===p.id?p:x):[p,...prev]; });
+    // Background ingredient lookup — fire and forget
+    if (!p.ingredients?.length && p.name) fetchIngredients(p);
+  };
+
+  const fetchIngredients = async (p) => {
+    try {
+      const res = await fetch("/api/ingredients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name:p.name, brand:p.brand||"", category:p.category||"skin", globalProductId:p.global_product_id||null })
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.ingredients?.length > 0) {
+        const updates = { ingredients: data.ingredients, global_product_id: data.globalProductId };
+        await supabase.from("products").update(updates).eq("id", p.id).eq("user_id", user.id);
+        setProducts(prev => prev.map(x => x.id===p.id ? {...x, ...updates} : x));
+      }
+    } catch(e) { console.error("Ingredient fetch error:", e); }
   };
   const deleteProduct = async (id) => {
     await supabase.from("products").delete().eq("id",id).eq("user_id",user.id);
