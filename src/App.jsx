@@ -995,7 +995,7 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
   const txProds   = productList.filter(p => p.category === "treatment");
   const formatList = arr => arr.map(p => `${p.name}${p.brand ? " by " + p.brand : ""}${p.frequency ? " (" + p.frequency + ")" : ""}`).join(", ");
 
-  const stripCitations = text => text ? text.replace(/]*>|<\/antml:cite>/g, "").replace(/\[[\d,\s-]+\]/g, "").trim() : text;
+  const stripCitations = text => text ? text.replace(/<cite[^>]*>|<\/cite>/g, "").replace(/\[[\d,\s-]+\]/g, "").trim() : text;
 
   const getNotes = () => {
     if (!entries || !dateRange) return "";
@@ -1061,7 +1061,7 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
       if (!res.ok) { console.error("API error", res.status, await res.text()); setStatus("error"); return; }
       const data = await res.json();
       const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
-      const clean = text.replace(/]*>[\s\S]*?<\/antml:cite>/g, "").replace(/]*>/g, "").replace(/<\/antml:cite>/g, "");
+      const clean = text.replace(/<cite[^>]*>[\s\S]*?<\/cite>/g, "").replace(/<cite[^>]*>/g, "").replace(/<\/cite>/g, "");
       const jsonMatch = clean.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
