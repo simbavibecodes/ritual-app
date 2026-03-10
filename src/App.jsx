@@ -992,9 +992,9 @@ function RoutineAnalysis({ products, snapProducts, onClose }) {
 
   const formatList = (arr) => arr.map(p => `${p.name}${p.brand ? ` by ${p.brand}` : ""}`).join(", ");
 
-  const analyse = async () => {
+  const analyze = async () => {
     setStatus("loading");
-    const prompt = `You are a skincare and haircare expert. Analyse this person's current beauty routine and give a brief, practical analysis.
+    const prompt = `You are a skincare and haircare expert. Analyze this person's current beauty routine and give a brief, practical analysis.
 
 Current routine:
 ${skinProds.length > 0 ? `SKIN: ${formatList(skinProds)}` : ""}
@@ -1054,7 +1054,7 @@ Give your analysis in exactly this JSON structure (no markdown, no extra text, p
       {status==="idle"&&(
         <div style={{textAlign:"center",padding:"16px 0"}}>
           <div style={{fontSize:".82rem",color:"#a08070",marginBottom:16,lineHeight:1.6}}>
-            Claude will look up your products and analyse ingredient interactions, synergies, and give personalised recommendations.
+            Claude will look up your products and analyze ingredient interactions, synergies, and give personalised recommendations.
           </div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center",marginBottom:20}}>
             {productList.map(p=>(
@@ -1063,9 +1063,9 @@ Give your analysis in exactly this JSON structure (no markdown, no extra text, p
               </span>
             ))}
           </div>
-          <button onClick={analyse}
+          <button onClick={analyze}
             style={{background:"#3a2e27",border:"none",borderRadius:12,padding:"13px 28px",color:"#f7ece4",fontSize:".86rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".06em",fontWeight:500}}>
-            Analyse My Routine
+            Analyze My Routine
           </button>
         </div>
       )}
@@ -1104,16 +1104,18 @@ Give your analysis in exactly this JSON structure (no markdown, no extra text, p
   );
 }
 
-function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onRemoveFromSnapshot, onFinaliseBase, onBack }) {
+function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onRemoveFromSnapshot, onFinalizeBase, onBack }) {
   const [tab, setTab] = useState("current");
   const [showForm, setShowForm] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [editProd, setEditProd] = useState(null);
   const [chooseCat, setChooseCat] = useState(false);
-  const [isEditing, setIsEditing] = useState(false); // true = editing existing product
+  const [isEditing, setIsEditing] = useState(false);
+  const [confirmFinalize, setConfirmFinalize] = useState(false);
+  const [confirmNewSnap, setConfirmNewSnap] = useState(false); // "something changed?"
 
   // Base = open snapshot with is_base=true (draft mode)
-  // Finalised = open snapshot with is_base=false
+  // Finalized = open snapshot with is_base=false
   const baseSnap    = snapshots.find(s=>!s.ended_at && s.is_base);
   const currentSnap = snapshots.find(s=>!s.ended_at && !s.is_base);
   const activeSnap  = baseSnap || currentSnap; // whichever is open
@@ -1149,8 +1151,8 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
   const removeFromActive = async (snapProdId) => {
     if (!activeSnap) return;
     if (currentSnap) {
-      // Finalised — removing triggers new snapshot
-      await onOpenSnapshot(false); // closes current, opens new finalised snap
+      // Finalized — removing triggers new snapshot
+      await onOpenSnapshot(false); // closes current, opens new finalized snap
       // The new snap gets created without this product — handled by caller
     }
     await onRemoveFromSnapshot(activeSnap.id, snapProdId);
@@ -1172,12 +1174,12 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
       }
       <div style={{flex:1,minWidth:0}}>
         <div style={{fontSize:".88rem",fontWeight:500,color:"#3a2e27"}}>{p.name}</div>
-        {p.brand&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:1}}>{p.brand}</div>}
+        {p.brand&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:1}}>{p.brand}{p.frequency&&<span style={{marginLeft:6,background:"#f0e8f4",borderRadius:8,padding:"1px 7px",fontSize:".68rem",color:"#7a6a8a"}}>{p.frequency}</span>}</div>}
         {p.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>{p.tags.map(t=><span key={t} style={{fontSize:".66rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 7px",color:"#8a6858"}}>{t}</span>)}</div>}
         {p.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:4,fontStyle:"italic"}}>{p.notes}</div>}
         <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
           {p.link&&<button onClick={()=>window.open(p.link,"_blank")} style={{background:"#b07a5e",border:"none",borderRadius:8,padding:"4px 10px",color:"#fff",cursor:"pointer",fontSize:".72rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
-          <button className="ghost-btn" style={{fontSize:".72rem",padding:"3px 8px"}} onClick={()=>openEditForm(p)}>Edit</button>
+          {baseSnap&&<button className="ghost-btn" style={{fontSize:".72rem",padding:"3px 8px"}} onClick={()=>openEditForm(p)}>Edit</button>}
           <button className="ghost-btn" style={{fontSize:".72rem",padding:"3px 8px",color:"#c07060"}} onClick={()=>removeFromActive(p.snapProdId)}>Remove</button>
         </div>
       </div>
@@ -1237,6 +1239,18 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
           </button>
         ))}
       </div>
+      <div style={{marginBottom:12}}>
+        <div style={{fontSize:".7rem",color:"#a08070",marginBottom:6,letterSpacing:".08em",textTransform:"uppercase"}}>Frequency <span style={{textTransform:"none",letterSpacing:0,color:"#c0b0a8"}}>(optional)</span></div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {["Daily","2x a week","Weekly","2x a month","Monthly"].map(f=>(
+            <button key={f} className={`dow-chip ${editProd.frequency===f?"on":""}`}
+              style={{fontSize:".74rem",padding:"5px 12px"}}
+              onClick={()=>setEditProd(p=>({...p,frequency:p.frequency===f?"":f}))}>
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
       <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes (optional)" value={editProd.notes||""} onChange={e=>setEditProd(p=>({...p,notes:e.target.value}))}/>
       <button className="save-btn" onClick={save} disabled={!editProd.name.trim()} style={{opacity:editProd.name.trim()?1:.4}}>
         {isEditing?"Save Changes":"Add to My Routine"}
@@ -1268,12 +1282,12 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
           {baseSnap&&(
             <div style={{background:"#fdf6e8",border:"1.5px solid #e8d0a0",borderRadius:14,padding:"14px 16px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
-                <div style={{fontSize:".78rem",fontWeight:600,color:"#7a5c28",marginBottom:2}}>📋 Draft — not yet finalised</div>
-                <div style={{fontSize:".72rem",color:"#a08050"}}>Add all your products then tap Finalise when ready</div>
+                <div style={{fontSize:".78rem",fontWeight:600,color:"#7a5c28",marginBottom:2}}>📋 Draft — not yet finalized</div>
+                <div style={{fontSize:".72rem",color:"#a08050"}}>Add all your products then tap Finalize when ready</div>
               </div>
-              <button onClick={()=>onFinaliseBase(baseSnap.id)}
+              <button onClick={()=>setConfirmFinalize(true)}
                 style={{background:"#b07a5e",border:"none",borderRadius:10,padding:"8px 14px",color:"#fff",fontSize:".78rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap",fontWeight:500}}>
-                Finalise
+                Finalize
               </button>
             </div>
           )}
@@ -1305,14 +1319,25 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
           )}
 
           {activeSnap&&snapProducts.length>0&&!baseSnap&&(
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-              <div style={{fontSize:".68rem",color:"#a08070",letterSpacing:".06em"}}>
-                Current routine since {new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}
+            <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"16px 18px",marginBottom:18}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                <div>
+                  <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#5a3a27"}}>
+                    {new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})} — Present
+                  </div>
+                  <div style={{fontSize:".72rem",color:"#a08070",marginTop:3}}>{snapProducts.length} product{snapProducts.length!==1?"s":""} · {skinProds.length} skin · {hairProds.length} hair{txProds.length>0?` · ${txProds.length} treatment`:""}</div>
+                </div>
               </div>
-              {!showAnalysis&&<button onClick={()=>setShowAnalysis(true)}
-                style={{background:"#3a2e27",border:"none",borderRadius:10,padding:"6px 12px",color:"#f7ece4",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".04em",whiteSpace:"nowrap"}}>
-                ✦ Analyse
-              </button>}
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <button onClick={()=>setShowAnalysis(v=>!v)}
+                  style={{background:"#3a2e27",border:"none",borderRadius:10,padding:"8px 16px",color:"#f7ece4",fontSize:".76rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".04em",fontWeight:500}}>
+                  {showAnalysis?"Close Analysis":"Analyze My Routine"}
+                </button>
+                <button onClick={()=>setConfirmNewSnap(true)}
+                  style={{background:"none",border:"1px solid #e8d8cc",borderRadius:10,padding:"8px 14px",color:"#a08070",fontSize:".74rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+                  Something changed?
+                </button>
+              </div>
             </div>
           )}
           {showAnalysis&&activeSnap&&<RoutineAnalysis products={products} snapProducts={activeSnap.products} onClose={()=>setShowAnalysis(false)}/>}
@@ -1328,6 +1353,44 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
           {pastSnaps.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No past snapshots yet — they appear here when your routine changes</div>}
           {pastSnaps.map(snap=><SnapCard key={snap.id} snap={snap}/>)}
         </>
+      )}
+
+      {/* Finalize confirmation */}
+      {confirmFinalize&&(
+        <div className="overlay" onClick={()=>setConfirmFinalize(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-title" style={{marginBottom:12}}>Finalize Your Routine?</div>
+            <div style={{fontSize:".84rem",color:"#6a5048",lineHeight:1.7,marginBottom:20}}>
+              Once finalized, your routine becomes a permanent snapshot. You won't be able to edit individual products — any future changes will automatically start a new snapshot so your history stays accurate.
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setConfirmFinalize(false)} className="ghost-btn" style={{flex:1}}>Cancel</button>
+              <button onClick={()=>{setConfirmFinalize(false);onFinalizeBase(baseSnap.id);}}
+                style={{flex:1,background:"#b07a5e",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
+                Yes, Finalize
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Something changed confirmation */}
+      {confirmNewSnap&&(
+        <div className="overlay" onClick={()=>setConfirmNewSnap(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-title" style={{marginBottom:12}}>Start a New Snapshot?</div>
+            <div style={{fontSize:".84rem",color:"#6a5048",lineHeight:1.7,marginBottom:20}}>
+              This will close your current routine snapshot and start a fresh one. Your current routine will be preserved in Snapshot History exactly as it is.
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setConfirmNewSnap(false)} className="ghost-btn" style={{flex:1}}>Cancel</button>
+              <button onClick={async()=>{setConfirmNewSnap(false);const id=await onOpenSnapshot(false);}}
+                style={{flex:1,background:"#b07a5e",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
+                Yes, Start New
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1930,7 +1993,7 @@ export default function App({ user }) {
         }
         // Load purchases
         const { data: purchRows } = await supabase.from("purchases").select("*").eq("user_id", user.id).order("date", {ascending:false});
-        if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[], image:r.image||'', link:r.link||'' })));
+        if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[], image:r.image||'', link:r.link||'', frequency:r.frequency||'' })));
         // Load treatments
         const { data: txRows } = await supabase.from("treatments").select("*").eq("user_id", user.id);
         if (txRows) setTreatments(txRows.map(r=>({ id:r.id, name:r.name, type:r.type, dates:r.dates||[], completedDates:r.completed_dates||[], location:r.location||'' })));
@@ -2111,7 +2174,7 @@ export default function App({ user }) {
         id: p.id, user_id: user.id, name: p.name, brand: p.brand||"",
         category: p.category, price: parseFloat(p.price)||0,
         quantity: parseInt(p.quantity)||1, date: p.date, notes: p.notes||"",
-        tags: p.tags||[], image: p.image||'', link: p.link||'',
+        tags: p.tags||[], image: p.image||'', link: p.link||'', frequency: p.frequency||'',
         updated_at: new Date().toISOString()
       }, { onConflict: "id" });
       setPurchases(prev => { const f=prev.filter(x=>x.id!==p.id); return [p,...f].sort((a,b)=>b.date.localeCompare(a.date)); });
@@ -2179,11 +2242,11 @@ export default function App({ user }) {
     return newSnap.id;
   };
 
-  const finaliseBase = async (baseId) => {
-    // Convert base snapshot to finalised (is_base = false)
+  const finalizeBase = async (baseId) => {
+    // Convert base snapshot to finalized (is_base = false)
     await supabase.from("snapshots").update({is_base:false}).eq("id",baseId);
     setSnapshots(prev=>prev.map(s=>s.id===baseId?{...s,is_base:false}:s));
-    showT("Routine finalised ✓");
+    showT("Routine finalized ✓");
   };
   const addProductToSnapshot = async (snapId, productId) => {
     const id = crypto.randomUUID();
@@ -2366,7 +2429,7 @@ export default function App({ user }) {
       onOpenSnapshot={openNewSnapshot}
       onAddToSnapshot={addProductToSnapshot}
       onRemoveFromSnapshot={removeProductFromSnapshot}
-      onFinaliseBase={finaliseBase}
+      onFinalizeBase={finalizeBase}
       onBack={()=>setPageView(null)}/></div>
   );
   if (pageView==="wishlist") return (
