@@ -1221,12 +1221,7 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
         const parts = [];
         if (draftChanges.added.length) parts.push(`Added: ${draftChanges.added.join(", ")}`);
         if (draftChanges.removed.length) parts.push(`Removed: ${draftChanges.removed.join(", ")}`);
-        alert(`New snapshot created ✓
-
-${parts.join("
-")}
-
-Your previous routine has been saved to Snapshot History.`);
+        alert("New snapshot created ✓\n\n" + parts.join("\n") + "\n\nYour previous routine has been saved to Snapshot History.");
       }
       // Edits only (link/frequency/notes) — no new snapshot, already saved
     }
