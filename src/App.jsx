@@ -1106,26 +1106,71 @@ Give your analysis in exactly this JSON structure (no markdown, no extra text, p
 
 function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onRemoveFromSnapshot, onFinalizeBase, onBack }) {
   const [tab, setTab] = useState("current");
+  const [editMode, setEditMode] = useState(false); // draft edit mode on finalized routine
   const [showForm, setShowForm] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [editProd, setEditProd] = useState(null);
   const [chooseCat, setChooseCat] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditingProd, setIsEditingProd] = useState(false);
   const [confirmFinalize, setConfirmFinalize] = useState(false);
-  const [confirmNewSnap, setConfirmNewSnap] = useState(false); // "something changed?"
+  const [draftChanges, setDraftChanges] = useState(null); // {added:[], removed:[], edited:[]} tracked during edit mode
+  const [unsavedWarning, setUnsavedWarning] = useState(false);
+  const [pendingNav, setPendingNav] = useState(null); // callback to run after discard/save
 
-  // Base = open snapshot with is_base=true (draft mode)
-  // Finalized = open snapshot with is_base=false
-  const baseSnap    = snapshots.find(s=>!s.ended_at && s.is_base);
-  const currentSnap = snapshots.find(s=>!s.ended_at && !s.is_base);
-  const activeSnap  = baseSnap || currentSnap; // whichever is open
-  const pastSnaps   = snapshots.filter(s=>s.ended_at).sort((a,b)=>b.started_at.localeCompare(a.started_at));
+  const draftSnap    = snapshots.find(s=>!s.ended_at && s.is_base);
+  const currentSnap  = snapshots.find(s=>!s.ended_at && !s.is_base);
+  const activeSnap   = draftSnap || currentSnap;
+  const isDraft      = !!draftSnap || editMode;
+  const pastSnaps    = snapshots.filter(s=>s.ended_at).sort((a,b)=>b.started_at.localeCompare(a.started_at));
 
-  const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, image:"", link:"", notes:"", tags:[] });
+  const snapProducts = activeSnap
+    ? activeSnap.products.map(sp=>({ snapProdId:sp.id, ...products.find(p=>p.id===sp.product_id) })).filter(p=>p&&p.id)
+    : [];
+  const skinProds = snapProducts.filter(p=>p.category==="skin");
+  const hairProds = snapProducts.filter(p=>p.category==="hair");
+  const txProds   = snapProducts.filter(p=>p.category==="treatment");
+
+  const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, image:"", link:"", notes:"", tags:[], frequency:"" });
+
+  const hasChanges = draftChanges && (draftChanges.added.length>0 || draftChanges.removed.length>0 || draftChanges.edited.length>0);
+
+  const tryNavigateAway = (callback) => {
+    if (editMode && hasChanges) {
+      setPendingNav(()=>callback);
+      setUnsavedWarning(true);
+    } else {
+      if (editMode) setEditMode(false);
+      callback();
+    }
+  };
+
+  const enterEditMode = () => {
+    setEditMode(true);
+    setDraftChanges({added:[], removed:[], edited:[]});
+  };
+
+  const discardChanges = () => {
+    setEditMode(false);
+    setDraftChanges(null);
+    setShowForm(false);
+    setEditProd(null);
+    setUnsavedWarning(false);
+    if (pendingNav) { pendingNav(); setPendingNav(null); }
+  };
+
+  const saveDraft = async () => {
+    // Save current state as a draft snapshot (is_base=true keeps it editable)
+    if (!draftSnap && currentSnap) {
+      // mark current as base/draft
+      await onFinalizeBase(currentSnap.id, true); // pass true = convert to draft
+    }
+    setUnsavedWarning(false);
+    if (pendingNav) { pendingNav(); setPendingNav(null); }
+  };
 
   const openEditForm = (prod) => {
     setEditProd({...prod});
-    setIsEditing(true);
+    setIsEditingProd(true);
     setShowForm(true);
     setChooseCat(false);
   };
@@ -1133,38 +1178,61 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
   const save = async () => {
     if (!editProd.name.trim()) return;
     await onSaveProduct(editProd);
-    if (!isEditing) {
-      // New product — add to active snap or open base snap
+    if (!isEditingProd) {
+      // New product
       if (activeSnap) {
         if (!activeSnap.products.find(p=>p.product_id===editProd.id)) {
           await onAddToSnapshot(activeSnap.id, editProd.id);
+          if (draftChanges) setDraftChanges(prev=>({...prev, added:[...prev.added, editProd.name]}));
         }
       } else {
-        const newSnapId = await onOpenSnapshot(true); // true = is_base
+        const newSnapId = await onOpenSnapshot(true);
         if (newSnapId) await onAddToSnapshot(newSnapId, editProd.id);
       }
+    } else {
+      if (draftChanges) setDraftChanges(prev=>({...prev, edited:[...prev.edited, editProd.name]}));
     }
-    // If editing existing product, no snapshot change needed — just update product data
-    setShowForm(false); setEditProd(null); setIsEditing(false);
+    setShowForm(false); setEditProd(null); setIsEditingProd(false);
   };
 
-  const removeFromActive = async (snapProdId) => {
+  const removeProduct = async (snapProdId, prodName) => {
     if (!activeSnap) return;
-    if (currentSnap) {
-      // Finalized — removing triggers new snapshot
-      await onOpenSnapshot(false); // closes current, opens new finalized snap
-      // The new snap gets created without this product — handled by caller
-    }
     await onRemoveFromSnapshot(activeSnap.id, snapProdId);
+    if (draftChanges) setDraftChanges(prev=>({...prev, removed:[...prev.removed, prodName]}));
   };
 
-  const snapProducts = activeSnap
-    ? activeSnap.products.map(sp=>({ snapProdId:sp.id, ...products.find(p=>p.id===sp.product_id) })).filter(p=>p && p.id)
-    : [];
+  const doFinalize = async () => {
+    setConfirmFinalize(false);
+    if (draftSnap) {
+      // First time finalize
+      await onFinalizeBase(draftSnap.id);
+    } else if (editMode && currentSnap) {
+      // Re-finalize after edit
+      const productChanges = (draftChanges?.added?.length||0) + (draftChanges?.removed?.length||0);
+      if (productChanges > 0) {
+        // Products changed — close current snapshot, open new one with current products
+        const newSnapId = await onOpenSnapshot(false);
+        if (newSnapId) {
+          for (const sp of activeSnap.products) {
+            await onAddToSnapshot(newSnapId, sp.product_id);
+          }
+        }
+        // Notify
+        const parts = [];
+        if (draftChanges.added.length) parts.push(`Added: ${draftChanges.added.join(", ")}`);
+        if (draftChanges.removed.length) parts.push(`Removed: ${draftChanges.removed.join(", ")}`);
+        alert(`New snapshot created ✓
 
-  const skinProds = snapProducts.filter(p=>p.category==="skin");
-  const hairProds = snapProducts.filter(p=>p.category==="hair");
-  const txProds   = snapProducts.filter(p=>p.category==="treatment");
+${parts.join("
+")}
+
+Your previous routine has been saved to Snapshot History.`);
+      }
+      // Edits only (link/frequency/notes) — no new snapshot, already saved
+    }
+    setEditMode(false);
+    setDraftChanges(null);
+  };
 
   const ProductCard = ({p}) => (
     <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"12px 14px",marginBottom:8,display:"flex",gap:12,alignItems:"flex-start"}}>
@@ -1177,11 +1245,14 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
         {p.brand&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:1}}>{p.brand}{p.frequency&&<span style={{marginLeft:6,background:"#f0e8f4",borderRadius:8,padding:"1px 7px",fontSize:".68rem",color:"#7a6a8a"}}>{p.frequency}</span>}</div>}
         {p.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>{p.tags.map(t=><span key={t} style={{fontSize:".66rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 7px",color:"#8a6858"}}>{t}</span>)}</div>}
         {p.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:4,fontStyle:"italic"}}>{p.notes}</div>}
-        <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+        {isDraft&&<div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
           {p.link&&<button onClick={()=>window.open(p.link,"_blank")} style={{background:"#b07a5e",border:"none",borderRadius:8,padding:"4px 10px",color:"#fff",cursor:"pointer",fontSize:".72rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
-          {baseSnap&&<button className="ghost-btn" style={{fontSize:".72rem",padding:"3px 8px"}} onClick={()=>openEditForm(p)}>Edit</button>}
-          <button className="ghost-btn" style={{fontSize:".72rem",padding:"3px 8px",color:"#c07060"}} onClick={()=>removeFromActive(p.snapProdId)}>Remove</button>
-        </div>
+          <button className="ghost-btn" style={{fontSize:".72rem",padding:"3px 8px"}} onClick={()=>openEditForm(p)}>Edit</button>
+          <button className="ghost-btn" style={{fontSize:".72rem",padding:"3px 8px",color:"#c07060"}} onClick={()=>removeProduct(p.snapProdId, p.name)}>Remove</button>
+        </div>}
+        {!isDraft&&p.link&&<div style={{marginTop:8}}>
+          <button onClick={()=>window.open(p.link,"_blank")} style={{background:"#b07a5e",border:"none",borderRadius:8,padding:"4px 10px",color:"#fff",cursor:"pointer",fontSize:".72rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>
+        </div>}
       </div>
     </div>
   );
@@ -1194,6 +1265,12 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
     const txP=prods.filter(p=>p.category==="treatment");
     const startLabel = new Date(snap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
     const endLabel = snap.ended_at ? new Date(snap.ended_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}) : "Present";
+    const MiniCard = ({p,emoji}) => (
+      <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"10px 14px",marginBottom:6,display:"flex",gap:10,alignItems:"center"}}>
+        {p.image?<img src={p.image} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:8,flexShrink:0}}/>:<div style={{width:36,height:36,borderRadius:8,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",flexShrink:0}}>{emoji}</div>}
+        <div><div style={{fontSize:".84rem",fontWeight:500,color:"#3a2e27"}}>{p.name}</div>{p.brand&&<div style={{fontSize:".7rem",color:"#a08070"}}>{p.brand}</div>}</div>
+      </div>
+    );
     return (
       <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"16px 18px",marginBottom:12,cursor:"pointer"}} onClick={()=>setOpen(o=>!o)}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
@@ -1204,9 +1281,9 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
           <span style={{color:"#b07a5e",fontSize:".8rem",marginLeft:8}}>{open?"▲":"▼"}</span>
         </div>
         {open&&<div style={{marginTop:14,borderTop:"1px solid #f0e0d4",paddingTop:12}} onClick={e=>e.stopPropagation()}>
-          {skinP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8}}>🌿 Skin</div>{skinP.map(p=><div key={p.id} style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"10px 14px",marginBottom:6,display:"flex",gap:10,alignItems:"center"}}>{p.image?<img src={p.image} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:8,flexShrink:0}}/>:<div style={{width:36,height:36,borderRadius:8,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",flexShrink:0}}>🌿</div>}<div><div style={{fontSize:".84rem",fontWeight:500,color:"#3a2e27"}}>{p.name}</div>{p.brand&&<div style={{fontSize:".7rem",color:"#a08070"}}>{p.brand}</div>}</div></div>)}</>}
-          {hairP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8,marginTop:12}}>✨ Hair</div>{hairP.map(p=><div key={p.id} style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"10px 14px",marginBottom:6,display:"flex",gap:10,alignItems:"center"}}>{p.image?<img src={p.image} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:8,flexShrink:0}}/>:<div style={{width:36,height:36,borderRadius:8,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",flexShrink:0}}>✨</div>}<div><div style={{fontSize:".84rem",fontWeight:500,color:"#3a2e27"}}>{p.name}</div>{p.brand&&<div style={{fontSize:".7rem",color:"#a08070"}}>{p.brand}</div>}</div></div>)}</>}
-          {txP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8,marginTop:12}}>💉 Treatments</div>{txP.map(p=><div key={p.id} style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"10px 14px",marginBottom:6,display:"flex",gap:10,alignItems:"center"}}>{p.image?<img src={p.image} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:8,flexShrink:0}}/>:<div style={{width:36,height:36,borderRadius:8,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",flexShrink:0}}>💉</div>}<div><div style={{fontSize:".84rem",fontWeight:500,color:"#3a2e27"}}>{p.name}</div>{p.brand&&<div style={{fontSize:".7rem",color:"#a08070"}}>{p.brand}</div>}</div></div>)}</>}
+          {skinP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8}}>🌿 Skin</div>{skinP.map(p=><MiniCard key={p.id} p={p} emoji="🌿"/>)}</>}
+          {hairP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8,marginTop:12}}>✨ Hair</div>{hairP.map(p=><MiniCard key={p.id} p={p} emoji="✨"/>)}</>}
+          {txP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8,marginTop:12}}>💉 Treatments</div>{txP.map(p=><MiniCard key={p.id} p={p} emoji="💉"/>)}</>}
         </div>}
       </div>
     );
@@ -1215,10 +1292,10 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
   const ProductForm = () => (
     <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{isEditing?"Edit Product":"Add Product"}</div>
-        <button onClick={()=>{setShowForm(false);setEditProd(null);setIsEditing(false);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{isEditingProd?"Edit Product":"Add Product"}</div>
+        <button onClick={()=>{setShowForm(false);setEditProd(null);setIsEditingProd(false);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
       </div>
-      {!isEditing&&<ProductSearch category={editProd.category} onSelect={({name,brand,image,link})=>setEditProd(p=>({...p,name,brand,image:image||"",link:link||""}))}/>}
+      {!isEditingProd&&<ProductSearch category={editProd.category} onSelect={({name,brand,image,link})=>setEditProd(p=>({...p,name,brand,image:image||"",link:link||""}))}/>}
       <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editProd.name} onChange={e=>setEditProd(p=>({...p,name:e.target.value}))}/>
       <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand (optional)" value={editProd.brand||""} onChange={e=>setEditProd(p=>({...p,brand:e.target.value}))}/>
       <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={editProd.link||""} onChange={e=>setEditProd(p=>({...p,link:e.target.value}))}/>
@@ -1253,7 +1330,7 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
       </div>
       <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes (optional)" value={editProd.notes||""} onChange={e=>setEditProd(p=>({...p,notes:e.target.value}))}/>
       <button className="save-btn" onClick={save} disabled={!editProd.name.trim()} style={{opacity:editProd.name.trim()?1:.4}}>
-        {isEditing?"Save Changes":"Add to My Routine"}
+        {isEditingProd?"Save Changes":"Add to My Routine"}
       </button>
     </div>
   );
@@ -1261,7 +1338,7 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
   return (
     <div className="app">
       <div className="header" style={{position:"relative"}}>
-        <button onClick={onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1.2rem",padding:"8px"}}>←</button>
+        <button onClick={()=>tryNavigateAway(onBack)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1.2rem",padding:"8px"}}>←</button>
         <div className="header-title">My <span>Products</span></div>
         <div className="header-sub">{products.length} in library</div>
       </div>
@@ -1278,12 +1355,16 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
 
       {tab==="current"&&(
         <>
-          {/* Base draft banner */}
-          {baseSnap&&(
+          {/* Draft/edit mode banner */}
+          {isDraft&&(
             <div style={{background:"#fdf6e8",border:"1.5px solid #e8d0a0",borderRadius:14,padding:"14px 16px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
-                <div style={{fontSize:".78rem",fontWeight:600,color:"#7a5c28",marginBottom:2}}>📋 Draft — not yet finalized</div>
-                <div style={{fontSize:".72rem",color:"#a08050"}}>Add all your products then tap Finalize when ready</div>
+                <div style={{fontSize:".78rem",fontWeight:600,color:"#7a5c28",marginBottom:2}}>
+                  {draftSnap?"📋 Draft — not yet finalized":"✏️ Edit mode"}
+                </div>
+                <div style={{fontSize:".72rem",color:"#a08050"}}>
+                  {draftSnap?"Add all your products then finalize when ready":"Make your changes then finalize to save a new snapshot"}
+                </div>
               </div>
               <button onClick={()=>setConfirmFinalize(true)}
                 style={{background:"#b07a5e",border:"none",borderRadius:10,padding:"8px 14px",color:"#fff",fontSize:".78rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap",fontWeight:500}}>
@@ -1292,15 +1373,39 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
             </div>
           )}
 
+          {/* Finalized routine card */}
+          {!isDraft&&activeSnap&&snapProducts.length>0&&(
+            <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"16px 18px",marginBottom:18}}>
+              <div style={{marginBottom:12}}>
+                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#5a3a27"}}>
+                  {new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})} — Present
+                </div>
+                <div style={{fontSize:".72rem",color:"#a08070",marginTop:3}}>{snapProducts.length} product{snapProducts.length!==1?"s":""} · {skinProds.length} skin · {hairProds.length} hair{txProds.length>0?` · ${txProds.length} treatment`:""}</div>
+              </div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <button onClick={()=>setShowAnalysis(v=>!v)}
+                  style={{background:"#3a2e27",border:"none",borderRadius:10,padding:"8px 16px",color:"#f7ece4",fontSize:".76rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".04em",fontWeight:500}}>
+                  {showAnalysis?"Close Analysis":"Analyze My Routine"}
+                </button>
+                <button onClick={enterEditMode}
+                  style={{background:"none",border:"1px solid #e8d8cc",borderRadius:10,padding:"8px 14px",color:"#a08070",fontSize:".74rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+                  Something changed?
+                </button>
+              </div>
+            </div>
+          )}
+
+          {showAnalysis&&activeSnap&&!isDraft&&<RoutineAnalysis products={products} snapProducts={activeSnap.products} onClose={()=>setShowAnalysis(false)}/>}
+
           {showForm&&editProd&&<ProductForm/>}
 
-          {!showForm&&(
+          {!showForm&&isDraft&&(
             chooseCat?(
               <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
                 <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:14}}>Add a product</div>
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
                   {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
-                    <button key={cat} onClick={()=>{setEditProd(blank(cat));setIsEditing(false);setShowForm(true);setChooseCat(false);}}
+                    <button key={cat} onClick={()=>{setEditProd(blank(cat));setIsEditingProd(false);setShowForm(true);setChooseCat(false);}}
                       style={{display:"flex",alignItems:"center",gap:12,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
                       <span style={{fontSize:"1.3rem"}}>{emoji}</span>
                       <span style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>{label} Product</span>
@@ -1317,30 +1422,6 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
           {snapProducts.length===0&&!showForm&&!chooseCat&&(
             <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No products in your current routine yet</div>
           )}
-
-          {activeSnap&&snapProducts.length>0&&!baseSnap&&(
-            <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"16px 18px",marginBottom:18}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                <div>
-                  <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#5a3a27"}}>
-                    {new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})} — Present
-                  </div>
-                  <div style={{fontSize:".72rem",color:"#a08070",marginTop:3}}>{snapProducts.length} product{snapProducts.length!==1?"s":""} · {skinProds.length} skin · {hairProds.length} hair{txProds.length>0?` · ${txProds.length} treatment`:""}</div>
-                </div>
-              </div>
-              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                <button onClick={()=>setShowAnalysis(v=>!v)}
-                  style={{background:"#3a2e27",border:"none",borderRadius:10,padding:"8px 16px",color:"#f7ece4",fontSize:".76rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".04em",fontWeight:500}}>
-                  {showAnalysis?"Close Analysis":"Analyze My Routine"}
-                </button>
-                <button onClick={()=>setConfirmNewSnap(true)}
-                  style={{background:"none",border:"1px solid #e8d8cc",borderRadius:10,padding:"8px 14px",color:"#a08070",fontSize:".74rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
-                  Something changed?
-                </button>
-              </div>
-            </div>
-          )}
-          {showAnalysis&&activeSnap&&<RoutineAnalysis products={products} snapProducts={activeSnap.products} onClose={()=>setShowAnalysis(false)}/>}
 
           {skinProds.length>0&&<><div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10}}>🌿 Skin</div>{skinProds.map(p=><ProductCard key={p.id} p={p}/>)}</>}
           {hairProds.length>0&&<><div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,marginTop:skinProds.length?16:0}}>✨ Hair</div>{hairProds.map(p=><ProductCard key={p.id} p={p}/>)}</>}
@@ -1361,11 +1442,14 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
           <div className="modal" onClick={e=>e.stopPropagation()}>
             <div className="modal-title" style={{marginBottom:12}}>Finalize Your Routine?</div>
             <div style={{fontSize:".84rem",color:"#6a5048",lineHeight:1.7,marginBottom:20}}>
-              Once finalized, your routine becomes a permanent snapshot. You won't be able to edit individual products — any future changes will automatically start a new snapshot so your history stays accurate.
+              {draftSnap
+                ? "Once finalized, your routine becomes a permanent snapshot. Any future changes will automatically create a new snapshot so your history stays accurate."
+                : `This will save your changes${(draftChanges?.added?.length||0)+(draftChanges?.removed?.length||0)>0?" and create a new snapshot":""}.${(draftChanges?.added?.length||0)+(draftChanges?.removed?.length||0)>0?" Your current routine will be preserved in Snapshot History.":""}`
+              }
             </div>
             <div style={{display:"flex",gap:10}}>
               <button onClick={()=>setConfirmFinalize(false)} className="ghost-btn" style={{flex:1}}>Cancel</button>
-              <button onClick={()=>{setConfirmFinalize(false);onFinalizeBase(baseSnap.id);}}
+              <button onClick={doFinalize}
                 style={{flex:1,background:"#b07a5e",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
                 Yes, Finalize
               </button>
@@ -1374,20 +1458,24 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
         </div>
       )}
 
-      {/* Something changed confirmation */}
-      {confirmNewSnap&&(
-        <div className="overlay" onClick={()=>setConfirmNewSnap(false)}>
+      {/* Unsaved changes warning */}
+      {unsavedWarning&&(
+        <div className="overlay" onClick={()=>setUnsavedWarning(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div className="modal-title" style={{marginBottom:12}}>Start a New Snapshot?</div>
+            <div className="modal-title" style={{marginBottom:12}}>Unsaved Changes</div>
             <div style={{fontSize:".84rem",color:"#6a5048",lineHeight:1.7,marginBottom:20}}>
-              This will close your current routine snapshot and start a fresh one. Your current routine will be preserved in Snapshot History exactly as it is.
+              You have unsaved changes to your routine. What would you like to do?
             </div>
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>setConfirmNewSnap(false)} className="ghost-btn" style={{flex:1}}>Cancel</button>
-              <button onClick={async()=>{setConfirmNewSnap(false);const id=await onOpenSnapshot(false);}}
-                style={{flex:1,background:"#b07a5e",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
-                Yes, Start New
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              <button onClick={saveDraft}
+                style={{background:"#b07a5e",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
+                Save Draft
               </button>
+              <button onClick={discardChanges}
+                style={{background:"none",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px",color:"#c07060",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+                Discard Changes
+              </button>
+              <button onClick={()=>setUnsavedWarning(false)} className="ghost-btn">Stay on Page</button>
             </div>
           </div>
         </div>
@@ -1395,6 +1483,7 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
     </div>
   );
 }
+
 
 function TreatmentHistoryCard({ tx, doneDates }) {
   const [open, setOpen] = useState(false);
