@@ -557,38 +557,35 @@ function ProductSearch({ category, onSelect }) {
   const search = async () => {
     if (!query.trim()) return;
     setLoading(true); setSearched(true);
-    const q = query.trim().toLowerCase();
-    try {
-      // 1. Search our global DB first (Supabase REST)
-      const supaUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supaKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      const dbRes = await fetch(
-        supaUrl + "/rest/v1/global_products?or=(name.ilike.*" + encodeURIComponent(q) + "*,brand.ilike.*" + encodeURIComponent(q) + "*)&limit=5&order=search_count.desc",
-        { headers: { apikey: supaKey, Authorization: "Bearer " + supaKey } }
-      );
-      const dbData = dbRes.ok ? await dbRes.json() : [];
-      const globalResults = (dbData || []).map(p => ({
-        product_name: p.name,
-        brands: p.brand,
-        image_small_url: "",
-        global_product_id: p.id,
-        ingredients: p.ingredients || [],
-        _source: "global"
-      }));
+    const q = query.trim();
 
-      // 2. Also search OpenBeautyFacts
-      let openResults = [];
-      try {
-        const res = await fetch("https://world.openbeautyfacts.org/cgi/search.pl?search_terms=" + encodeURIComponent(query) + "&search_simple=1&action=process&json=1&page_size=6");
-        const data = await res.json();
-        openResults = (data.products || []).filter(p => p.product_name).map(p => ({...p, _source:"open"}));
-      } catch(e) {}
+    // Search OpenBeautyFacts and global DB in parallel
+    const [openResults, globalResults] = await Promise.all([
+      fetch("https://world.openbeautyfacts.org/cgi/search.pl?search_terms=" + encodeURIComponent(q) + "&search_simple=1&action=process&json=1&page_size=8")
+        .then(r => r.json())
+        .then(data => (data.products || []).filter(p => p.product_name).map(p => ({...p, _source:"open"})))
+        .catch(() => []),
+      (async () => {
+        try {
+          const supaUrl = import.meta.env.VITE_SUPABASE_URL;
+          const supaKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+          const res = await fetch(
+            supaUrl + "/rest/v1/global_products?or=(name.ilike.*" + encodeURIComponent(q) + "*,brand.ilike.*" + encodeURIComponent(q) + "*)&limit=5&order=search_count.desc",
+            { headers: { apikey: supaKey, Authorization: "Bearer " + supaKey } }
+          );
+          const data = res.ok ? await res.json() : [];
+          return (data || []).map(p => ({
+            product_name: p.name, brands: p.brand, image_small_url: "",
+            global_product_id: p.id, ingredients: p.ingredients || [], _source: "global"
+          }));
+        } catch(e) { return []; }
+      })()
+    ]);
 
-      // Merge — global results first, deduplicate by name+brand
-      const seen = new Set(globalResults.map(p => (p.product_name + "|" + p.brands).toLowerCase()));
-      const deduped = openResults.filter(p => !seen.has((p.product_name + "|" + (p.brands||"")).toLowerCase()));
-      setResults([...globalResults, ...deduped]);
-    } catch(e) { console.error(e); setResults([]); }
+    // Merge — global first, then open results not already covered by name match
+    const globalNames = new Set(globalResults.map(p => p.product_name.toLowerCase()));
+    const deduped = openResults.filter(p => !globalNames.has((p.product_name||"").toLowerCase()));
+    setResults([...globalResults, ...deduped]);
     setLoading(false);
   };
 
@@ -2544,7 +2541,7 @@ export default function App({ user }) {
         if (txRows) setTreatments(txRows.map(r=>({ id:r.id, name:r.name, type:r.type, dates:r.dates||[], completedDates:r.completed_dates||[], location:r.location||'' })));
         // Load products library
         const { data: prodRows } = await supabase.from("products").select("*").eq("user_id", user.id).order("created_at", {ascending:false});
-        if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[] })));
+        if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[] })));
         // Load wishlist
         const { data: wishRows } = await supabase.from("wishlist").select("*").eq("user_id", user.id).order("created_at", {ascending:false});
         if (wishRows) setWishlist(wishRows.map(r=>({ id:r.id, product_id:r.product_id||null, name:r.name||"", brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], priority:r.priority||0 })));
