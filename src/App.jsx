@@ -1029,9 +1029,7 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
       skinProds.length > 0 ? "SKIN PRODUCTS: " + formatList(skinProds) : "",
       hairProds.length > 0 ? "HAIR PRODUCTS: " + formatList(hairProds) : "",
       txProds.length > 0 ? "TREATMENTS: " + formatList(txProds) : "",
-      notes ? "
-JOURNAL NOTES FROM THIS PERIOD:
-" + notes : "",
+      notes ? "\nJOURNAL NOTES FROM THIS PERIOD:\n" + notes : "",
       "",
       "Respond ONLY with this exact JSON (no markdown, no citations, no extra text):",
       JSON.stringify({
@@ -1101,22 +1099,13 @@ JOURNAL NOTES FROM THIS PERIOD:
     const newHistory = [...chatHistory, { role: "user", content: userMsg }];
     setChatHistory(newHistory);
     try {
-      const systemContext = "You are a skincare and haircare expert. The user is asking follow-up questions about their beauty routine analysis. Keep answers concise and practical. Do not use citation tags.
-
-Their routine:
-" +
-        (skinProds.length > 0 ? "SKIN: " + formatList(skinProds) + "
-" : "") +
-        (hairProds.length > 0 ? "HAIR: " + formatList(hairProds) + "
-" : "") +
-        (txProds.length > 0 ? "TREATMENTS: " + formatList(txProds) + "
-" : "") +
-        "
-Previous analysis: " + (result ? JSON.stringify(result) : "");
+      const systemContext = "You are a skincare and haircare expert. The user is asking follow-up questions about their beauty routine analysis. Keep answers concise and practical. Do not use citation tags.\n\nTheir routine:\n" +
+        (skinProds.length > 0 ? "SKIN: " + formatList(skinProds) + "\n" : "") +
+        (hairProds.length > 0 ? "HAIR: " + formatList(hairProds) + "\n" : "") +
+        (txProds.length > 0 ? "TREATMENTS: " + formatList(txProds) + "\n" : "") +
+        "\nPrevious analysis: " + (result ? JSON.stringify(result) : "");
       const messages = [
-        { role: "user", content: systemContext + "
-
-Now answer this question: " + userMsg }
+        { role: "user", content: systemContext + "\n\nNow answer this question: " + userMsg }
       ];
       const res = await fetch("/api/claude", {
         method: "POST",
