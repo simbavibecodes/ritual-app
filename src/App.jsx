@@ -1350,77 +1350,95 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
 
       {tab==="current"&&(
         <>
-          {/* Draft/edit mode banner */}
-          {isDraft&&(
-            <div style={{background:"#fdf6e8",border:"1.5px solid #e8d0a0",borderRadius:14,padding:"14px 16px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div>
-                <div style={{fontSize:".78rem",fontWeight:600,color:"#7a5c28",marginBottom:2}}>
-                  {draftSnap?"📋 Draft — not yet finalized":"✏️ Edit mode"}
+          {/* Empty state */}
+          {snapProducts.length===0&&!showForm&&!chooseCat&&!isDraft&&(
+            <div style={{textAlign:"center",padding:"48px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No products in your current routine yet</div>
+          )}
+
+          {/* THE BIG CARD — wraps everything */}
+          {(snapProducts.length>0||isDraft)&&(
+            <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:20,padding:"18px",marginBottom:16}}>
+
+              {/* Card header: date + action buttons top right */}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+                <div>
+                  {activeSnap&&(
+                    <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.05rem",fontStyle:"italic",color:"#5a3a27"}}>
+                      {new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})} — Present
+                    </div>
+                  )}
+                  {activeSnap&&<div style={{fontSize:".7rem",color:"#a08070",marginTop:3}}>{snapProducts.length} product{snapProducts.length!==1?"s":""}{skinProds.length>0?` · ${skinProds.length} skin`:""}{ hairProds.length>0?` · ${hairProds.length} hair`:""}{ txProds.length>0?` · ${txProds.length} treatment`:""}</div>}
+                  {isDraft&&draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:600,color:"#c07a28"}}>📋 Draft</div>}
+                  {isDraft&&!draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:600,color:"#7a8a5a"}}>✏️ Editing</div>}
                 </div>
-                <div style={{fontSize:".72rem",color:"#a08050"}}>
-                  {draftSnap?"Add all your products then finalize when ready":"Make your changes then finalize to save a new snapshot"}
+                <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0,marginLeft:10}}>
+                  {!isDraft&&<button onClick={()=>setShowAnalysis(v=>!v)}
+                    style={{background:"#3a2e27",border:"none",borderRadius:9,padding:"6px 12px",color:"#f7ece4",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,whiteSpace:"nowrap"}}>
+                    {showAnalysis?"Close":"Analyze My Routine"}
+                  </button>}
+                  {!isDraft&&<button onClick={enterEditMode}
+                    style={{background:"none",border:"1.5px solid #e8d8cc",borderRadius:9,padding:"6px 10px",color:"#a08070",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>
+                    Something changed?
+                  </button>}
+                  {isDraft&&<button onClick={()=>setConfirmFinalize(true)}
+                    style={{background:"#b07a5e",border:"none",borderRadius:9,padding:"6px 14px",color:"#fff",fontSize:".76rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,whiteSpace:"nowrap"}}>
+                    Finalize
+                  </button>}
                 </div>
               </div>
-              <button onClick={()=>setConfirmFinalize(true)}
-                style={{background:"#b07a5e",border:"none",borderRadius:10,padding:"8px 14px",color:"#fff",fontSize:".78rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap",fontWeight:500}}>
-                Finalize
-              </button>
+
+              {/* Analysis panel — inside the card */}
+              {showAnalysis&&activeSnap&&!isDraft&&(
+                <div style={{marginBottom:16,borderBottom:"1px solid #f0e0d4",paddingBottom:16}}>
+                  <RoutineAnalysis products={products} snapProducts={activeSnap.products} onClose={()=>setShowAnalysis(false)}/>
+                </div>
+              )}
+
+              {/* Add product form — inside the card */}
+              {showForm&&editProd&&<ProductForm/>}
+
+              {/* Add product picker — inside the card, draft only */}
+              {!showForm&&isDraft&&(
+                chooseCat?(
+                  <div style={{background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"16px",marginBottom:14}}>
+                    <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:12}}>Add a product</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
+                        <button key={cat} onClick={()=>{setEditProd(blank(cat));setIsEditingProd(false);setShowForm(true);setChooseCat(false);}}
+                          style={{display:"flex",alignItems:"center",gap:12,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"11px 14px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+                          <span style={{fontSize:"1.2rem"}}>{emoji}</span>
+                          <span style={{fontSize:".86rem",color:"#3a2e27",fontWeight:500}}>{label} Product</span>
+                        </button>
+                      ))}
+                      <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".76rem",color:"#a08070",cursor:"pointer",marginTop:2,fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+                    </div>
+                  </div>
+                ):(
+                  <button className="add-sched-btn" style={{marginBottom:14}} onClick={()=>setChooseCat(true)}>+ Add Product</button>
+                )
+              )}
+
+              {/* Product lists — inside the card */}
+              {skinProds.length>0&&(
+                <div style={{marginBottom:skinProds.length&&(hairProds.length||txProds.length)?16:0}}>
+                  <div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8}}>🌿 Skin</div>
+                  {skinProds.map(p=><ProductCard key={p.id} p={p}/>)}
+                </div>
+              )}
+              {hairProds.length>0&&(
+                <div style={{marginBottom:hairProds.length&&txProds.length?16:0}}>
+                  <div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8}}>✨ Hair</div>
+                  {hairProds.map(p=><ProductCard key={p.id} p={p}/>)}
+                </div>
+              )}
+              {txProds.length>0&&(
+                <div>
+                  <div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8}}>💉 Treatments</div>
+                  {txProds.map(p=><ProductCard key={p.id} p={p}/>)}
+                </div>
+              )}
             </div>
           )}
-
-          {/* Finalized routine card */}
-          {!isDraft&&activeSnap&&snapProducts.length>0&&(
-            <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"16px 18px",marginBottom:18}}>
-              <div style={{marginBottom:12}}>
-                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#5a3a27"}}>
-                  {new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})} — Present
-                </div>
-                <div style={{fontSize:".72rem",color:"#a08070",marginTop:3}}>{snapProducts.length} product{snapProducts.length!==1?"s":""} · {skinProds.length} skin · {hairProds.length} hair{txProds.length>0?` · ${txProds.length} treatment`:""}</div>
-              </div>
-              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                <button onClick={()=>setShowAnalysis(v=>!v)}
-                  style={{background:"#3a2e27",border:"none",borderRadius:10,padding:"8px 16px",color:"#f7ece4",fontSize:".76rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".04em",fontWeight:500}}>
-                  {showAnalysis?"Close Analysis":"Analyze My Routine"}
-                </button>
-                <button onClick={enterEditMode}
-                  style={{background:"none",border:"1px solid #e8d8cc",borderRadius:10,padding:"8px 14px",color:"#a08070",fontSize:".74rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
-                  Something changed?
-                </button>
-              </div>
-            </div>
-          )}
-
-          {showAnalysis&&activeSnap&&!isDraft&&<RoutineAnalysis products={products} snapProducts={activeSnap.products} onClose={()=>setShowAnalysis(false)}/>}
-
-          {showForm&&editProd&&<ProductForm/>}
-
-          {!showForm&&isDraft&&(
-            chooseCat?(
-              <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
-                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:14}}>Add a product</div>
-                <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                  {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
-                    <button key={cat} onClick={()=>{setEditProd(blank(cat));setIsEditingProd(false);setShowForm(true);setChooseCat(false);}}
-                      style={{display:"flex",alignItems:"center",gap:12,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
-                      <span style={{fontSize:"1.3rem"}}>{emoji}</span>
-                      <span style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>{label} Product</span>
-                    </button>
-                  ))}
-                  <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".78rem",color:"#a08070",cursor:"pointer",marginTop:4,fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
-                </div>
-              </div>
-            ):(
-              <button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>setChooseCat(true)}>+ Add Product</button>
-            )
-          )}
-
-          {snapProducts.length===0&&!showForm&&!chooseCat&&(
-            <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No products in your current routine yet</div>
-          )}
-
-          {skinProds.length>0&&<><div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10}}>🌿 Skin</div>{skinProds.map(p=><ProductCard key={p.id} p={p}/>)}</>}
-          {hairProds.length>0&&<><div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,marginTop:skinProds.length?16:0}}>✨ Hair</div>{hairProds.map(p=><ProductCard key={p.id} p={p}/>)}</>}
-          {txProds.length>0&&<><div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,marginTop:(skinProds.length||hairProds.length)?16:0}}>💉 Treatments</div>{txProds.map(p=><ProductCard key={p.id} p={p}/>)}</>}
         </>
       )}
 
