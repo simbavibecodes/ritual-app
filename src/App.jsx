@@ -1013,7 +1013,7 @@ function WishlistPage({ wishlist, products, onSave, onDelete, onMoveToCart, onBa
 }
 
 // ── MY PRODUCTS PAGE ───────────────────────────────────────────
-function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, isCurrent }) {
+function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, isCurrent, onFetchIngredients }) {
   const [status, setStatus] = useState(() => isCurrent ? "confirm_entries" : "loading_auto");
   const [result, setResult] = useState(null);
   const [includeEntries, setIncludeEntries] = useState(true);
@@ -1056,47 +1056,61 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
     return Object.entries(entries).filter(([d]) => d >= dateRange.start && d <= endDate).filter(([,e]) => e.skin_notes || e.hair_notes).length;
   };
 
-  const buildPrompt = (useNotes) => {
-    const notes = useNotes ? getNotes() : "";
-    const hasIngredients = productList.some(p => p.ingredients?.length > 0);
-    const needsSearch = productList.some(p => !p.ingredients?.length);
-    const formatWithIngredients = (arr) => arr.map(p => {
-      const base = p.name + (p.brand ? " by " + p.brand : "") + (p.frequency ? " (" + p.frequency + ")" : "");
-      return p.ingredients?.length ? base + " [ingredients: " + p.ingredients.slice(0,15).join(", ") + "]" : base;
-    }).join("\n  ");
-    const parts = [
-      "You are a skincare and haircare formulation expert. Analyze this beauty routine based on actual ingredients.",
-      hasIngredients ? "Ingredient data is provided — analyze ingredient-level interactions, actives, and conflicts." : "",
-      needsSearch ? "For products without ingredients listed, look them up via web search." : "All ingredients are provided — no web search needed.",
-      "",
-      skinProds.length > 0 ? "SKIN PRODUCTS:\n  " + formatWithIngredients(skinProds) : "",
-      hairProds.length > 0 ? "HAIR PRODUCTS:\n  " + formatWithIngredients(hairProds) : "",
-      txProds.length > 0 ? "TREATMENTS:\n  " + formatWithIngredients(txProds) : "",
-      notes ? "\nJOURNAL NOTES:\n" + notes : "",
-      "",
-      "Respond ONLY with this exact JSON (no markdown, no citations, no extra text):",
-      JSON.stringify({
-        strengths: "2-3 sentences on what this routine excels at, citing specific ingredients or actives",
-        cautions: "2-3 sentences on ingredient conflicts or over-exfoliation risks. If none, say so briefly.",
-        synergies: skinProds.length > 0 && hairProds.length > 0
-          ? "SKIN SYNERGIES: [1-2 sentences] HAIR SYNERGIES: [1-2 sentences]"
-          : "1-2 sentences on ingredients that work especially well together",
-        journal_insights: notes ? "1-2 sentences on what the journal reveals about real-world performance" : null,
-        recommendation: "1-2 sentences on the single most impactful change"
-      }, null, 2)
-    ];
-    return parts.filter(Boolean).join("\n");
-  };
-
   const doAnalyze = async (useNotes) => {
+    // ── Step 1: Prefetch missing ingredients ──
+    const missingIngredients = productList.filter(p => !p.ingredients?.length);
+    if (missingIngredients.length > 0 && onFetchIngredients) {
+      setStatus("fetching_ingredients");
+      await Promise.all(missingIngredients.map(p => onFetchIngredients(p)));
+    }
+
     setStatus("loading");
+
+    // Re-read products after fetch (ingredients now updated in parent state)
+    const freshList = snapProducts
+      .map(sp => products.find(p => p.id === (sp.product_id || sp.id)))
+      .filter(Boolean);
+    const freshSkin = freshList.filter(p => p.category === "skin");
+    const freshHair = freshList.filter(p => p.category === "hair");
+    const freshTx   = freshList.filter(p => p.category === "treatment");
+
+    const allHaveIngredients = freshList.every(p => p.ingredients?.length > 0);
+    const notes = useNotes ? getNotes() : "";
+
+    const formatDetailed = (arr) => arr.map(p => {
+      const freq = p.frequency ? ` — used ${p.frequency}` : "";
+      const ings = p.ingredients?.length
+        ? `\n    Key ingredients: ${p.ingredients.slice(0, 20).join(", ")}`
+        : "";
+      return `  • ${p.name}${p.brand ? " by " + p.brand : ""}${freq}${ings}`;
+    }).join("\n");
+
+    const prompt = [
+      "You are a cosmetic formulation expert and dermatologist. Give a sharp, specific, actionable analysis of this routine.",
+      "Base your analysis on the actual ingredients listed. Do not be vague — name specific ingredients and explain exactly why they matter.",
+      "Be direct and opinionated. If something is redundant, a conflict, or missing — say it clearly.",
+      "",
+      freshSkin.length > 0 ? "SKIN ROUTINE:\n" + formatDetailed(freshSkin) : "",
+      freshHair.length > 0 ? "HAIR ROUTINE:\n" + formatDetailed(freshHair) : "",
+      freshTx.length > 0   ? "TREATMENTS:\n"   + formatDetailed(freshTx)   : "",
+      notes ? "\nJOURNAL NOTES (real-world observations):\n" + notes : "",
+      "",
+      "Respond ONLY with this exact JSON (no markdown, no citations, no preamble):",
+      JSON.stringify({
+        strengths: "2-3 sentences. Name the specific actives or ingredient combinations that make this routine strong. E.g. 'The combination of niacinamide and zinc in X product effectively controls sebum while...'",
+        conflicts: "Name any ingredient conflicts or overuse risks with exact product names. E.g. 'Using X and Y together risks over-exfoliation because both contain AHAs.' If none, say 'No significant conflicts found.'",
+        gaps: "What is this routine missing? Name specific ingredients or product types that would improve results. Be direct: 'This routine lacks a dedicated SPF...' or 'No occlusives present to lock in moisture...'",
+        synergies: "Name 1-2 specific ingredient combinations that work especially well together in this routine and why.",
+        journal_insights: notes ? "What do the journal notes reveal about how this routine is actually performing? Note any patterns." : null,
+        recommendation: "The single most impactful change this person should make. Be specific — name the product to add, remove, or swap and exactly why."
+      }, null, 2)
+    ].filter(Boolean).join("\n");
+
     try {
-      const allHaveIngredients = productList.every(p => p.ingredients?.length > 0);
       const body = {
         model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
-        messages: [{ role: "user", content: buildPrompt(useNotes) }],
-        userId: undefined,
+        max_tokens: 1200,
+        messages: [{ role: "user", content: prompt }],
         action: "analysis"
       };
       if (!allHaveIngredients) body.tools = [{ type: "web_search_20250305", name: "web_search" }];
@@ -1113,13 +1127,12 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
       if (jsonMatch) {
         try {
           const parsed = JSON.parse(jsonMatch[0]);
-          // Strip citations from all string values
           Object.keys(parsed).forEach(k => { if (typeof parsed[k] === "string") parsed[k] = stripCitations(parsed[k]); });
           setResult(parsed);
         } catch { setResult({ raw: stripCitations(clean) }); }
       } else { setResult({ raw: stripCitations(clean) }); }
       setStatus("done");
-      setChatHistory([{ role: "assistant", content: "I've analyzed your routine. What would you like to know more about?" }]);
+      setChatHistory([{ role: "assistant", content: "I've analyzed your routine. What would you like to dig into?" }]);
     } catch(e) { console.error("Analysis error:", e); setStatus("error"); }
   };
 
@@ -1137,6 +1150,21 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
       </div>
     </div>
   ); }
+
+  if (status === "fetching_ingredients") return (
+    <div style={{background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"16px",marginTop:12}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>Routine Analysis</div>
+        <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#a08070"}}>×</button>
+      </div>
+      <div style={{textAlign:"center",padding:"24px 0"}}>
+        <div style={{fontSize:"1.4rem",marginBottom:10,animation:"spin 1.5s linear infinite",display:"inline-block"}}>🔍</div>
+        <div style={{fontSize:".84rem",color:"#5a3a27",marginBottom:4}}>Looking up ingredients…</div>
+        <div style={{fontSize:".76rem",color:"#a08070",fontStyle:"italic"}}>This only happens once per product</div>
+        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      </div>
+    </div>
+  );
 
   const sendChat = async () => {
     if (!chatInput.trim() || chatLoading) return;
@@ -1241,10 +1269,11 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
             ? <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.7}}>{result.raw}</div>
             : <div>
                 <Section emoji="✨" label="What this routine does well" color="#5a8a5a" text={result.strengths}/>
-                <Section emoji="⚠️" label="Things to watch" color="#b07a30" text={result.cautions}/>
-                <Section emoji="🤝" label="Synergies" color="#5a6a9a" text={result.synergies}/>
+                <Section emoji="⚠️" label="Conflicts & risks" color="#c07060" text={result.conflicts}/>
+                <Section emoji="🔍" label="What's missing" color="#b07a30" text={result.gaps}/>
+                <Section emoji="🤝" label="Ingredient synergies" color="#5a6a9a" text={result.synergies}/>
                 <Section emoji="📓" label="What your journal reveals" color="#7a6a4a" text={result.journal_insights}/>
-                <Section emoji="💡" label="Recommendation" color="#7a5c48" text={result.recommendation}/>
+                <Section emoji="💡" label="Top recommendation" color="#7a5c48" text={result.recommendation}/>
               </div>
           }
 
@@ -1533,7 +1562,7 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
   );
 }
 
-function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onRemoveFromSnapshot, onFinalizeBase, onDeleteSnapshot, onBack }) {
+function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onRemoveFromSnapshot, onFinalizeBase, onDeleteSnapshot, onFetchIngredients, onBack }) {
   const [tab, setTab] = useState("current");
   const [editMode, setEditMode] = useState(false); // draft edit mode on finalized routine
   const [showForm, setShowForm] = useState(false);
@@ -1725,7 +1754,8 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
             entries={entries}
             dateRange={{start:snap.started_at, end:snap.ended_at}}
             isCurrent={false}
-            onClose={()=>setSnapAnalysis(false)}/>
+            onClose={()=>setSnapAnalysis(false)}
+            onFetchIngredients={onFetchIngredients}/>
         </div>}
         {confirmDel&&<div style={{marginTop:12,background:"#fff8f3",border:"1.5px solid #f0c8c0",borderRadius:12,padding:"14px"}} onClick={e=>e.stopPropagation()}>
           <div style={{fontSize:".84rem",color:"#3a2e27",marginBottom:12,lineHeight:1.5}}>Delete this snapshot? This cannot be undone.</div>
@@ -1812,7 +1842,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
               {/* Analysis panel — inside the card */}
               {showAnalysis&&activeSnap&&!isDraft&&(
                 <div style={{marginBottom:16,borderBottom:"1px solid #f0e0d4",paddingBottom:16}}>
-                  <RoutineAnalysis products={products} snapProducts={activeSnap.products} entries={entries} dateRange={{start:activeSnap.started_at, end:null}} isCurrent={true} onClose={()=>setShowAnalysis(false)}/>
+                  <RoutineAnalysis products={products} snapProducts={activeSnap.products} entries={entries} dateRange={{start:activeSnap.started_at, end:null}} isCurrent={true} onClose={()=>setShowAnalysis(false)} onFetchIngredients={onFetchIngredients}/>
                 </div>
               )}
 
@@ -2999,6 +3029,7 @@ export default function App({ user }) {
       onRemoveFromSnapshot={removeProductFromSnapshot}
       onFinalizeBase={finalizeBase}
       onDeleteSnapshot={deleteSnapshot}
+      onFetchIngredients={fetchIngredients}
       onBack={()=>setPageView(null)}/></div>
   );
   if (pageView==="wishlist") return (
