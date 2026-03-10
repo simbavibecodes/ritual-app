@@ -978,9 +978,13 @@ function WishlistPage({ wishlist, products, onSave, onDelete, onMoveToCart, onBa
 }
 
 // ── MY PRODUCTS PAGE ───────────────────────────────────────────
-function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, title }) {
-  const [status, setStatus] = useState("idle");
+function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, isCurrent }) {
+  const [status, setStatus] = useState(() => isCurrent ? "confirm_entries" : "loading_auto");
   const [result, setResult] = useState(null);
+  const [includeEntries, setIncludeEntries] = useState(true);
+  const [chatInput, setChatInput] = useState("");
+  const [chatHistory, setChatHistory] = useState([]);
+  const [chatLoading, setChatLoading] = useState(false);
 
   const productList = snapProducts
     .map(sp => products.find(p => p.id === (sp.product_id || sp.id)))
@@ -989,96 +993,151 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
   const skinProds = productList.filter(p => p.category === "skin");
   const hairProds = productList.filter(p => p.category === "hair");
   const txProds   = productList.filter(p => p.category === "treatment");
+  const formatList = arr => arr.map(p => `${p.name}${p.brand ? " by " + p.brand : ""}${p.frequency ? " (" + p.frequency + ")" : ""}`).join(", ");
 
-  const formatList = (arr) => arr.map(p => `${p.name}${p.brand ? ` by ${p.brand}` : ""}${p.frequency ? ` (${p.frequency})` : ""}`).join(", ");
+  const stripCitations = text => text ? text.replace(/]*>|<\/antml:cite>/g, "").replace(/\[[\d,\s-]+\]/g, "").trim() : text;
 
-  // Pull notes from entries within the snapshot date range
   const getNotes = () => {
     if (!entries || !dateRange) return "";
-    const { start, end } = dateRange;
-    const endDate = end || new Date().toISOString().slice(0,10);
-    const relevant = Object.entries(entries)
-      .filter(([d]) => d >= start && d <= endDate)
+    const endDate = dateRange.end || new Date().toISOString().slice(0,10);
+    return Object.entries(entries)
+      .filter(([d]) => d >= dateRange.start && d <= endDate)
       .map(([d, e]) => {
         const parts = [];
-        if (e.skin_notes) parts.push(`Skin (${d}): ${e.skin_notes}`);
-        if (e.hair_notes) parts.push(`Hair (${d}): ${e.hair_notes}`);
-        if (e.skin_mood) parts.push(`Skin mood (${d}): ${e.skin_mood}`);
-        if (e.hair_mood) parts.push(`Hair mood (${d}): ${e.hair_mood}`);
+        if (e.skin_notes) parts.push("Skin (" + d + "): " + e.skin_notes);
+        if (e.hair_notes) parts.push("Hair (" + d + "): " + e.hair_notes);
+        if (e.skin_mood) parts.push("Skin mood (" + d + "): " + e.skin_mood);
+        if (e.hair_mood) parts.push("Hair mood (" + d + "): " + e.hair_mood);
         return parts.join(" | ");
       })
-      .filter(Boolean);
-    return relevant.length > 0 ? relevant.slice(0, 30).join("\n") : "";
+      .filter(Boolean)
+      .slice(0, 30)
+      .join("
+");
   };
 
-  const analyze = async () => {
-    setStatus("loading");
-    const notes = getNotes();
-    const journalLine = notes ? "1-2 sentences on what the journal notes reveal about how this routine performed in practice. Be specific." : "null";
-    const prompt = [
-      "You are a skincare and haircare expert. Analyze this beauty routine and give a brief, practical analysis.",
-      "",
-      title ? "Routine: " + title : "",
-      skinProds.length > 0 ? "SKIN: " + formatList(skinProds) : "",
-      hairProds.length > 0 ? "HAIR: " + formatList(hairProds) : "",
-      txProds.length > 0 ? "TREATMENTS: " + formatList(txProds) : "",
-      notes ? "JOURNAL NOTES FROM THIS PERIOD:" : "",
-      notes || "",
-      "",
-      "Give your analysis in exactly this JSON structure (no markdown, no extra text, pure JSON):",
-      "{",
-      '  "strengths": "2-3 sentences on what this routine does well based on products and any journal notes",',
-      '  "cautions": "2-3 sentences on anything to watch out for. If nothing concerning, say so briefly.",',
-      '  "synergies": "1-2 sentences on any products that work especially well together and why",',
-      '  "journal_insights": "' + journalLine + '",',
-      '  "recommendation": "1-2 sentences of the single most impactful change or addition"',
-      "}"
-    ].filter(s => s !== undefined).join("\n");
+  const journalEntryCount = () => {
+    if (!entries || !dateRange) return 0;
+    const endDate = dateRange.end || new Date().toISOString().slice(0,10);
+    return Object.entries(entries).filter(([d]) => d >= dateRange.start && d <= endDate).filter(([,e]) => e.skin_notes || e.hair_notes).length;
+  };
 
+  const buildPrompt = (useNotes) => {
+    const notes = useNotes ? getNotes() : "";
+    const parts = [
+      "You are a skincare and haircare expert. Analyze this beauty routine. Be concise and practical.",
+      "",
+      skinProds.length > 0 ? "SKIN PRODUCTS: " + formatList(skinProds) : "",
+      hairProds.length > 0 ? "HAIR PRODUCTS: " + formatList(hairProds) : "",
+      txProds.length > 0 ? "TREATMENTS: " + formatList(txProds) : "",
+      notes ? "
+JOURNAL NOTES FROM THIS PERIOD:
+" + notes : "",
+      "",
+      "Respond ONLY with this exact JSON (no markdown, no citations, no extra text):",
+      JSON.stringify({
+        strengths: "2-3 sentences on what this routine excels at",
+        cautions: "2-3 sentences on conflicts or risks. If none, say so briefly.",
+        synergies: skinProds.length > 0 && hairProds.length > 0
+          ? "Separate with SKIN SYNERGIES: and HAIR SYNERGIES: labels. 1-2 sentences each."
+          : "1-2 sentences on products working especially well together",
+        journal_insights: notes ? "1-2 sentences on what the journal reveals about real-world performance" : null,
+        recommendation: "1-2 sentences on the single most impactful change"
+      }, null, 2)
+    ];
+    return parts.filter(Boolean).join("
+");
+  };
+
+  const doAnalyze = async (useNotes) => {
+    setStatus("loading");
     try {
       const res = await fetch("/api/claude", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
           max_tokens: 1000,
           tools: [{ type: "web_search_20250305", name: "web_search" }],
-          messages: [{ role: "user", content: prompt }]
+          messages: [{ role: "user", content: buildPrompt(useNotes) }]
         })
       });
-      if (!res.ok) {
-        const errText = await res.text();
-        console.error("API error", res.status, errText);
-        setStatus("error");
-        return;
-      }
+      if (!res.ok) { console.error("API error", res.status, await res.text()); setStatus("error"); return; }
       const data = await res.json();
       const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const clean = text.replace(/]*>[\s\S]*?<\/antml:cite>/g, "").replace(/]*>/g, "").replace(/<\/antml:cite>/g, "");
+      const jsonMatch = clean.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        try { setResult(JSON.parse(jsonMatch[0])); } catch(pe) { console.error("Parse error", pe); setResult({ raw: text }); }
-        setStatus("done");
-      } else if (text) {
-        setResult({ raw: text });
-        setStatus("done");
-      } else {
-        console.error("Empty response", data);
-        setStatus("error");
-      }
-    } catch(e) {
-      console.error("Analysis API error:", e);
-      setStatus("error");
-    }
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          // Strip citations from all string values
+          Object.keys(parsed).forEach(k => { if (typeof parsed[k] === "string") parsed[k] = stripCitations(parsed[k]); });
+          setResult(parsed);
+        } catch { setResult({ raw: stripCitations(clean) }); }
+      } else { setResult({ raw: stripCitations(clean) }); }
+      setStatus("done");
+      setChatHistory([{ role: "assistant", content: "I've analyzed your routine. What would you like to know more about?" }]);
+    } catch(e) { console.error("Analysis error:", e); setStatus("error"); }
+  };
+
+  // Auto-analyze for historic snapshots
+  if (status === "loading_auto") { setTimeout(() => doAnalyze(true), 0); return (
+    <div style={{background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"16px",marginTop:12}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>Routine Analysis</div>
+        <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#a08070"}}>×</button>
+      </div>
+      <div style={{textAlign:"center",padding:"24px 0"}}>
+        <div style={{fontSize:"1.4rem",marginBottom:10,animation:"spin 1.5s linear infinite",display:"inline-block"}}>✦</div>
+        <div style={{fontSize:".8rem",color:"#a08070",fontStyle:"italic"}}>Analyzing your routine…</div>
+        <style>{".spin-anim{animation:spin 1.5s linear infinite}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}"}</style>
+      </div>
+    </div>
+  ); }
+
+  const sendChat = async () => {
+    if (!chatInput.trim() || chatLoading) return;
+    const userMsg = chatInput.trim();
+    setChatInput("");
+    setChatLoading(true);
+    const newHistory = [...chatHistory, { role: "user", content: userMsg }];
+    setChatHistory(newHistory);
+    try {
+      const systemContext = "You are a skincare and haircare expert. The user is asking follow-up questions about their beauty routine analysis. Keep answers concise and practical. Do not use citation tags.
+
+Their routine:
+" +
+        (skinProds.length > 0 ? "SKIN: " + formatList(skinProds) + "
+" : "") +
+        (hairProds.length > 0 ? "HAIR: " + formatList(hairProds) + "
+" : "") +
+        (txProds.length > 0 ? "TREATMENTS: " + formatList(txProds) + "
+" : "") +
+        "
+Previous analysis: " + (result ? JSON.stringify(result) : "");
+      const messages = [
+        { role: "user", content: systemContext + "
+
+Now answer this question: " + userMsg }
+      ];
+      const res = await fetch("/api/claude", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 600, messages })
+      });
+      const data = await res.json();
+      const text = stripCitations((data.content || []).filter(b => b.type === "text").map(b => b.text).join(""));
+      setChatHistory([...newHistory, { role: "assistant", content: text }]);
+    } catch(e) { setChatHistory([...newHistory, { role: "assistant", content: "Sorry, something went wrong. Please try again." }]); }
+    setChatLoading(false);
   };
 
   const Section = ({ emoji, label, color, text }) => {
     if (!text || text === "null") return null;
     return (
-      <div style={{marginBottom:16}}>
-        <div style={{fontSize:".7rem",letterSpacing:".1em",textTransform:"uppercase",color,fontWeight:600,marginBottom:6}}>{emoji} {label}</div>
-        <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.6}}>{text}</div>
+      <div style={{marginBottom:14}}>
+        <div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color,fontWeight:600,marginBottom:5}}>{emoji} {label}</div>
+        <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.6}}>{stripCitations(text)}</div>
       </div>
     );
   };
@@ -1086,57 +1145,87 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
   return (
     <div style={{background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"16px",marginTop:12}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>Analysis{title ? ` — ${title}` : ""}</div>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>Routine Analysis</div>
         <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#a08070"}}>×</button>
       </div>
 
-      {status==="idle"&&(
-        <div style={{textAlign:"center",padding:"8px 0 12px"}}>
-          <div style={{display:"flex",flexWrap:"wrap",gap:5,justifyContent:"center",marginBottom:14}}>
-            {productList.map(p=>(
-              <span key={p.id} style={{fontSize:".7rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"3px 9px",color:"#7a5c48"}}>
-                {p.name}{p.brand ? ` · ${p.brand}` : ""}
-              </span>
-            ))}
+      {status==="confirm_entries"&&(
+        <div style={{padding:"4px 0 8px"}}>
+          <div style={{fontSize:".84rem",color:"#5a3a27",marginBottom:14,lineHeight:1.6}}>
+            Include journal entries since <strong>{new Date(dateRange.start+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</strong>?
+            {journalEntryCount() > 0
+              ? <span style={{color:"#a08070"}}> ({journalEntryCount()} entries with notes)</span>
+              : <span style={{color:"#c0a890"}}> (no notes found for this period)</span>}
           </div>
-          {getNotes() && <div style={{fontSize:".72rem",color:"#a08070",marginBottom:12,fontStyle:"italic"}}>📓 {Object.entries(entries||{}).filter(([d])=>d>=(dateRange?.start||"")&&d<=(dateRange?.end||new Date().toISOString().slice(0,10))).filter(([,e])=>e.skin_notes||e.hair_notes).length} journal entries from this period will be included</div>}
-          <button onClick={analyze}
-            style={{background:"#3a2e27",border:"none",borderRadius:10,padding:"10px 22px",color:"#f7ece4",fontSize:".8rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
-            Analyze My Routine
-          </button>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>doAnalyze(true)}
+              style={{flex:1,background:"#3a2e27",border:"none",borderRadius:10,padding:"10px",color:"#f7ece4",fontSize:".8rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
+              Yes, include entries
+            </button>
+            <button onClick={()=>doAnalyze(false)}
+              style={{flex:1,background:"none",border:"1.5px solid #e8d8cc",borderRadius:10,padding:"10px",color:"#a08070",fontSize:".8rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+              Just products
+            </button>
+          </div>
         </div>
       )}
 
       {status==="loading"&&(
         <div style={{textAlign:"center",padding:"24px 0"}}>
-          <div style={{fontSize:"1.4rem",marginBottom:10,animation:"spin 1.5s linear infinite",display:"inline-block"}}>✦</div>
-          <div style={{fontSize:".8rem",color:"#a08070",fontStyle:"italic"}}>Looking up your products and analyzing…</div>
+          <div style={{fontSize:"1.4rem",marginBottom:10,display:"inline-block",animation:"spin 1.5s linear infinite"}}>✦</div>
+          <div style={{fontSize:".8rem",color:"#a08070",fontStyle:"italic"}}>Analyzing your routine…</div>
           <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         </div>
       )}
 
       {status==="error"&&(
         <div style={{textAlign:"center",padding:"12px 0"}}>
-          <div style={{fontSize:".8rem",color:"#c07060",marginBottom:6}}>Something went wrong. Please try again.</div>
-          <div style={{fontSize:".7rem",color:"#a08070",marginBottom:10}}>Check the browser console for details.</div>
-          <button onClick={()=>setStatus("idle")} className="ghost-btn">Try Again</button>
+          <div style={{fontSize:".8rem",color:"#c07060",marginBottom:8}}>Something went wrong. Please try again.</div>
+          <button onClick={()=>setStatus(isCurrent?"confirm_entries":"loading_auto")} className="ghost-btn">Try Again</button>
         </div>
       )}
 
       {status==="done"&&result&&(
         <div>
-          {result.raw ? (
-            <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.7,whiteSpace:"pre-wrap"}}>{result.raw}</div>
-          ) : (
-            <div>
-              <Section emoji="✨" label="What this routine does well" color="#5a8a5a" text={result.strengths}/>
-              <Section emoji="⚠️" label="Things to watch" color="#b07a30" text={result.cautions}/>
-              <Section emoji="🤝" label="Product synergies" color="#5a6a9a" text={result.synergies}/>
-              <Section emoji="📓" label="What your journal reveals" color="#7a6a4a" text={result.journal_insights}/>
-              <Section emoji="💡" label="Recommendation" color="#7a5c48" text={result.recommendation}/>
+          {result.raw
+            ? <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.7}}>{result.raw}</div>
+            : <div>
+                <Section emoji="✨" label="What this routine does well" color="#5a8a5a" text={result.strengths}/>
+                <Section emoji="⚠️" label="Things to watch" color="#b07a30" text={result.cautions}/>
+                <Section emoji="🤝" label="Synergies" color="#5a6a9a" text={result.synergies}/>
+                <Section emoji="📓" label="What your journal reveals" color="#7a6a4a" text={result.journal_insights}/>
+                <Section emoji="💡" label="Recommendation" color="#7a5c48" text={result.recommendation}/>
+              </div>
+          }
+
+          {/* Chatbot */}
+          <div style={{marginTop:16,borderTop:"1px solid #f0e0d4",paddingTop:14}}>
+            <div style={{fontSize:".68rem",letterSpacing:".08em",textTransform:"uppercase",color:"#a08070",marginBottom:10}}>Ask a follow-up</div>
+            {chatHistory.slice(1).map((m,i)=>(
+              <div key={i} style={{marginBottom:10,display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
+                <div style={{maxWidth:"85%",background:m.role==="user"?"#3a2e27":"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"8px 12px",fontSize:".8rem",color:m.role==="user"?"#f7ece4":"#3a2e27",lineHeight:1.5}}>
+                  {m.content}
+                </div>
+              </div>
+            ))}
+            {chatLoading&&<div style={{fontSize:".76rem",color:"#a08070",fontStyle:"italic",marginBottom:8}}>Thinking…</div>}
+            <div style={{display:"flex",gap:8,marginTop:4}}>
+              <input
+                className="ifield"
+                style={{flex:1,fontSize:".8rem",padding:"8px 12px"}}
+                placeholder="e.g. Why do these conflict? What helps with redness?"
+                value={chatInput}
+                onChange={e=>setChatInput(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&sendChat()}
+              />
+              <button onClick={sendChat} disabled={!chatInput.trim()||chatLoading}
+                style={{background:"#3a2e27",border:"none",borderRadius:10,padding:"8px 14px",color:"#f7ece4",fontSize:".8rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",opacity:chatInput.trim()?1:.4}}>
+                →
+              </button>
             </div>
-          )}
-          <button onClick={()=>setStatus("idle")} className="ghost-btn" style={{marginTop:4,fontSize:".74rem"}}>Run Again</button>
+          </div>
+
+          <button onClick={()=>{setStatus(isCurrent?"confirm_entries":"loading_auto");setResult(null);setChatHistory([]);}} className="ghost-btn" style={{marginTop:12,fontSize:".74rem"}}>Run Again</button>
         </div>
       )}
     </div>
@@ -1321,7 +1410,7 @@ function CompareRoutines({ snapshots, products, entries, onClose }) {
   );
 }
 
-function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onRemoveFromSnapshot, onFinalizeBase, onBack }) {
+function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onRemoveFromSnapshot, onFinalizeBase, onDeleteSnapshot, onBack }) {
   const [tab, setTab] = useState("current");
   const [editMode, setEditMode] = useState(false); // draft edit mode on finalized routine
   const [showForm, setShowForm] = useState(false);
@@ -1470,9 +1559,10 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
     </div>
   );
 
-  const SnapCard = ({snap}) => {
+  const SnapCard = ({snap}) => { // uses onDeleteSnapshot from closure
     const [open, setOpen] = useState(false);
     const [snapAnalysis, setSnapAnalysis] = useState(false);
+    const [confirmDel, setConfirmDel] = useState(false);
     const prods = snap.products.map(sp=>products.find(p=>p.id===sp.product_id)).filter(Boolean);
     const skinP=prods.filter(p=>p.category==="skin");
     const hairP=prods.filter(p=>p.category==="hair");
@@ -1494,7 +1584,10 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
             <button onClick={e=>{e.stopPropagation();setSnapAnalysis(v=>!v);}} style={{background:"none",border:"1px solid #e8d8cc",borderRadius:8,padding:"4px 10px",color:"#a08070",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
-              {snapAnalysis?"Close":"Analyze"}
+              {snapAnalysis?"Close":"Analyze my routine"}
+            </button>
+            <button onClick={e=>{e.stopPropagation();setConfirmDel(true);}} style={{background:"none",border:"1px solid #f0c8c0",borderRadius:8,padding:"4px 10px",color:"#c07060",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+              Delete
             </button>
             <span style={{color:"#b07a5e",fontSize:".8rem"}}>{open?"▲":"▼"}</span>
           </div>
@@ -1505,8 +1598,18 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
             snapProducts={snap.products}
             entries={entries}
             dateRange={{start:snap.started_at, end:snap.ended_at}}
-            title={startLabel + " — " + endLabel}
+            isCurrent={false}
             onClose={()=>setSnapAnalysis(false)}/>
+        </div>}
+        {confirmDel&&<div style={{marginTop:12,background:"#fff8f3",border:"1.5px solid #f0c8c0",borderRadius:12,padding:"14px"}} onClick={e=>e.stopPropagation()}>
+          <div style={{fontSize:".84rem",color:"#3a2e27",marginBottom:12,lineHeight:1.5}}>Delete this snapshot? This cannot be undone.</div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>setConfirmDel(false)} className="ghost-btn" style={{flex:1,fontSize:".78rem"}}>Cancel</button>
+            <button onClick={()=>onDeleteSnapshot(snap.id)}
+              style={{flex:1,background:"#c07060",border:"none",borderRadius:10,padding:"9px",color:"#fff",fontSize:".78rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+              Yes, Delete
+            </button>
+          </div>
         </div>}
         {open&&<div style={{marginTop:14,borderTop:"1px solid #f0e0d4",paddingTop:12}} onClick={e=>e.stopPropagation()}>
           {skinP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8}}>🌿 Skin</div>{skinP.map(p=><MiniCard key={p.id} p={p} emoji="🌿"/>)}</>}
@@ -1649,7 +1752,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
               {/* Analysis panel — inside the card */}
               {showAnalysis&&activeSnap&&!isDraft&&(
                 <div style={{marginBottom:16,borderBottom:"1px solid #f0e0d4",paddingBottom:16}}>
-                  <RoutineAnalysis products={products} snapProducts={activeSnap.products} entries={entries} dateRange={{start:activeSnap.started_at, end:null}} onClose={()=>setShowAnalysis(false)}/>
+                  <RoutineAnalysis products={products} snapProducts={activeSnap.products} entries={entries} dateRange={{start:activeSnap.started_at, end:null}} isCurrent={true} onClose={()=>setShowAnalysis(false)}/>
                 </div>
               )}
 
@@ -1717,7 +1820,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
             </button>
           )}
           {pastSnaps.length===0&&!showCompare&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No past snapshots yet — they appear here when your routine changes</div>}
-          {!showCompare&&pastSnaps.map(snap=><SnapCard key={snap.id} snap={snap}/>)}
+          {!showCompare&&pastSnaps.map(snap=><SnapCard key={snap.id} snap={snap} onDeleteSnapshot={onDeleteSnapshot}/>)}
         </>
       )}
 
@@ -2617,10 +2720,16 @@ export default function App({ user }) {
   };
 
   const finalizeBase = async (baseId) => {
-    // Convert base snapshot to finalized (is_base = false)
     await supabase.from("snapshots").update({is_base:false}).eq("id",baseId);
     setSnapshots(prev=>prev.map(s=>s.id===baseId?{...s,is_base:false}:s));
     showT("Routine finalized ✓");
+  };
+
+  const deleteSnapshot = async (snapId) => {
+    await supabase.from("snapshot_products").delete().eq("snapshot_id", snapId);
+    await supabase.from("snapshots").delete().eq("id", snapId);
+    setSnapshots(prev=>prev.filter(s=>s.id!==snapId));
+    showT("Snapshot deleted");
   };
   const addProductToSnapshot = async (snapId, productId) => {
     const id = crypto.randomUUID();
@@ -2805,6 +2914,7 @@ export default function App({ user }) {
       onAddToSnapshot={addProductToSnapshot}
       onRemoveFromSnapshot={removeProductFromSnapshot}
       onFinalizeBase={finalizeBase}
+      onDeleteSnapshot={deleteSnapshot}
       onBack={()=>setPageView(null)}/></div>
   );
   if (pageView==="wishlist") return (
