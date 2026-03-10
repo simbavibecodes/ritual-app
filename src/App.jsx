@@ -1044,8 +1044,7 @@ JOURNAL NOTES FROM THIS PERIOD:
         recommendation: "1-2 sentences on the single most impactful change"
       }, null, 2)
     ];
-    return parts.filter(Boolean).join("
-");
+    return parts.filter(Boolean).join("\n");
   };
 
   const doAnalyze = async (useNotes) => {
