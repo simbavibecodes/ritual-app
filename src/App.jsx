@@ -1008,31 +1008,32 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
         return parts.join(" | ");
       })
       .filter(Boolean);
-    return relevant.length > 0 ? relevant.slice(0, 30).join("
-") : "";
+    return relevant.length > 0 ? relevant.slice(0, 30).join("\n") : "";
   };
 
   const analyze = async () => {
     setStatus("loading");
     const notes = getNotes();
-    const prompt = `You are a skincare and haircare expert. Analyze this beauty routine and give a brief, practical analysis.
-
-${title ? `Routine: ${title}` : ""}
-${skinProds.length > 0 ? `SKIN: ${formatList(skinProds)}` : ""}
-${hairProds.length > 0 ? `HAIR: ${formatList(hairProds)}` : ""}
-${txProds.length > 0 ? `TREATMENTS: ${formatList(txProds)}` : ""}
-${notes ? `
-JOURNAL NOTES FROM THIS PERIOD:
-${notes}` : ""}
-
-Give your analysis in exactly this JSON structure (no markdown, no extra text, pure JSON):
-{
-  "strengths": "2-3 sentences on what this routine does well based on products and any journal notes",
-  "cautions": "2-3 sentences on anything to watch out for. If nothing concerning, say so briefly.",
-  "synergies": "1-2 sentences on any products that work especially well together and why",
-  "journal_insights": "${notes ? "1-2 sentences on what the journal notes reveal about how this routine performed in practice. Be specific." : null}",
-  "recommendation": "1-2 sentences of the single most impactful change or addition"
-}`;
+    const journalLine = notes ? "1-2 sentences on what the journal notes reveal about how this routine performed in practice. Be specific." : "null";
+    const prompt = [
+      "You are a skincare and haircare expert. Analyze this beauty routine and give a brief, practical analysis.",
+      "",
+      title ? "Routine: " + title : "",
+      skinProds.length > 0 ? "SKIN: " + formatList(skinProds) : "",
+      hairProds.length > 0 ? "HAIR: " + formatList(hairProds) : "",
+      txProds.length > 0 ? "TREATMENTS: " + formatList(txProds) : "",
+      notes ? "JOURNAL NOTES FROM THIS PERIOD:" : "",
+      notes || "",
+      "",
+      "Give your analysis in exactly this JSON structure (no markdown, no extra text, pure JSON):",
+      "{",
+      '  "strengths": "2-3 sentences on what this routine does well based on products and any journal notes",',
+      '  "cautions": "2-3 sentences on anything to watch out for. If nothing concerning, say so briefly.",',
+      '  "synergies": "1-2 sentences on any products that work especially well together and why",',
+      '  "journal_insights": "' + journalLine + '",',
+      '  "recommendation": "1-2 sentences of the single most impactful change or addition"',
+      "}"
+    ].filter(s => s !== undefined).join("\n");
 
     try {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -1155,8 +1156,7 @@ function CompareRoutines({ snapshots, products, entries, onClose }) {
         if (e.hair_notes) parts.push(`Hair (${d}): ${e.hair_notes}`);
         return parts.join(" | ");
       }).filter(Boolean);
-    return relevant.slice(0, 15).join("
-");
+    return relevant.slice(0, 15).join("\n");
   };
 
   const compare = async () => {
@@ -1171,32 +1171,29 @@ function CompareRoutines({ snapshots, products, entries, onClose }) {
       const hair = prods.filter(p=>p.category==="hair").map(p=>`${p.name}${p.brand?` by ${p.brand}`:""}`).join(", ");
       const tx   = prods.filter(p=>p.category==="treatment").map(p=>`${p.name}${p.brand?` by ${p.brand}`:""}`).join(", ");
       const notes = getSnapNotes(snap);
-      return `ROUTINE ${i+1} (${getSnapLabel(snap)}):
-${skin ? `Skin: ${skin}` : ""}
-${hair ? `Hair: ${hair}` : ""}
-${tx ? `Treatments: ${tx}` : ""}
-${notes ? `Journal notes:
-${notes}` : "No journal notes for this period."}`;
-    }).join("
+      return [
+        "ROUTINE " + (i+1) + " (" + getSnapLabel(snap) + "):",
+        skin ? "Skin: " + skin : "",
+        hair ? "Hair: " + hair : "",
+        tx ? "Treatments: " + tx : "",
+        notes ? "Journal notes:\n" + notes : "No journal notes for this period."
+      ].filter(Boolean).join("\n");
+    }).join("\n\n---\n\n");
 
----
-
-");
-
-    const prompt = `You are a skincare and haircare expert. Compare these ${selectedSnaps.length} beauty routines and give a practical, insightful comparison. Use journal notes to assess how each routine performed in practice.
-
-${routineBlocks}
-
-Respond in exactly this JSON structure (no markdown, pure JSON):
-{
-  "routines": [
-    { "label": "Routine 1 (date range)", "summary": "2 sentences on what this routine was optimized for and how it performed based on journal notes if available" }
-  ],
-  "what_improved": "2-3 sentences on positive trends or changes across the routines over time",
-  "common_thread": "1-2 sentences on products or ingredients appearing across multiple routines",
-  "best_period": "1-2 sentences on which routine period seemed to work best and why, based on products and journal evidence",
-  "recommendation": "2-3 sentences of actionable advice based on everything you see across all routines"
-}`;
+    const prompt = [
+      "You are a skincare and haircare expert. Compare these " + selectedSnaps.length + " beauty routines and give a practical, insightful comparison. Use journal notes to assess how each routine performed in practice.",
+      "",
+      routineBlocks,
+      "",
+      "Respond in exactly this JSON structure (no markdown, pure JSON):",
+      "{",
+      '  "routines": [{ "label": "Routine 1 (date range)", "summary": "2 sentences on what this routine was optimized for and how it performed based on journal notes if available" }],',
+      '  "what_improved": "2-3 sentences on positive trends or changes across the routines over time",',
+      '  "common_thread": "1-2 sentences on products or ingredients appearing across multiple routines",',
+      '  "best_period": "1-2 sentences on which routine period seemed to work best and why, based on products and journal evidence",',
+      '  "recommendation": "2-3 sentences of actionable advice based on everything you see across all routines"',
+      "}"
+    ].join("\n");
 
     try {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
