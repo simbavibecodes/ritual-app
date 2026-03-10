@@ -978,9 +978,136 @@ function WishlistPage({ wishlist, products, onSave, onDelete, onMoveToCart, onBa
 }
 
 // ── MY PRODUCTS PAGE ───────────────────────────────────────────
+function RoutineAnalysis({ products, snapProducts, onClose }) {
+  const [status, setStatus] = useState("idle"); // idle | loading | done | error
+  const [result, setResult] = useState(null);
+
+  const productList = snapProducts
+    .map(sp => products.find(p => p.id === sp.product_id))
+    .filter(Boolean);
+
+  const skinProds = productList.filter(p => p.category === "skin");
+  const hairProds = productList.filter(p => p.category === "hair");
+  const txProds   = productList.filter(p => p.category === "treatment");
+
+  const formatList = (arr) => arr.map(p => `${p.name}${p.brand ? ` by ${p.brand}` : ""}`).join(", ");
+
+  const analyse = async () => {
+    setStatus("loading");
+    const prompt = `You are a skincare and haircare expert. Analyse this person's current beauty routine and give a brief, practical analysis.
+
+Current routine:
+${skinProds.length > 0 ? `SKIN: ${formatList(skinProds)}` : ""}
+${hairProds.length > 0 ? `HAIR: ${formatList(hairProds)}` : ""}
+${txProds.length > 0 ? `TREATMENTS: ${formatList(txProds)}` : ""}
+
+Give your analysis in exactly this JSON structure (no markdown, no extra text, pure JSON):
+{
+  "strengths": "2-3 sentences on what this routine does well",
+  "cautions": "2-3 sentences on anything to watch out for — ingredient conflicts, over-exfoliation, etc. If nothing concerning, say so briefly.",
+  "synergies": "1-2 sentences on any products that work especially well together and why",
+  "recommendation": "1-2 sentences of the single most impactful change or addition they could make"
+}`;
+
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          tools: [{ type: "web_search_20250305", name: "web_search" }],
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      const data = await res.json();
+      // Extract text content from response
+      const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+      // Parse JSON from response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        setResult(JSON.parse(jsonMatch[0]));
+        setStatus("done");
+      } else {
+        setResult({ raw: text });
+        setStatus("done");
+      }
+    } catch(e) {
+      setStatus("error");
+    }
+  };
+
+  const Section = ({ emoji, label, color, text }) => (
+    <div style={{marginBottom:16}}>
+      <div style={{fontSize:".7rem",letterSpacing:".1em",textTransform:"uppercase",color,fontWeight:600,marginBottom:6}}>{emoji} {label}</div>
+      <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.6}}>{text}</div>
+    </div>
+  );
+
+  return (
+    <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"20px",marginBottom:16}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",fontStyle:"italic",color:"#5a3a27"}}>Routine Analysis</div>
+        <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+      </div>
+
+      {status==="idle"&&(
+        <div style={{textAlign:"center",padding:"16px 0"}}>
+          <div style={{fontSize:".82rem",color:"#a08070",marginBottom:16,lineHeight:1.6}}>
+            Claude will look up your products and analyse ingredient interactions, synergies, and give personalised recommendations.
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center",marginBottom:20}}>
+            {productList.map(p=>(
+              <span key={p.id} style={{fontSize:".72rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"4px 10px",color:"#7a5c48"}}>
+                {p.name}{p.brand?` · ${p.brand}`:""}
+              </span>
+            ))}
+          </div>
+          <button onClick={analyse}
+            style={{background:"#3a2e27",border:"none",borderRadius:12,padding:"13px 28px",color:"#f7ece4",fontSize:".86rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".06em",fontWeight:500}}>
+            Analyse My Routine
+          </button>
+        </div>
+      )}
+
+      {status==="loading"&&(
+        <div style={{textAlign:"center",padding:"32px 0"}}>
+          <div style={{fontSize:"1.4rem",marginBottom:12,animation:"spin 1.5s linear infinite",display:"inline-block"}}>✦</div>
+          <div style={{fontSize:".82rem",color:"#a08070",fontStyle:"italic"}}>Looking up your products and analysing…</div>
+          <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+        </div>
+      )}
+
+      {status==="error"&&(
+        <div style={{textAlign:"center",padding:"16px 0"}}>
+          <div style={{fontSize:".82rem",color:"#c07060",marginBottom:12}}>Something went wrong. Please try again.</div>
+          <button onClick={()=>setStatus("idle")} className="ghost-btn">Try Again</button>
+        </div>
+      )}
+
+      {status==="done"&&result&&(
+        <div>
+          {result.raw ? (
+            <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.7,whiteSpace:"pre-wrap"}}>{result.raw}</div>
+          ) : (
+            <>
+              {result.strengths&&<Section emoji="✨" label="What your routine does well" color="#5a8a5a" text={result.strengths}/>}
+              {result.cautions&&<Section emoji="⚠️" label="Things to watch" color="#b07a30" text={result.cautions}/>}
+              {result.synergies&&<Section emoji="🤝" label="Product synergies" color="#5a6a9a" text={result.synergies}/>}
+              {result.recommendation&&<Section emoji="💡" label="Recommendation" color="#7a5c48" text={result.recommendation}/>}
+            </>
+          )}
+          <button onClick={()=>setStatus("idle")} className="ghost-btn" style={{marginTop:8,fontSize:".76rem"}}>Run Again</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onRemoveFromSnapshot, onFinaliseBase, onBack }) {
   const [tab, setTab] = useState("current");
   const [showForm, setShowForm] = useState(false);
+  const [showAnalysis, setShowAnalysis] = useState(false);
   const [editProd, setEditProd] = useState(null);
   const [chooseCat, setChooseCat] = useState(false);
   const [isEditing, setIsEditing] = useState(false); // true = editing existing product
@@ -1178,10 +1305,17 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
           )}
 
           {activeSnap&&snapProducts.length>0&&!baseSnap&&(
-            <div style={{fontSize:".68rem",color:"#a08070",marginBottom:14,letterSpacing:".06em"}}>
-              Current routine since {new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div style={{fontSize:".68rem",color:"#a08070",letterSpacing:".06em"}}>
+                Current routine since {new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}
+              </div>
+              {!showAnalysis&&<button onClick={()=>setShowAnalysis(true)}
+                style={{background:"#3a2e27",border:"none",borderRadius:10,padding:"6px 12px",color:"#f7ece4",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".04em",whiteSpace:"nowrap"}}>
+                ✦ Analyse
+              </button>}
             </div>
           )}
+          {showAnalysis&&activeSnap&&<RoutineAnalysis products={products} snapProducts={activeSnap.products} onClose={()=>setShowAnalysis(false)}/>}
 
           {skinProds.length>0&&<><div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10}}>🌿 Skin</div>{skinProds.map(p=><ProductCard key={p.id} p={p}/>)}</>}
           {hairProds.length>0&&<><div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,marginTop:skinProds.length?16:0}}>✨ Hair</div>{hairProds.map(p=><ProductCard key={p.id} p={p}/>)}</>}
