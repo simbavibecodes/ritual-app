@@ -1099,23 +1099,39 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
     const newHistory = [...chatHistory, { role: "user", content: userMsg }];
     setChatHistory(newHistory);
     try {
-      const systemContext = "You are a skincare and haircare expert. The user is asking follow-up questions about their beauty routine analysis. Keep answers concise and practical. Do not use citation tags.\n\nTheir routine:\n" +
+      const context = "You are a skincare and haircare expert answering follow-up questions about a beauty routine. Be concise and practical. Never use citation tags or brackets.\n\nRoutine:\n" +
         (skinProds.length > 0 ? "SKIN: " + formatList(skinProds) + "\n" : "") +
         (hairProds.length > 0 ? "HAIR: " + formatList(hairProds) + "\n" : "") +
         (txProds.length > 0 ? "TREATMENTS: " + formatList(txProds) + "\n" : "") +
-        "\nPrevious analysis: " + (result ? JSON.stringify(result) : "");
+        (result && !result.raw ? "\nAnalysis summary: strengths=" + (result.strengths||"") + " recommendation=" + (result.recommendation||"") : "");
       const messages = [
-        { role: "user", content: systemContext + "\n\nNow answer this question: " + userMsg }
+        { role: "user", content: context + "\n\nQuestion: " + userMsg }
       ];
       const res = await fetch("/api/claude", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 600, messages })
       });
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error("Chat API error", res.status, errText);
+        setChatHistory([...newHistory, { role: "assistant", content: "Error " + res.status + ": " + errText.slice(0, 120) }]);
+        setChatLoading(false);
+        return;
+      }
       const data = await res.json();
+      if (data.error) {
+        console.error("Claude error", data.error);
+        setChatHistory([...newHistory, { role: "assistant", content: "API error: " + (data.error.message || JSON.stringify(data.error)) }]);
+        setChatLoading(false);
+        return;
+      }
       const text = stripCitations((data.content || []).filter(b => b.type === "text").map(b => b.text).join(""));
-      setChatHistory([...newHistory, { role: "assistant", content: text }]);
-    } catch(e) { setChatHistory([...newHistory, { role: "assistant", content: "Sorry, something went wrong. Please try again." }]); }
+      setChatHistory([...newHistory, { role: "assistant", content: text || "(no response)" }]);
+    } catch(e) {
+      console.error("Chat fetch error:", e);
+      setChatHistory([...newHistory, { role: "assistant", content: "Network error: " + e.message }]);
+    }
     setChatLoading(false);
   };
 
