@@ -978,35 +978,60 @@ function WishlistPage({ wishlist, products, onSave, onDelete, onMoveToCart, onBa
 }
 
 // ── MY PRODUCTS PAGE ───────────────────────────────────────────
-function RoutineAnalysis({ products, snapProducts, onClose }) {
-  const [status, setStatus] = useState("idle"); // idle | loading | done | error
+function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, title }) {
+  const [status, setStatus] = useState("idle");
   const [result, setResult] = useState(null);
 
   const productList = snapProducts
-    .map(sp => products.find(p => p.id === sp.product_id))
+    .map(sp => products.find(p => p.id === (sp.product_id || sp.id)))
     .filter(Boolean);
 
   const skinProds = productList.filter(p => p.category === "skin");
   const hairProds = productList.filter(p => p.category === "hair");
   const txProds   = productList.filter(p => p.category === "treatment");
 
-  const formatList = (arr) => arr.map(p => `${p.name}${p.brand ? ` by ${p.brand}` : ""}`).join(", ");
+  const formatList = (arr) => arr.map(p => `${p.name}${p.brand ? ` by ${p.brand}` : ""}${p.frequency ? ` (${p.frequency})` : ""}`).join(", ");
+
+  // Pull notes from entries within the snapshot date range
+  const getNotes = () => {
+    if (!entries || !dateRange) return "";
+    const { start, end } = dateRange;
+    const endDate = end || new Date().toISOString().slice(0,10);
+    const relevant = Object.entries(entries)
+      .filter(([d]) => d >= start && d <= endDate)
+      .map(([d, e]) => {
+        const parts = [];
+        if (e.skin_notes) parts.push(`Skin (${d}): ${e.skin_notes}`);
+        if (e.hair_notes) parts.push(`Hair (${d}): ${e.hair_notes}`);
+        if (e.skin_mood) parts.push(`Skin mood (${d}): ${e.skin_mood}`);
+        if (e.hair_mood) parts.push(`Hair mood (${d}): ${e.hair_mood}`);
+        return parts.join(" | ");
+      })
+      .filter(Boolean);
+    return relevant.length > 0 ? relevant.slice(0, 30).join("
+") : "";
+  };
 
   const analyze = async () => {
     setStatus("loading");
-    const prompt = `You are a skincare and haircare expert. Analyze this person's current beauty routine and give a brief, practical analysis.
+    const notes = getNotes();
+    const prompt = `You are a skincare and haircare expert. Analyze this beauty routine and give a brief, practical analysis.
 
-Current routine:
+${title ? `Routine: ${title}` : ""}
 ${skinProds.length > 0 ? `SKIN: ${formatList(skinProds)}` : ""}
 ${hairProds.length > 0 ? `HAIR: ${formatList(hairProds)}` : ""}
 ${txProds.length > 0 ? `TREATMENTS: ${formatList(txProds)}` : ""}
+${notes ? `
+JOURNAL NOTES FROM THIS PERIOD:
+${notes}` : ""}
 
 Give your analysis in exactly this JSON structure (no markdown, no extra text, pure JSON):
 {
-  "strengths": "2-3 sentences on what this routine does well",
-  "cautions": "2-3 sentences on anything to watch out for — ingredient conflicts, over-exfoliation, etc. If nothing concerning, say so briefly.",
+  "strengths": "2-3 sentences on what this routine does well based on products and any journal notes",
+  "cautions": "2-3 sentences on anything to watch out for. If nothing concerning, say so briefly.",
   "synergies": "1-2 sentences on any products that work especially well together and why",
-  "recommendation": "1-2 sentences of the single most impactful change or addition they could make"
+  "journal_insights": "${notes ? "1-2 sentences on what the journal notes reveal about how this routine performed in practice. Be specific." : null}",
+  "recommendation": "1-2 sentences of the single most impactful change or addition"
 }`;
 
     try {
@@ -1021,12 +1046,10 @@ Give your analysis in exactly this JSON structure (no markdown, no extra text, p
         })
       });
       const data = await res.json();
-      // Extract text content from response
       const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
-      // Parse JSON from response
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const jsonMatch = text.match(/\{[\s\S]*?\}/);
       if (jsonMatch) {
-        setResult(JSON.parse(jsonMatch[0]));
+        try { setResult(JSON.parse(jsonMatch[0])); } catch { setResult({ raw: text }); }
         setStatus("done");
       } else {
         setResult({ raw: text });
@@ -1037,35 +1060,212 @@ Give your analysis in exactly this JSON structure (no markdown, no extra text, p
     }
   };
 
-  const Section = ({ emoji, label, color, text }) => (
-    <div style={{marginBottom:16}}>
-      <div style={{fontSize:".7rem",letterSpacing:".1em",textTransform:"uppercase",color,fontWeight:600,marginBottom:6}}>{emoji} {label}</div>
-      <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.6}}>{text}</div>
-    </div>
-  );
+  const Section = ({ emoji, label, color, text }) => {
+    if (!text || text === "null") return null;
+    return (
+      <div style={{marginBottom:16}}>
+        <div style={{fontSize:".7rem",letterSpacing:".1em",textTransform:"uppercase",color,fontWeight:600,marginBottom:6}}>{emoji} {label}</div>
+        <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.6}}>{text}</div>
+      </div>
+    );
+  };
 
   return (
-    <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"20px",marginBottom:16}}>
+    <div style={{background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"16px",marginTop:12}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>Analysis{title ? ` — ${title}` : ""}</div>
+        <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#a08070"}}>×</button>
+      </div>
+
+      {status==="idle"&&(
+        <div style={{textAlign:"center",padding:"8px 0 12px"}}>
+          <div style={{display:"flex",flexWrap:"wrap",gap:5,justifyContent:"center",marginBottom:14}}>
+            {productList.map(p=>(
+              <span key={p.id} style={{fontSize:".7rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"3px 9px",color:"#7a5c48"}}>
+                {p.name}{p.brand ? ` · ${p.brand}` : ""}
+              </span>
+            ))}
+          </div>
+          {getNotes() && <div style={{fontSize:".72rem",color:"#a08070",marginBottom:12,fontStyle:"italic"}}>📓 {Object.entries(entries||{}).filter(([d])=>d>=(dateRange?.start||"")&&d<=(dateRange?.end||new Date().toISOString().slice(0,10))).filter(([,e])=>e.skin_notes||e.hair_notes).length} journal entries from this period will be included</div>}
+          <button onClick={analyze}
+            style={{background:"#3a2e27",border:"none",borderRadius:10,padding:"10px 22px",color:"#f7ece4",fontSize:".8rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
+            Analyze My Routine
+          </button>
+        </div>
+      )}
+
+      {status==="loading"&&(
+        <div style={{textAlign:"center",padding:"24px 0"}}>
+          <div style={{fontSize:"1.4rem",marginBottom:10,animation:"spin 1.5s linear infinite",display:"inline-block"}}>✦</div>
+          <div style={{fontSize:".8rem",color:"#a08070",fontStyle:"italic"}}>Looking up your products and analyzing…</div>
+          <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+        </div>
+      )}
+
+      {status==="error"&&(
+        <div style={{textAlign:"center",padding:"12px 0"}}>
+          <div style={{fontSize:".8rem",color:"#c07060",marginBottom:10}}>Something went wrong. Please try again.</div>
+          <button onClick={()=>setStatus("idle")} className="ghost-btn">Try Again</button>
+        </div>
+      )}
+
+      {status==="done"&&result&&(
+        <div>
+          {result.raw ? (
+            <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.7,whiteSpace:"pre-wrap"}}>{result.raw}</div>
+          ) : (
+            <div>
+              <Section emoji="✨" label="What this routine does well" color="#5a8a5a" text={result.strengths}/>
+              <Section emoji="⚠️" label="Things to watch" color="#b07a30" text={result.cautions}/>
+              <Section emoji="🤝" label="Product synergies" color="#5a6a9a" text={result.synergies}/>
+              <Section emoji="📓" label="What your journal reveals" color="#7a6a4a" text={result.journal_insights}/>
+              <Section emoji="💡" label="Recommendation" color="#7a5c48" text={result.recommendation}/>
+            </div>
+          )}
+          <button onClick={()=>setStatus("idle")} className="ghost-btn" style={{marginTop:4,fontSize:".74rem"}}>Run Again</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CompareRoutines({ snapshots, products, entries, onClose }) {
+  const [selected, setSelected] = useState([]);
+  const [status, setStatus] = useState("idle");
+  const [result, setResult] = useState(null);
+
+  const allSnaps = [...snapshots].sort((a,b) => b.started_at.localeCompare(a.started_at));
+
+  const toggle = (id) => setSelected(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
+
+  const getSnapLabel = (snap) => {
+    const start = new Date(snap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+    const end = snap.ended_at ? new Date(snap.ended_at+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "Present";
+    return `${start} — ${end}`;
+  };
+
+  const getSnapNotes = (snap) => {
+    if (!entries) return "";
+    const endDate = snap.ended_at || new Date().toISOString().slice(0,10);
+    const relevant = Object.entries(entries)
+      .filter(([d]) => d >= snap.started_at && d <= endDate)
+      .map(([d, e]) => {
+        const parts = [];
+        if (e.skin_notes) parts.push(`Skin (${d}): ${e.skin_notes}`);
+        if (e.hair_notes) parts.push(`Hair (${d}): ${e.hair_notes}`);
+        return parts.join(" | ");
+      }).filter(Boolean);
+    return relevant.slice(0, 15).join("
+");
+  };
+
+  const compare = async () => {
+    if (selected.length < 2) return;
+    setStatus("loading");
+
+    const selectedSnaps = selected.map(id => allSnaps.find(s=>s.id===id)).filter(Boolean);
+
+    const routineBlocks = selectedSnaps.map((snap, i) => {
+      const prods = snap.products.map(sp => products.find(p=>p.id===sp.product_id)).filter(Boolean);
+      const skin = prods.filter(p=>p.category==="skin").map(p=>`${p.name}${p.brand?` by ${p.brand}`:""}`).join(", ");
+      const hair = prods.filter(p=>p.category==="hair").map(p=>`${p.name}${p.brand?` by ${p.brand}`:""}`).join(", ");
+      const tx   = prods.filter(p=>p.category==="treatment").map(p=>`${p.name}${p.brand?` by ${p.brand}`:""}`).join(", ");
+      const notes = getSnapNotes(snap);
+      return `ROUTINE ${i+1} (${getSnapLabel(snap)}):
+${skin ? `Skin: ${skin}` : ""}
+${hair ? `Hair: ${hair}` : ""}
+${tx ? `Treatments: ${tx}` : ""}
+${notes ? `Journal notes:
+${notes}` : "No journal notes for this period."}`;
+    }).join("
+
+---
+
+");
+
+    const prompt = `You are a skincare and haircare expert. Compare these ${selectedSnaps.length} beauty routines and give a practical, insightful comparison. Use journal notes to assess how each routine performed in practice.
+
+${routineBlocks}
+
+Respond in exactly this JSON structure (no markdown, pure JSON):
+{
+  "routines": [
+    { "label": "Routine 1 (date range)", "summary": "2 sentences on what this routine was optimized for and how it performed based on journal notes if available" }
+  ],
+  "what_improved": "2-3 sentences on positive trends or changes across the routines over time",
+  "common_thread": "1-2 sentences on products or ingredients appearing across multiple routines",
+  "best_period": "1-2 sentences on which routine period seemed to work best and why, based on products and journal evidence",
+  "recommendation": "2-3 sentences of actionable advice based on everything you see across all routines"
+}`;
+
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1500,
+          tools: [{ type: "web_search_20250305", name: "web_search" }],
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      const data = await res.json();
+      const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try { setResult(JSON.parse(jsonMatch[0])); } catch { setResult({ raw: text }); }
+        setStatus("done");
+      } else {
+        setResult({ raw: text });
+        setStatus("done");
+      }
+    } catch(e) {
+      setStatus("error");
+    }
+  };
+
+  const Section = ({ emoji, label, color, text }) => {
+    if (!text) return null;
+    return (
+      <div style={{marginBottom:16}}>
+        <div style={{fontSize:".7rem",letterSpacing:".1em",textTransform:"uppercase",color,fontWeight:600,marginBottom:6}}>{emoji} {label}</div>
+        <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.6}}>{text}</div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",fontStyle:"italic",color:"#5a3a27"}}>Routine Analysis</div>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#5a3a27"}}>Compare Routines</div>
         <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
       </div>
 
       {status==="idle"&&(
-        <div style={{textAlign:"center",padding:"16px 0"}}>
-          <div style={{fontSize:".82rem",color:"#a08070",marginBottom:16,lineHeight:1.6}}>
-            Claude will look up your products and analyze ingredient interactions, synergies, and give personalised recommendations.
+        <div>
+          <div style={{fontSize:".78rem",color:"#a08070",marginBottom:12}}>Select any routines to compare — journal notes from each period will be included.</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
+            {allSnaps.map(snap => {
+              const prods = snap.products.map(sp=>products.find(p=>p.id===sp.product_id)).filter(Boolean);
+              const noteCount = Object.entries(entries||{}).filter(([d])=>d>=snap.started_at&&d<=(snap.ended_at||new Date().toISOString().slice(0,10))).filter(([,e])=>e.skin_notes||e.hair_notes).length;
+              const isSelected = selected.includes(snap.id);
+              return (
+                <div key={snap.id} onClick={()=>toggle(snap.id)}
+                  style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:12,border:`1.5px solid ${isSelected?"#b07a5e":"#e8d8cc"}`,background:isSelected?"#fdf0e8":"#fdf6f0",cursor:"pointer"}}>
+                  <div style={{width:18,height:18,borderRadius:4,border:`2px solid ${isSelected?"#b07a5e":"#d0b8a8"}`,background:isSelected?"#b07a5e":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    {isSelected&&<span style={{color:"#fff",fontSize:".7rem",lineHeight:1}}>✓</span>}
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:".82rem",color:"#3a2e27",fontWeight:500}}>{getSnapLabel(snap)}</div>
+                    <div style={{fontSize:".7rem",color:"#a08070",marginTop:2}}>{prods.length} products{noteCount>0?` · ${noteCount} journal entries`:""}</div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center",marginBottom:20}}>
-            {productList.map(p=>(
-              <span key={p.id} style={{fontSize:".72rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"4px 10px",color:"#7a5c48"}}>
-                {p.name}{p.brand?` · ${p.brand}`:""}
-              </span>
-            ))}
-          </div>
-          <button onClick={analyze}
-            style={{background:"#3a2e27",border:"none",borderRadius:12,padding:"13px 28px",color:"#f7ece4",fontSize:".86rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".06em",fontWeight:500}}>
-            Analyze My Routine
+          <button onClick={compare} disabled={selected.length < 2}
+            style={{width:"100%",background:selected.length>=2?"#3a2e27":"#d0b8a8",border:"none",borderRadius:12,padding:"12px",color:"#f7ece4",fontSize:".84rem",cursor:selected.length>=2?"pointer":"default",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
+            Compare {selected.length >= 2 ? `${selected.length} Routines` : "— Select at least 2"}
           </button>
         </div>
       )}
@@ -1073,8 +1273,7 @@ Give your analysis in exactly this JSON structure (no markdown, no extra text, p
       {status==="loading"&&(
         <div style={{textAlign:"center",padding:"32px 0"}}>
           <div style={{fontSize:"1.4rem",marginBottom:12,animation:"spin 1.5s linear infinite",display:"inline-block"}}>✦</div>
-          <div style={{fontSize:".82rem",color:"#a08070",fontStyle:"italic"}}>Looking up your products and analysing…</div>
-          <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+          <div style={{fontSize:".82rem",color:"#a08070",fontStyle:"italic"}}>Comparing your routines…</div>
         </div>
       )}
 
@@ -1090,21 +1289,27 @@ Give your analysis in exactly this JSON structure (no markdown, no extra text, p
           {result.raw ? (
             <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.7,whiteSpace:"pre-wrap"}}>{result.raw}</div>
           ) : (
-            <>
-              {result.strengths&&<Section emoji="✨" label="What your routine does well" color="#5a8a5a" text={result.strengths}/>}
-              {result.cautions&&<Section emoji="⚠️" label="Things to watch" color="#b07a30" text={result.cautions}/>}
-              {result.synergies&&<Section emoji="🤝" label="Product synergies" color="#5a6a9a" text={result.synergies}/>}
-              {result.recommendation&&<Section emoji="💡" label="Recommendation" color="#7a5c48" text={result.recommendation}/>}
-            </>
+            <div>
+              {result.routines?.map((r,i)=>(
+                <div key={i} style={{marginBottom:16,paddingBottom:16,borderBottom:i<result.routines.length-1?"1px solid #f0e0d4":"none"}}>
+                  <div style={{fontSize:".7rem",letterSpacing:".08em",textTransform:"uppercase",color:"#b07a5e",fontWeight:600,marginBottom:6}}>📅 {r.label}</div>
+                  <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.6}}>{r.summary}</div>
+                </div>
+              ))}
+              <Section emoji="📈" label="What improved over time" color="#5a8a5a" text={result.what_improved}/>
+              <Section emoji="🔗" label="Common thread" color="#5a6a9a" text={result.common_thread}/>
+              <Section emoji="🏆" label="Best performing period" color="#b07a30" text={result.best_period}/>
+              <Section emoji="💡" label="Recommendation" color="#7a5c48" text={result.recommendation}/>
+            </div>
           )}
-          <button onClick={()=>setStatus("idle")} className="ghost-btn" style={{marginTop:8,fontSize:".76rem"}}>Run Again</button>
+          <button onClick={()=>{setStatus("idle");setSelected([]);}} className="ghost-btn" style={{marginTop:4,fontSize:".74rem"}}>Compare Again</button>
         </div>
       )}
     </div>
   );
 }
 
-function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onRemoveFromSnapshot, onFinalizeBase, onBack }) {
+function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onRemoveFromSnapshot, onFinalizeBase, onBack }) {
   const [tab, setTab] = useState("current");
   const [editMode, setEditMode] = useState(false); // draft edit mode on finalized routine
   const [showForm, setShowForm] = useState(false);
@@ -1113,6 +1318,7 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
   const [chooseCat, setChooseCat] = useState(false);
   const [isEditingProd, setIsEditingProd] = useState(false);
   const [confirmFinalize, setConfirmFinalize] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
   const [draftChanges, setDraftChanges] = useState(null); // {added:[], removed:[], edited:[]} tracked during edit mode
   const [unsavedWarning, setUnsavedWarning] = useState(false);
   const [pendingNav, setPendingNav] = useState(null); // callback to run after discard/save
@@ -1254,6 +1460,7 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
 
   const SnapCard = ({snap}) => {
     const [open, setOpen] = useState(false);
+    const [snapAnalysis, setSnapAnalysis] = useState(false);
     const prods = snap.products.map(sp=>products.find(p=>p.id===sp.product_id)).filter(Boolean);
     const skinP=prods.filter(p=>p.category==="skin");
     const hairP=prods.filter(p=>p.category==="hair");
@@ -1273,8 +1480,22 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>{startLabel} — {endLabel}</div>
             <div style={{fontSize:".72rem",color:"#a08070",marginTop:3}}>{prods.length} product{prods.length!==1?"s":""} · {skinP.length} skin · {hairP.length} hair{txP.length>0?` · ${txP.length} treatment`:""}</div>
           </div>
-          <span style={{color:"#b07a5e",fontSize:".8rem",marginLeft:8}}>{open?"▲":"▼"}</span>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <button onClick={e=>{e.stopPropagation();setSnapAnalysis(v=>!v);}} style={{background:"none",border:"1px solid #e8d8cc",borderRadius:8,padding:"4px 10px",color:"#a08070",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+              {snapAnalysis?"Close":"Analyze"}
+            </button>
+            <span style={{color:"#b07a5e",fontSize:".8rem"}}>{open?"▲":"▼"}</span>
+          </div>
         </div>
+        {snapAnalysis&&<div onClick={e=>e.stopPropagation()}>
+          <RoutineAnalysis
+            products={products}
+            snapProducts={snap.products}
+            entries={entries}
+            dateRange={{start:snap.started_at, end:snap.ended_at}}
+            title={startLabel + " — " + endLabel}
+            onClose={()=>setSnapAnalysis(false)}/>
+        </div>}
         {open&&<div style={{marginTop:14,borderTop:"1px solid #f0e0d4",paddingTop:12}} onClick={e=>e.stopPropagation()}>
           {skinP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8}}>🌿 Skin</div>{skinP.map(p=><MiniCard key={p.id} p={p} emoji="🌿"/>)}</>}
           {hairP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8,marginTop:12}}>✨ Hair</div>{hairP.map(p=><MiniCard key={p.id} p={p} emoji="✨"/>)}</>}
@@ -1312,16 +1533,42 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
         ))}
       </div>
       <div style={{marginBottom:12}}>
-        <div style={{fontSize:".7rem",color:"#a08070",marginBottom:6,letterSpacing:".08em",textTransform:"uppercase"}}>Frequency <span style={{textTransform:"none",letterSpacing:0,color:"#c0b0a8"}}>(optional)</span></div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-          {["Daily","2x a week","Weekly","2x a month","Monthly"].map(f=>(
-            <button key={f} className={`dow-chip ${editProd.frequency===f?"on":""}`}
-              style={{fontSize:".74rem",padding:"5px 12px"}}
-              onClick={()=>setEditProd(p=>({...p,frequency:p.frequency===f?"":f}))}>
-              {f}
-            </button>
-          ))}
+        <div style={{fontSize:".7rem",color:"#a08070",marginBottom:8,letterSpacing:".08em",textTransform:"uppercase"}}>Frequency <span style={{textTransform:"none",letterSpacing:0,color:"#c0b0a8"}}>(optional)</span></div>
+        <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+          <button className={`dow-chip ${editProd.frequency==="Daily"?"on":""}`}
+            style={{fontSize:".74rem",padding:"5px 14px",fontWeight:editProd.frequency==="Daily"?600:400}}
+            onClick={()=>setEditProd(p=>({...p,frequency:p.frequency==="Daily"?"":"Daily"}))}>
+            Daily
+          </button>
+          <span style={{color:"#d0b8a8",fontSize:".8rem"}}>or</span>
+          <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+            {[2,3,4,5,6,7].map(n=>{
+              const unit = editProd._freqUnit||"week";
+              const val = `${n}x ${unit}`;
+              const active = editProd.frequency===val;
+              return <button key={n} className={`dow-chip ${active?"on":""}`}
+                style={{fontSize:".78rem",padding:"5px 10px",minWidth:36}}
+                onClick={()=>setEditProd(p=>({...p,frequency:active?"":val,_freqUnit:unit}))}>
+                {n}x
+              </button>;
+            })}
+          </div>
+          <div style={{display:"flex",gap:4}}>
+            {["week","month"].map(u=>{
+              const n = editProd.frequency?.match(/^(\d+)x /)?.[1];
+              const active = editProd._freqUnit===u||(editProd.frequency&&editProd.frequency.endsWith(u)&&!editProd._freqUnit);
+              return <button key={u} className={`dow-chip ${active&&editProd.frequency!=="Daily"?"on":""}`}
+                style={{fontSize:".74rem",padding:"5px 12px"}}
+                onClick={()=>{
+                  const num = n||2;
+                  setEditProd(p=>({...p,_freqUnit:u,frequency:p.frequency==="Daily"?`${num}x ${u}`:`${num}x ${u}`}));
+                }}>
+                {u}
+              </button>;
+            })}
+          </div>
         </div>
+        {editProd.frequency&&<div style={{marginTop:6,fontSize:".72rem",color:"#b07a5e",fontStyle:"italic"}}>→ {editProd.frequency}</div>}
       </div>
       <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes (optional)" value={editProd.notes||""} onChange={e=>setEditProd(p=>({...p,notes:e.target.value}))}/>
       <button className="save-btn" onClick={save} disabled={!editProd.name.trim()} style={{opacity:editProd.name.trim()?1:.4}}>
@@ -1390,7 +1637,7 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
               {/* Analysis panel — inside the card */}
               {showAnalysis&&activeSnap&&!isDraft&&(
                 <div style={{marginBottom:16,borderBottom:"1px solid #f0e0d4",paddingBottom:16}}>
-                  <RoutineAnalysis products={products} snapProducts={activeSnap.products} onClose={()=>setShowAnalysis(false)}/>
+                  <RoutineAnalysis products={products} snapProducts={activeSnap.products} entries={entries} dateRange={{start:activeSnap.started_at, end:null}} onClose={()=>setShowAnalysis(false)}/>
                 </div>
               )}
 
@@ -1444,8 +1691,21 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
 
       {tab==="history"&&(
         <>
-          {pastSnaps.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No past snapshots yet — they appear here when your routine changes</div>}
-          {pastSnaps.map(snap=><SnapCard key={snap.id} snap={snap}/>)}
+          {showCompare&&(
+            <CompareRoutines
+              snapshots={[...(activeSnap?[{...activeSnap,ended_at:null}]:[]),...pastSnaps]}
+              products={products}
+              entries={entries}
+              onClose={()=>setShowCompare(false)}/>
+          )}
+          {!showCompare&&(
+            <button onClick={()=>setShowCompare(true)}
+              style={{width:"100%",background:"#3a2e27",border:"none",borderRadius:12,padding:"12px",color:"#f7ece4",fontSize:".82rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,marginBottom:16,letterSpacing:".04em"}}>
+              ✦ Compare Routines
+            </button>
+          )}
+          {pastSnaps.length===0&&!showCompare&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No past snapshots yet — they appear here when your routine changes</div>}
+          {!showCompare&&pastSnaps.map(snap=><SnapCard key={snap.id} snap={snap}/>)}
         </>
       )}
 
@@ -2526,6 +2786,7 @@ export default function App({ user }) {
     <div><style>{STYLES}</style><MyProductsPage
       products={products}
       snapshots={snapshots}
+      entries={entries}
       onSaveProduct={saveProduct}
       onDeleteProduct={confirmDeleteProduct}
       onOpenSnapshot={openNewSnapshot}
