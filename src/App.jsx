@@ -1038,7 +1038,11 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
     try {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
           max_tokens: 1000,
@@ -1046,17 +1050,27 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
           messages: [{ role: "user", content: prompt }]
         })
       });
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error("API error", res.status, errText);
+        setStatus("error");
+        return;
+      }
       const data = await res.json();
       const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
-      const jsonMatch = text.match(/\{[\s\S]*?\}/);
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        try { setResult(JSON.parse(jsonMatch[0])); } catch { setResult({ raw: text }); }
+        try { setResult(JSON.parse(jsonMatch[0])); } catch(pe) { console.error("Parse error", pe); setResult({ raw: text }); }
         setStatus("done");
-      } else {
+      } else if (text) {
         setResult({ raw: text });
         setStatus("done");
+      } else {
+        console.error("Empty response", data);
+        setStatus("error");
       }
     } catch(e) {
+      console.error("Analysis API error:", e);
       setStatus("error");
     }
   };
@@ -1105,7 +1119,8 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
 
       {status==="error"&&(
         <div style={{textAlign:"center",padding:"12px 0"}}>
-          <div style={{fontSize:".8rem",color:"#c07060",marginBottom:10}}>Something went wrong. Please try again.</div>
+          <div style={{fontSize:".8rem",color:"#c07060",marginBottom:6}}>Something went wrong. Please try again.</div>
+          <div style={{fontSize:".7rem",color:"#a08070",marginBottom:10}}>Check the browser console for details.</div>
           <button onClick={()=>setStatus("idle")} className="ghost-btn">Try Again</button>
         </div>
       )}
@@ -1198,7 +1213,11 @@ function CompareRoutines({ snapshots, products, entries, onClose }) {
     try {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
           max_tokens: 1500,
