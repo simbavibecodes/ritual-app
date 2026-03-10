@@ -1057,19 +1057,25 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
   };
 
   const doAnalyze = async (useNotes) => {
-    // ── Step 1: Prefetch missing ingredients ──
+    // ── Step 1: Prefetch missing ingredients, collect results locally ──
     const missingIngredients = productList.filter(p => !p.ingredients?.length);
+    const fetchedMap = {}; // id -> {ingredients, ...}
+
     if (missingIngredients.length > 0 && onFetchIngredients) {
       setStatus("fetching_ingredients");
-      await Promise.all(missingIngredients.map(p => onFetchIngredients(p)));
+      const results = await Promise.all(missingIngredients.map(async p => {
+        const data = await onFetchIngredients(p);
+        return { id: p.id, data };
+      }));
+      results.forEach(({ id, data }) => { if (data?.ingredients?.length) fetchedMap[id] = data; });
     }
 
     setStatus("loading");
 
-    // Re-read products after fetch (ingredients now updated in parent state)
-    const freshList = snapProducts
-      .map(sp => products.find(p => p.id === (sp.product_id || sp.id)))
-      .filter(Boolean);
+    // Merge fetched ingredients into product list locally (don't wait for state update)
+    const freshList = productList.map(p =>
+      fetchedMap[p.id] ? { ...p, ingredients: fetchedMap[p.id].ingredients } : p
+    );
     const freshSkin = freshList.filter(p => p.category === "skin");
     const freshHair = freshList.filter(p => p.category === "hair");
     const freshTx   = freshList.filter(p => p.category === "treatment");
@@ -1087,6 +1093,7 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
 
     const prompt = [
       "You are a cosmetic formulation expert and dermatologist. Give a sharp, specific, actionable analysis of this routine.",
+      "IMPORTANT: You must analyze ALL products listed below — skin, hair, and treatments. Do not skip any category.",
       "Base your analysis on the actual ingredients listed. Do not be vague — name specific ingredients and explain exactly why they matter.",
       "Be direct and opinionated. If something is redundant, a conflict, or missing — say it clearly.",
       "",
@@ -1109,7 +1116,7 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
     try {
       const body = {
         model: "claude-sonnet-4-20250514",
-        max_tokens: 1200,
+        max_tokens: 1800,
         messages: [{ role: "user", content: prompt }],
         action: "analysis"
       };
@@ -1160,7 +1167,6 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
       <div style={{textAlign:"center",padding:"24px 0"}}>
         <div style={{fontSize:"1.4rem",marginBottom:10,animation:"spin 1.5s linear infinite",display:"inline-block"}}>🔍</div>
         <div style={{fontSize:".84rem",color:"#5a3a27",marginBottom:4}}>Looking up ingredients…</div>
-        <div style={{fontSize:".76rem",color:"#a08070",fontStyle:"italic"}}>This only happens once per product</div>
         <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       </div>
     </div>
@@ -1174,11 +1180,16 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
     const newHistory = [...chatHistory, { role: "user", content: userMsg }];
     setChatHistory(newHistory);
     try {
-      const context = "You are a skincare and haircare expert answering follow-up questions about a beauty routine. Be concise and practical. Never use citation tags or brackets.\n\nRoutine:\n" +
-        (skinProds.length > 0 ? "SKIN: " + formatList(skinProds) + "\n" : "") +
-        (hairProds.length > 0 ? "HAIR: " + formatList(hairProds) + "\n" : "") +
-        (txProds.length > 0 ? "TREATMENTS: " + formatList(txProds) + "\n" : "") +
-        (result && !result.raw ? "\nAnalysis summary: strengths=" + (result.strengths||"") + " recommendation=" + (result.recommendation||"") : "");
+      const formatWithIngs = (arr) => arr.map(p => {
+        const ings = p.ingredients?.length ? ` [${p.ingredients.slice(0,10).join(", ")}]` : "";
+        return `${p.name}${p.brand?" by "+p.brand:""}${ings}`;
+      }).join("; ");
+      const context = "You are a skincare and haircare formulation expert answering follow-up questions. Be specific, concise, and practical. Use plain text only — no markdown asterisks, no bullet symbols, no citation brackets.\n\n" +
+        "FULL ROUTINE:\n" +
+        (skinProds.length > 0 ? "Skin: " + formatWithIngs(skinProds) + "\n" : "") +
+        (hairProds.length > 0 ? "Hair: " + formatWithIngs(hairProds) + "\n" : "") +
+        (txProds.length > 0 ? "Treatments: " + formatWithIngs(txProds) + "\n" : "") +
+        (result && !result.raw ? "\nPrevious analysis:\nStrengths: " + (result.strengths||"") + "\nConflicts: " + (result.conflicts||"") + "\nGaps: " + (result.gaps||"") + "\nRecommendation: " + (result.recommendation||"") : "");
       const messages = [
         { role: "user", content: context + "\n\nQuestion: " + userMsg }
       ];
@@ -1282,8 +1293,13 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
             <div style={{fontSize:".68rem",letterSpacing:".08em",textTransform:"uppercase",color:"#a08070",marginBottom:10}}>Ask a follow-up</div>
             {chatHistory.slice(1).map((m,i)=>(
               <div key={i} style={{marginBottom:10,display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
-                <div style={{maxWidth:"85%",background:m.role==="user"?"#3a2e27":"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"8px 12px",fontSize:".8rem",color:m.role==="user"?"#f7ece4":"#3a2e27",lineHeight:1.5}}>
-                  {m.content}
+                <div style={{maxWidth:"85%",background:m.role==="user"?"#3a2e27":"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"8px 12px",fontSize:".8rem",color:m.role==="user"?"#f7ece4":"#3a2e27",lineHeight:1.6}}>
+                  {m.role==="assistant"
+                    ? m.content.split("\n").map((line,j) => {
+                        const bold = line.replace(/\*\*(.+?)\*\*/g, (_,t) => `<b>${t}</b>`);
+                        return <div key={j} style={{marginBottom:line===""?6:2}} dangerouslySetInnerHTML={{__html:bold||"&nbsp;"}}/>
+                      })
+                    : m.content}
                 </div>
               </div>
             ))}
@@ -2780,14 +2796,16 @@ export default function App({ user }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name:p.name, brand:p.brand||"", category:p.category||"skin", globalProductId:p.global_product_id||null })
       });
-      if (!res.ok) return;
+      if (!res.ok) return null;
       const data = await res.json();
       if (data.ingredients?.length > 0) {
         const updates = { ingredients: data.ingredients, global_product_id: data.globalProductId };
         await supabase.from("products").update(updates).eq("id", p.id).eq("user_id", user.id);
         setProducts(prev => prev.map(x => x.id===p.id ? {...x, ...updates} : x));
+        return data; // return so RoutineAnalysis can use it immediately
       }
-    } catch(e) { console.error("Ingredient fetch error:", e); }
+      return null;
+    } catch(e) { console.error("Ingredient fetch error:", e); return null; }
   };
   const deleteProduct = async (id) => {
     await supabase.from("products").delete().eq("id",id).eq("user_id",user.id);
