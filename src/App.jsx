@@ -978,43 +978,66 @@ function WishlistPage({ wishlist, products, onSave, onDelete, onMoveToCart, onBa
 }
 
 // ── MY PRODUCTS PAGE ───────────────────────────────────────────
-function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onRemoveFromSnapshot, onBack }) {
-  const [tab, setTab] = useState("current"); // current | history
+function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onRemoveFromSnapshot, onFinaliseBase, onBack }) {
+  const [tab, setTab] = useState("current");
   const [showForm, setShowForm] = useState(false);
   const [editProd, setEditProd] = useState(null);
   const [chooseCat, setChooseCat] = useState(false);
+  const [isEditing, setIsEditing] = useState(false); // true = editing existing product
 
-  const currentSnap = snapshots.find(s=>!s.ended_at);
-  const pastSnaps = snapshots.filter(s=>s.ended_at).sort((a,b)=>b.started_at.localeCompare(a.started_at));
+  // Base = open snapshot with is_base=true (draft mode)
+  // Finalised = open snapshot with is_base=false
+  const baseSnap    = snapshots.find(s=>!s.ended_at && s.is_base);
+  const currentSnap = snapshots.find(s=>!s.ended_at && !s.is_base);
+  const activeSnap  = baseSnap || currentSnap; // whichever is open
+  const pastSnaps   = snapshots.filter(s=>s.ended_at).sort((a,b)=>b.started_at.localeCompare(a.started_at));
 
   const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, image:"", link:"", notes:"", tags:[] });
+
+  const openEditForm = (prod) => {
+    setEditProd({...prod});
+    setIsEditing(true);
+    setShowForm(true);
+    setChooseCat(false);
+  };
+
   const save = async () => {
     if (!editProd.name.trim()) return;
     await onSaveProduct(editProd);
-    // Auto-add to current snapshot
-    if (currentSnap && !currentSnap.products.find(p=>p.product_id===editProd.id)) {
-      await onAddToSnapshot(currentSnap.id, editProd.id);
-    } else if (!currentSnap) {
-      const newSnapId = await onOpenSnapshot();
-      if (newSnapId) await onAddToSnapshot(newSnapId, editProd.id);
+    if (!isEditing) {
+      // New product — add to active snap or open base snap
+      if (activeSnap) {
+        if (!activeSnap.products.find(p=>p.product_id===editProd.id)) {
+          await onAddToSnapshot(activeSnap.id, editProd.id);
+        }
+      } else {
+        const newSnapId = await onOpenSnapshot(true); // true = is_base
+        if (newSnapId) await onAddToSnapshot(newSnapId, editProd.id);
+      }
     }
-    setShowForm(false); setEditProd(null);
+    // If editing existing product, no snapshot change needed — just update product data
+    setShowForm(false); setEditProd(null); setIsEditing(false);
   };
 
-  const removeFromCurrent = async (snapProdId) => {
-    if (!currentSnap) return;
-    await onRemoveFromSnapshot(currentSnap.id, snapProdId);
+  const removeFromActive = async (snapProdId) => {
+    if (!activeSnap) return;
+    if (currentSnap) {
+      // Finalised — removing triggers new snapshot
+      await onOpenSnapshot(false); // closes current, opens new finalised snap
+      // The new snap gets created without this product — handled by caller
+    }
+    await onRemoveFromSnapshot(activeSnap.id, snapProdId);
   };
 
-  const snapProducts = currentSnap
-    ? currentSnap.products.map(sp=>({ snapProdId:sp.id, ...products.find(p=>p.id===sp.product_id) })).filter(p=>p.id)
+  const snapProducts = activeSnap
+    ? activeSnap.products.map(sp=>({ snapProdId:sp.id, ...products.find(p=>p.id===sp.product_id) })).filter(p=>p && p.id)
     : [];
 
   const skinProds = snapProducts.filter(p=>p.category==="skin");
   const hairProds = snapProducts.filter(p=>p.category==="hair");
-  const txProds = snapProducts.filter(p=>p.category==="treatment");
+  const txProds   = snapProducts.filter(p=>p.category==="treatment");
 
-  const ProductCard = ({p, showRemove}) => (
+  const ProductCard = ({p}) => (
     <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"12px 14px",marginBottom:8,display:"flex",gap:12,alignItems:"flex-start"}}>
       {p.image
         ?<img src={p.image} alt="" style={{width:46,height:46,objectFit:"cover",borderRadius:10,flexShrink:0}}/>
@@ -1024,9 +1047,11 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
         <div style={{fontSize:".88rem",fontWeight:500,color:"#3a2e27"}}>{p.name}</div>
         {p.brand&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:1}}>{p.brand}</div>}
         {p.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>{p.tags.map(t=><span key={t} style={{fontSize:".66rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 7px",color:"#8a6858"}}>{t}</span>)}</div>}
-        <div style={{display:"flex",gap:6,marginTop:8}}>
+        {p.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:4,fontStyle:"italic"}}>{p.notes}</div>}
+        <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
           {p.link&&<button onClick={()=>window.open(p.link,"_blank")} style={{background:"#b07a5e",border:"none",borderRadius:8,padding:"4px 10px",color:"#fff",cursor:"pointer",fontSize:".72rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
-          {showRemove&&<button className="ghost-btn" style={{fontSize:".72rem",padding:"3px 8px",color:"#c07060"}} onClick={()=>removeFromCurrent(p.snapProdId)}>Remove</button>}
+          <button className="ghost-btn" style={{fontSize:".72rem",padding:"3px 8px"}} onClick={()=>openEditForm(p)}>Edit</button>
+          <button className="ghost-btn" style={{fontSize:".72rem",padding:"3px 8px",color:"#c07060"}} onClick={()=>removeFromActive(p.snapProdId)}>Remove</button>
         </div>
       </div>
     </div>
@@ -1050,13 +1075,47 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
           <span style={{color:"#b07a5e",fontSize:".8rem",marginLeft:8}}>{open?"▲":"▼"}</span>
         </div>
         {open&&<div style={{marginTop:14,borderTop:"1px solid #f0e0d4",paddingTop:12}} onClick={e=>e.stopPropagation()}>
-          {skinP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8}}>🌿 Skin</div>{skinP.map(p=><ProductCard key={p.id} p={p} showRemove={false}/>)}</>}
-          {hairP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8,marginTop:hairP.length?12:0}}>✨ Hair</div>{hairP.map(p=><ProductCard key={p.id} p={p} showRemove={false}/>)}</>}
-          {txP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8,marginTop:12}}>💉 Treatments</div>{txP.map(p=><ProductCard key={p.id} p={p} showRemove={false}/>)}</>}
+          {skinP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8}}>🌿 Skin</div>{skinP.map(p=><div key={p.id} style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"10px 14px",marginBottom:6,display:"flex",gap:10,alignItems:"center"}}>{p.image?<img src={p.image} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:8,flexShrink:0}}/>:<div style={{width:36,height:36,borderRadius:8,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",flexShrink:0}}>🌿</div>}<div><div style={{fontSize:".84rem",fontWeight:500,color:"#3a2e27"}}>{p.name}</div>{p.brand&&<div style={{fontSize:".7rem",color:"#a08070"}}>{p.brand}</div>}</div></div>)}</>}
+          {hairP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8,marginTop:12}}>✨ Hair</div>{hairP.map(p=><div key={p.id} style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"10px 14px",marginBottom:6,display:"flex",gap:10,alignItems:"center"}}>{p.image?<img src={p.image} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:8,flexShrink:0}}/>:<div style={{width:36,height:36,borderRadius:8,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",flexShrink:0}}>✨</div>}<div><div style={{fontSize:".84rem",fontWeight:500,color:"#3a2e27"}}>{p.name}</div>{p.brand&&<div style={{fontSize:".7rem",color:"#a08070"}}>{p.brand}</div>}</div></div>)}</>}
+          {txP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8,marginTop:12}}>💉 Treatments</div>{txP.map(p=><div key={p.id} style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"10px 14px",marginBottom:6,display:"flex",gap:10,alignItems:"center"}}>{p.image?<img src={p.image} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:8,flexShrink:0}}/>:<div style={{width:36,height:36,borderRadius:8,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",flexShrink:0}}>💉</div>}<div><div style={{fontSize:".84rem",fontWeight:500,color:"#3a2e27"}}>{p.name}</div>{p.brand&&<div style={{fontSize:".7rem",color:"#a08070"}}>{p.brand}</div>}</div></div>)}</>}
         </div>}
       </div>
     );
   };
+
+  const ProductForm = () => (
+    <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{isEditing?"Edit Product":"Add Product"}</div>
+        <button onClick={()=>{setShowForm(false);setEditProd(null);setIsEditing(false);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+      </div>
+      {!isEditing&&<ProductSearch category={editProd.category} onSelect={({name,brand,image,link})=>setEditProd(p=>({...p,name,brand,image:image||"",link:link||""}))}/>}
+      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editProd.name} onChange={e=>setEditProd(p=>({...p,name:e.target.value}))}/>
+      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand (optional)" value={editProd.brand||""} onChange={e=>setEditProd(p=>({...p,brand:e.target.value}))}/>
+      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={editProd.link||""} onChange={e=>setEditProd(p=>({...p,link:e.target.value}))}/>
+      <div style={{display:"flex",gap:8,marginBottom:10}}>
+        {["skin","hair","treatment"].map(cat=>(
+          <button key={cat} className={`dow-chip ${editProd.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
+            onClick={()=>setEditProd(p=>({...p,category:cat}))}>
+            {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
+          </button>
+        ))}
+      </div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+        {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
+          <button key={tag} className={`dow-chip ${(editProd.tags||[]).includes(tag)?"on":""}`}
+            style={{fontSize:".74rem",padding:"4px 10px"}}
+            onClick={()=>setEditProd(p=>({...p,tags:(p.tags||[]).includes(tag)?(p.tags||[]).filter(t=>t!==tag):[...(p.tags||[]),tag]}))}>
+            {tag}
+          </button>
+        ))}
+      </div>
+      <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes (optional)" value={editProd.notes||""} onChange={e=>setEditProd(p=>({...p,notes:e.target.value}))}/>
+      <button className="save-btn" onClick={save} disabled={!editProd.name.trim()} style={{opacity:editProd.name.trim()?1:.4}}>
+        {isEditing?"Save Changes":"Add to My Routine"}
+      </button>
+    </div>
+  );
 
   return (
     <div className="app">
@@ -1078,69 +1137,55 @@ function MyProductsPage({ products, snapshots, onSaveProduct, onDeleteProduct, o
 
       {tab==="current"&&(
         <>
-          {chooseCat&&(
-            <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
-              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:14}}>Add a product</div>
-              <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
-                  <button key={cat} onClick={()=>{setEditProd(blank(cat));setShowForm(true);setChooseCat(false);}}
-                    style={{display:"flex",alignItems:"center",gap:12,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
-                    <span style={{fontSize:"1.3rem"}}>{emoji}</span>
-                    <span style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>{label} Product</span>
-                  </button>
-                ))}
-                <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".78rem",color:"#a08070",cursor:"pointer",marginTop:4,fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+          {/* Base draft banner */}
+          {baseSnap&&(
+            <div style={{background:"#fdf6e8",border:"1.5px solid #e8d0a0",borderRadius:14,padding:"14px 16px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:".78rem",fontWeight:600,color:"#7a5c28",marginBottom:2}}>📋 Draft — not yet finalised</div>
+                <div style={{fontSize:".72rem",color:"#a08050"}}>Add all your products then tap Finalise when ready</div>
               </div>
+              <button onClick={()=>onFinaliseBase(baseSnap.id)}
+                style={{background:"#b07a5e",border:"none",borderRadius:10,padding:"8px 14px",color:"#fff",fontSize:".78rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap",fontWeight:500}}>
+                Finalise
+              </button>
             </div>
           )}
 
-          {showForm&&editProd&&(
-            <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>Add Product</div>
-                <button onClick={()=>{setShowForm(false);setEditProd(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+          {showForm&&editProd&&<ProductForm/>}
+
+          {!showForm&&(
+            chooseCat?(
+              <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:14}}>Add a product</div>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
+                    <button key={cat} onClick={()=>{setEditProd(blank(cat));setIsEditing(false);setShowForm(true);setChooseCat(false);}}
+                      style={{display:"flex",alignItems:"center",gap:12,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+                      <span style={{fontSize:"1.3rem"}}>{emoji}</span>
+                      <span style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>{label} Product</span>
+                    </button>
+                  ))}
+                  <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".78rem",color:"#a08070",cursor:"pointer",marginTop:4,fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+                </div>
               </div>
-              <ProductSearch category={editProd.category} onSelect={({name,brand,image,link})=>setEditProd(p=>({...p,name,brand,image:image||"",link:link||""}))}/>
-              <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editProd.name} onChange={e=>setEditProd(p=>({...p,name:e.target.value}))}/>
-              <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand (optional)" value={editProd.brand||""} onChange={e=>setEditProd(p=>({...p,brand:e.target.value}))}/>
-              <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={editProd.link||""} onChange={e=>setEditProd(p=>({...p,link:e.target.value}))}/>
-              <div style={{display:"flex",gap:8,marginBottom:10}}>
-                {["skin","hair","treatment"].map(cat=>(
-                  <button key={cat} className={`dow-chip ${editProd.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
-                    onClick={()=>setEditProd(p=>({...p,category:cat}))}>
-                    {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
-                  </button>
-                ))}
-              </div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-                {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
-                  <button key={tag} className={`dow-chip ${(editProd.tags||[]).includes(tag)?"on":""}`}
-                    style={{fontSize:".74rem",padding:"4px 10px"}}
-                    onClick={()=>setEditProd(p=>({...p,tags:(p.tags||[]).includes(tag)?(p.tags||[]).filter(t=>t!==tag):[...(p.tags||[]),tag]}))}>
-                    {tag}
-                  </button>
-                ))}
-              </div>
-              <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes (optional)" value={editProd.notes||""} onChange={e=>setEditProd(p=>({...p,notes:e.target.value}))}/>
-              <button className="save-btn" onClick={save} disabled={!editProd.name.trim()} style={{opacity:editProd.name.trim()?1:.4}}>Add to My Routine</button>
-            </div>
+            ):(
+              <button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>setChooseCat(true)}>+ Add Product</button>
+            )
           )}
 
-          {!showForm&&!chooseCat&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>setChooseCat(true)}>+ Add Product</button>}
-
-          {snapProducts.length===0&&!showForm&&(
+          {snapProducts.length===0&&!showForm&&!chooseCat&&(
             <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No products in your current routine yet</div>
           )}
 
-          {currentSnap&&snapProducts.length>0&&(
+          {activeSnap&&snapProducts.length>0&&!baseSnap&&(
             <div style={{fontSize:".68rem",color:"#a08070",marginBottom:14,letterSpacing:".06em"}}>
-              Current routine since {new Date(currentSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}
+              Current routine since {new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}
             </div>
           )}
 
-          {skinProds.length>0&&<><div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10}}>🌿 Skin</div>{skinProds.map(p=><ProductCard key={p.id} p={p} showRemove={true}/>)}</>}
-          {hairProds.length>0&&<><div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,marginTop:skinProds.length?16:0}}>✨ Hair</div>{hairProds.map(p=><ProductCard key={p.id} p={p} showRemove={true}/>)}</>}
-          {txProds.length>0&&<><div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,marginTop:(skinProds.length||hairProds.length)?16:0}}>💉 Treatments</div>{txProds.map(p=><ProductCard key={p.id} p={p} showRemove={true}/>)}</>}
+          {skinProds.length>0&&<><div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10}}>🌿 Skin</div>{skinProds.map(p=><ProductCard key={p.id} p={p}/>)}</>}
+          {hairProds.length>0&&<><div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,marginTop:skinProds.length?16:0}}>✨ Hair</div>{hairProds.map(p=><ProductCard key={p.id} p={p}/>)}</>}
+          {txProds.length>0&&<><div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,marginTop:(skinProds.length||hairProds.length)?16:0}}>💉 Treatments</div>{txProds.map(p=><ProductCard key={p.id} p={p}/>)}</>}
         </>
       )}
 
@@ -1763,7 +1808,7 @@ export default function App({ user }) {
         if (wishRows) setWishlist(wishRows.map(r=>({ id:r.id, product_id:r.product_id||null, name:r.name||"", brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], priority:r.priority||0 })));
         // Load snapshots
         const { data: snapRows } = await supabase.from("snapshots").select("*, snapshot_products(*)").eq("user_id", user.id).order("started_at", {ascending:false});
-        if (snapRows) setSnapshots(snapRows.map(r=>({ id:r.id, label:r.label||"", started_at:r.started_at, ended_at:r.ended_at||null, products:r.snapshot_products||[] })));
+        if (snapRows) setSnapshots(snapRows.map(r=>({ id:r.id, label:r.label||"", started_at:r.started_at, ended_at:r.ended_at||null, is_base:r.is_base||false, products:r.snapshot_products||[] })));
         // Load user name from profile metadata
         const { data: { user: freshUser } } = await supabase.auth.getUser();
         const name = freshUser?.user_metadata?.display_name || "";
@@ -1985,7 +2030,7 @@ export default function App({ user }) {
   };
 
   // ── Snapshots ──
-  const openNewSnapshot = async () => {
+  const openNewSnapshot = async (isBase=false) => {
     // Close current open snapshot
     const current = snapshots.find(s=>!s.ended_at);
     if (current) {
@@ -1994,10 +2039,17 @@ export default function App({ user }) {
       setSnapshots(prev=>prev.map(s=>s.id===current.id?updated:s));
     }
     // Open new snapshot
-    const newSnap = { id:crypto.randomUUID(), label:"", started_at:fmt(new Date()), ended_at:null, products:[] };
-    await supabase.from("snapshots").insert({id:newSnap.id, user_id:user.id, started_at:newSnap.started_at, label:newSnap.label});
+    const newSnap = { id:crypto.randomUUID(), label:"", started_at:fmt(new Date()), ended_at:null, is_base:isBase, products:[] };
+    await supabase.from("snapshots").insert({id:newSnap.id, user_id:user.id, started_at:newSnap.started_at, label:newSnap.label, is_base:isBase});
     setSnapshots(prev=>[newSnap,...prev]);
     return newSnap.id;
+  };
+
+  const finaliseBase = async (baseId) => {
+    // Convert base snapshot to finalised (is_base = false)
+    await supabase.from("snapshots").update({is_base:false}).eq("id",baseId);
+    setSnapshots(prev=>prev.map(s=>s.id===baseId?{...s,is_base:false}:s));
+    showT("Routine finalised ✓");
   };
   const addProductToSnapshot = async (snapId, productId) => {
     const id = crypto.randomUUID();
@@ -2180,6 +2232,7 @@ export default function App({ user }) {
       onOpenSnapshot={openNewSnapshot}
       onAddToSnapshot={addProductToSnapshot}
       onRemoveFromSnapshot={removeProductFromSnapshot}
+      onFinaliseBase={finaliseBase}
       onBack={()=>setPageView(null)}/></div>
   );
   if (pageView==="wishlist") return (
