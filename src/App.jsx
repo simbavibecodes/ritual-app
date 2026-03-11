@@ -1199,7 +1199,7 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
       const res = await fetch("/api/claude", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 600, messages })
+        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, messages })
       });
       if (!res.ok) {
         const errText = await res.text();
@@ -2714,7 +2714,9 @@ export default function App({ user }) {
 
   const toggleItem=(date,type,id)=>{
     const e=getE(date); const cur=e[type]||[];
-    setEntries(p=>({...p,[date]:{...e,[type]:cur.includes(id)?cur.filter(x=>x!==id):[...cur,id]}}));
+    const updated={...e,[type]:cur.includes(id)?cur.filter(x=>x!==id):[...cur,id]};
+    setEntries(p=>({...p,[date]:updated}));
+    persistEntry(date, updated);
   };
   const setNotesVal=(date,tab,v)=>setEntries(p=>({...p,[date]:{...getE(date),[tab==="skin"?"skin_notes":"hair_notes"]:v}}));
   const setMoodVal=(date,tab,v)=>{ const e=getE(date); const k=tab==="skin"?"skin_mood":"hair_mood"; setEntries(p=>({...p,[date]:{...e,[k]:e[k]===v?"":v}})); };
