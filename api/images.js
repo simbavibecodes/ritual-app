@@ -6,10 +6,12 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+console.log("ENV CHECK - SUPABASE_URL:", supabaseUrl ? supabaseUrl.slice(0,30) + "..." : "MISSING");
+console.log("ENV CHECK - SERVICE_KEY:", supabaseKey ? "present" : "MISSING");
+
+const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
