@@ -2590,7 +2590,23 @@ export default function App({ user }) {
         if (txRows) setTreatments(txRows.map(r=>({ id:r.id, name:r.name, type:r.type, dates:r.dates||[], completedDates:r.completed_dates||[], location:r.location||'' })));
         // Load products library
         const { data: prodRows } = await supabase.from("products").select("*").eq("user_id", user.id).order("created_at", {ascending:false});
-        if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[] })));
+        if (prodRows) {
+          const mapped = prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[] }));
+          setProducts(mapped);
+          // Backfill images for products that have a link but no image yet
+          const uid = user.id;
+          mapped.filter(p => !p.image && (p.link || p.name)).forEach((p, i) => {
+            setTimeout(() => {
+              fetch("/api/images", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ productId: p.id, userId: uid, link: p.link||"", name: p.name, brand: p.brand||"" })
+              }).then(r => r.ok ? r.json() : null).then(data => {
+                if (data?.imageUrl) setProducts(prev => prev.map(x => x.id===p.id ? {...x, image: data.imageUrl} : x));
+              }).catch(()=>{});
+            }, i * 300); // stagger requests
+          });
+        }
         // Load wishlist
         const { data: wishRows } = await supabase.from("wishlist").select("*").eq("user_id", user.id).order("created_at", {ascending:false});
         if (wishRows) setWishlist(wishRows.map(r=>({ id:r.id, product_id:r.product_id||null, name:r.name||"", brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], priority:r.priority||0 })));
@@ -2790,8 +2806,24 @@ export default function App({ user }) {
     const row = { id:p.id, user_id:user.id, name:p.name, brand:p.brand||"", category:p.category||"skin", image:p.image||"", link:p.link||"", notes:p.notes||"", tags:p.tags||[], frequency:p.frequency||"", global_product_id:p.global_product_id||null, ingredients:p.ingredients||[] };
     await supabase.from("products").upsert(row, {onConflict:"id"});
     setProducts(prev => { const idx=prev.findIndex(x=>x.id===p.id); return idx>=0?prev.map(x=>x.id===p.id?p:x):[p,...prev]; });
-    // Background ingredient lookup — fire and forget
+    // Background lookups — fire and forget
     if (!p.ingredients?.length && p.name) fetchIngredients(p);
+    if (!p.image && (p.link || p.name)) fetchProductImage(p);
+  };
+
+  const fetchProductImage = async (p) => {
+    try {
+      const res = await fetch("/api/images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: p.id, userId: user.id, link: p.link||"", name: p.name, brand: p.brand||"" })
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.imageUrl) {
+        setProducts(prev => prev.map(x => x.id===p.id ? {...x, image: data.imageUrl} : x));
+      }
+    } catch(e) { console.error("Image fetch error:", e); }
   };
 
   const fetchIngredients = async (p) => {
