@@ -2952,7 +2952,6 @@ export default function App({ user }) {
   const getDayAchievement=d=>{
     if(!d||d>today) return null;
     const e=entries[d];
-    if(!e) return null;
     const dow=parse(d).getDay();
     // Check recurring plans
     const recurPlanned=schedules.filter(s=>s.days.includes(dow)&&(!s.startDate||d>=s.startDate)).map(s=>s.itemId);
@@ -2962,9 +2961,10 @@ export default function App({ user }) {
     const hasTreatment=treatments.some(t=>t.dates.includes(d)&&t.completedDates.includes(d));
     let heart=null;
     if(plannedIds.length>0){
-      const allChecked=plannedIds.every(id=>(e.skin||[]).includes(id)||(e.hair||[]).includes(id));
+      const logged={skin:(e?.skin||[]),hair:(e?.hair||[])};
+      const allChecked=plannedIds.every(id=>logged.skin.includes(id)||logged.hair.includes(id));
       if(allChecked){
-        const isGlowing=e.skin_mood==="✨ Glowing"&&e.hair_mood==="✨ Glowing";
+        const isGlowing=e?.skin_mood==="✨ Glowing"&&e?.hair_mood==="✨ Glowing";
         heart=isGlowing?"heart-star":"heart";
       }
     }
@@ -3031,7 +3031,8 @@ export default function App({ user }) {
   },[entries,freqRange,today]);
 
   const todayDow=new Date().getDay();
-  const visibleReminders=schedules.filter(s=>!dismissed.includes(s.id)&&(!s.startDate||activeDate>=s.startDate)&&((s.days&&s.days.includes(todayDow))||(s.dates&&s.dates.includes(activeDate))));
+  const activeDateDow=parse(activeDate).getDay();
+  const visibleReminders=schedules.filter(s=>!dismissed.includes(s.id)&&(!s.startDate||activeDate>=s.startDate)&&((s.days&&s.days.includes(activeDateDow))||(s.dates&&s.dates.includes(activeDate))));
   const entry=getE(activeDate);
   const routines=activeTab==="skin"?skinR:hairR;
   const checked=activeTab==="skin"?entry.skin:entry.hair;
@@ -3108,7 +3109,7 @@ export default function App({ user }) {
               <button className={`sub-tab ${activeTab==="hair"?"active":""}`} onClick={()=>setActiveTab("hair")}>✨ Hair</button>
             </div>
             {(()=>{
-              const todayPlanned=schedules.filter(s=>s.days.includes(todayDow)&&(!s.startDate||today>=s.startDate)&&(activeTab==="skin"?skinR:hairR).find(r=>r.id===s.itemId));
+              const todayPlanned=schedules.filter(s=>s.days.includes(activeDateDow)&&(!s.startDate||activeDate>=s.startDate)&&(activeTab==="skin"?skinR:hairR).find(r=>r.id===s.itemId));
               const plannedIds=todayPlanned.map(s=>s.itemId);
               const plannedDone=checked.filter(id=>plannedIds.includes(id)).length;
               const hasPlanned=plannedIds.length>0;
