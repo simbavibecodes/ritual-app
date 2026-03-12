@@ -2593,9 +2593,9 @@ export default function App({ user }) {
         if (prodRows) {
           const mapped = prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[] }));
           setProducts(mapped);
-          // Backfill images for products that have a link but no image yet
+          // Backfill images — only for products with a link, staggered to avoid rate limits
           const uid = user.id;
-          mapped.filter(p => !p.image && (p.link || p.name)).forEach((p, i) => {
+          mapped.filter(p => !p.image && p.link).forEach((p, i) => {
             setTimeout(() => {
               fetch("/api/images", {
                 method: "POST",
@@ -2604,7 +2604,7 @@ export default function App({ user }) {
               }).then(r => r.ok ? r.json() : null).then(data => {
                 if (data?.imageUrl) setProducts(prev => prev.map(x => x.id===p.id ? {...x, image: data.imageUrl} : x));
               }).catch(()=>{});
-            }, i * 300); // stagger requests
+            }, i * 3000); // 3 seconds apart to stay under quota
           });
         }
         // Load wishlist
