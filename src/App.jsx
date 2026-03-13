@@ -2570,7 +2570,7 @@ export default function App({ user }) {
         }
         // Load schedules
         const { data: schedRows, error: schedErr } = await supabase.from("schedules").select("*").eq("user_id", user.id);
-        console.log("LOAD schedules:", schedRows, "error:", schedErr);
+        if (schedErr) console.error("Schedule load error:", schedErr);
         if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days||[], dates:r.dates||[], startDate:r.start_date||null, reminder:r.reminder, time:r.time, location:r.location||'' })));
         // Load freq settings
         const { data: freqRows } = await supabase.from("freq_settings").select("*").eq("user_id", user.id).single();
@@ -2721,7 +2721,7 @@ export default function App({ user }) {
         if (upsertErr) { console.error("Schedule upsert error:", upsertErr); return; }
         // Only delete ones that are no longer in the list
         const ids = newSchedules.map(s=>s.id);
-        await supabase.from("schedules").delete().eq("user_id", user.id).not("id", "in", `(${ids.map(id=>`"${id}"`).join(",")})`);
+        await supabase.from("schedules").delete().eq("user_id", user.id).not("id", "in", `(${ids.join(",")})`);
       } else {
         await supabase.from("schedules").delete().eq("user_id", user.id);
       }
@@ -2900,14 +2900,17 @@ export default function App({ user }) {
   };
 
   const deleteSnapshot = async (snapId) => {
+    if (!user) return;
     await supabase.from("snapshot_products").delete().eq("snapshot_id", snapId);
-    await supabase.from("snapshots").delete().eq("id", snapId);
+    await supabase.from("snapshots").delete().eq("id", snapId).eq("user_id", user.id);
     setSnapshots(prev=>prev.filter(s=>s.id!==snapId));
     showT("Snapshot deleted");
   };
   const addProductToSnapshot = async (snapId, productId) => {
+    if (!user) return;
     const id = crypto.randomUUID();
-    await supabase.from("snapshot_products").insert({id, snapshot_id:snapId, product_id:productId});
+    const { error } = await supabase.from("snapshot_products").insert({id, snapshot_id:snapId, product_id:productId});
+    if (error) { console.error("Failed to add product to snapshot:", error); return; }
     setSnapshots(prev=>prev.map(s=>s.id===snapId?{...s,products:[...s.products,{id,snapshot_id:snapId,product_id:productId}]}:s));
   };
   const removeProductFromSnapshot = async (snapId, snapProdId) => {
@@ -2929,7 +2932,7 @@ export default function App({ user }) {
   const confirmDeleteTreatment=(id)=>setConfirmDelete({message:"This treatment will be permanently deleted.",onConfirm:()=>deleteTreatment(id)});
   const completeTreatment = async (txId, date) => {
     const tx = treatments.find(t=>t.id===txId); if(!tx) return;
-    const already = tx.completedDates.includes(date);
+    const already = (tx.completedDates||[]).includes(date);
     const updated = {...tx, completedDates: already ? tx.completedDates.filter(d=>d!==date) : [...tx.completedDates, date]};
     setTreatments(p=>p.map(t=>t.id===txId?updated:t));
     await persistTreatment(updated);
