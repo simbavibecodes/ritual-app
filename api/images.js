@@ -28,7 +28,12 @@ export default async function handler(req, res) {
       const query = encodeURIComponent(productLabel + " beauty product");
       const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${searchEngineId}&q=${query}&searchType=image&num=5&imgType=photo`;
       console.log("Google URL:", googleUrl.replace(googleApiKey, "REDACTED"));
-      const googleRes = await fetch(googleUrl);
+      const referer =
+        req.headers.origin ||
+        (req.headers.host ? `https://${req.headers.host}` : null);
+      const googleRes = await fetch(googleUrl, {
+        headers: referer ? { Referer: referer } : {},
+      });
       const data = await googleRes.json();
       if (googleRes.ok) {
         const items = data.items || [];
@@ -36,7 +41,8 @@ export default async function handler(req, res) {
         const best = items.find(i => i.link?.includes("sephora")) || items[0];
         if (best?.link) imageUrl = best.link;
       } else {
-        console.error("Google error:", googleRes.status, JSON.stringify(data));
+        const reason = data?.error?.errors?.[0]?.reason || "unknown";
+        console.error("Google error:", googleRes.status, reason, JSON.stringify(data));
       }
     } catch (e) {
       console.error("Google image search error:", e.message);
