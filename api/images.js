@@ -19,6 +19,19 @@ function getOGTag(html, prop) {
   return null;
 }
 
+// For Sephora URLs, construct image URL directly from skuId — no scraping needed
+function sephoraImageFromUrl(link) {
+  try {
+    const url = new URL(link);
+    if (!url.hostname.includes("sephora.com")) return null;
+    const skuId = url.searchParams.get("skuId");
+    if (!skuId) return null;
+    return `https://www.sephora.com/productimages/sku/s${skuId}-main-zoom.jpg`;
+  } catch {
+    return null;
+  }
+}
+
 async function scrapeFromLink(link) {
   try {
     const res = await fetch(link, {
@@ -77,8 +90,17 @@ module.exports = async function handler(req, res) {
   let scrapedName = null;
   let scrapedBrand = null;
 
-  // ── 1. Scrape from product link ──
+  // ── 1. Sephora direct image URL (no scraping needed) ──
   if (link) {
+    const sephoraImage = sephoraImageFromUrl(link);
+    if (sephoraImage) {
+      imageUrl = sephoraImage;
+      console.log("Got image from Sephora CDN:", imageUrl);
+    }
+  }
+
+  // ── 2. Scrape OG tags from product link (non-Sephora) ──
+  if (!imageUrl && link) {
     const scraped = await scrapeFromLink(link);
     if (scraped?.image) {
       imageUrl = scraped.image;
@@ -89,7 +111,7 @@ module.exports = async function handler(req, res) {
     if (scraped?.siteName && !brand) scrapedBrand = scraped.siteName;
   }
 
-  // ── 2. Google image search ──
+  // ── 3. Google image search ──
   if (!imageUrl && productLabel && googleApiKey && searchEngineId) {
     try {
       imageUrl = await googleImageSearch(productLabel, googleApiKey, searchEngineId);
@@ -99,7 +121,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── 3. Open Beauty Facts fallback ──
+  // ── 4. Open Beauty Facts fallback ──
   if (!imageUrl && name) {
     try {
       const obfRes = await fetch(`https://world.openbeautyfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(productLabel)}&search_simple=1&action=process&json=1&page_size=5`);
@@ -118,7 +140,7 @@ module.exports = async function handler(req, res) {
 
   if (!imageUrl) return res.status(200).json({ success: false, message: "No image found" });
 
-  // ── 4. Save to Supabase ──
+  // ── 5. Save to Supabase ──
   try {
     const update = { image: imageUrl };
     if (scrapedName) update.name = scrapedName;
