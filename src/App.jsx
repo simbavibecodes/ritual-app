@@ -2171,7 +2171,10 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
       <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
         <div className="modal">
           <div className="modal-top">
-            <div className="modal-title">{schedules.find(s=>s.id===editing.id)?"Edit Plan":"New Plan"}</div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              {!schedules.find(s=>s.id===editing.id)&&!initialPlan&&<button className="ghost-btn" style={{padding:"4px 10px",fontSize:".75rem"}} onClick={()=>setScreen("chooseType")}>← Back</button>}
+              <div className="modal-title">{schedules.find(s=>s.id===editing.id)?"Edit Plan":"New Plan"}</div>
+            </div>
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
               {schedules.find(s=>s.id===editing.id)&&<button className="del-btn" onClick={()=>{onDelete(editing.id);onClose();}}>Delete</button>}
               <button className="modal-x" onClick={onClose}>×</button>
@@ -2247,16 +2250,6 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
           <input type="date" className="time-input" style={{width:"100%",marginBottom:14}}
             value={editing.startDate||fmt(new Date())}
             onChange={e=>setEditing(ed=>({...ed,startDate:e.target.value}))}/>
-          {editing.days.length!==7&&<>
-            <div className="modal-sub">Specific dates (tap to select, tap two for range)</div>
-            <MiniCal
-              selectedDates={editing.dates||[]}
-              onToggleDate={d=>setEditing(e=>({...e,dates:e.dates.includes(d)?e.dates.filter(x=>x!==d):[...e.dates,d]}))}
-              rangeStart={calRangeStart}
-              onRangeStart={d=>setCalRangeStart(d)}
-              onRangeEnd={range=>{ setEditing(e=>({...e,dates:[...new Set([...(e.dates||[]),...range])]})); setCalRangeStart(null); }}
-            />
-          </>}
           <div className="modal-sub" style={{marginBottom:8}}>Every <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional — leave blank for one-off)</span></div>
           <div className="toggle-row" style={{marginBottom:8}}>
             <div><div className="toggle-lbl">Every day</div></div>
@@ -2268,6 +2261,16 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
               return <button key={d} className={`dow-chip ${editing.days.includes(dow)?"on":""}`} onClick={()=>toggleDay(dow)}>{d}</button>;
             })}
           </div>}
+          {editing.days.length!==7&&<>
+            <div className="modal-sub">Specific dates (tap to select, tap two for range)</div>
+            <MiniCal
+              selectedDates={editing.dates||[]}
+              onToggleDate={d=>setEditing(e=>({...e,dates:e.dates.includes(d)?e.dates.filter(x=>x!==d):[...e.dates,d]}))}
+              rangeStart={calRangeStart}
+              onRangeStart={d=>setCalRangeStart(d)}
+              onRangeEnd={range=>{ setEditing(e=>({...e,dates:[...new Set([...(e.dates||[]),...range])]})); setCalRangeStart(null); }}
+            />
+          </>}
 
           <div className="toggle-row">
             <div><div className="toggle-lbl">🔔 Remind me</div><div className="toggle-sub">Browser notification</div></div>
@@ -3153,6 +3156,7 @@ export default function App({ user }) {
         </div>
 
         <div className="top-tabs">
+          <button className={`top-tab ${view==="log"&&activeDate===today?"active":""}`} onClick={()=>{setView("log");setActiveDate(today);}}>🏠</button>
           {[["log","Log"],["history","History"],["plan","Plan"],["frequency","Stats"]].map(([v,l])=>(
             <button key={v} className={`top-tab ${view===v?"active":""}`} onClick={()=>setView(v)}>{l}</button>
           ))}
@@ -3478,6 +3482,9 @@ export default function App({ user }) {
               onClick={async()=>{ await supabase.auth.updateUser({data:{display_name:userName.trim()}}); setShowNamePrompt(false); }}>
               Let's go ✨
             </button>
+            <button onClick={()=>setShowNamePrompt(false)} style={{background:"none",border:"none",fontSize:".76rem",color:"#a08070",cursor:"pointer",marginTop:10,fontFamily:"'DM Sans',sans-serif"}}>
+              Skip for now
+            </button>
           </div>
         </div>
       )}
@@ -3497,7 +3504,10 @@ export default function App({ user }) {
 
       {sideMenu&&<div className="side-menu-overlay" onClick={()=>setSideMenu(false)}/>}
       <div className={`side-menu ${sideMenu?"open":""}`}>
-        <div className="side-menu-title">Menu</div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+          <div className="side-menu-title" style={{marginBottom:0}}>Menu</div>
+          <button onClick={()=>setSideMenu(false)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#a08070",lineHeight:1,padding:"2px 6px"}}>×</button>
+        </div>
         <button className="side-menu-item" onClick={()=>{setPageView("account");setSideMenu(false);}}>
           <span>👤</span> My Account
         </button>
