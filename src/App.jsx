@@ -292,6 +292,9 @@ body{font-family:'DM Sans',sans-serif;background:#fdf6f0;min-height:100vh;color:
 .spend-label{color:#7a5c48}
 .spend-val{color:#b07a5e;font-weight:600}
 @keyframes fiu{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.bottom-sheet-overlay{position:fixed;inset:0;background:rgba(58,46,39,.38);z-index:250;backdrop-filter:blur(2px)}
+.bottom-sheet{position:fixed;left:0;right:0;bottom:0;z-index:251;background:#fdf6f0;border-radius:22px 22px 0 0;padding:22px 20px max(28px,calc(16px + env(safe-area-inset-bottom)));box-shadow:0 -6px 32px rgba(58,46,39,.14);max-height:88vh;overflow-y:auto;animation:sheetUp .26s cubic-bezier(.4,0,.2,1)}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes fout{to{opacity:0}}
 `;
 
@@ -1654,6 +1657,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   const [confirmFinalize, setConfirmFinalize] = useState(false);
   const [routineSuccess, setRoutineSuccess] = useState(null); // {title, body}
   const [newProductAlert, setNewProductAlert] = useState(null); // {data, originalId}
+  const [removeConfirm, setRemoveConfirm] = useState(null); // snapProdId pending removal
   const [showCompare, setShowCompare] = useState(false);
   const [draftChanges, setDraftChanges] = useState(null); // {added:[], removed:[], edited:[]} tracked during edit mode
   const [unsavedWarning, setUnsavedWarning] = useState(false);
@@ -2008,11 +2012,21 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                         <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.15rem",color:"#3a2e27",lineHeight:1.3,marginBottom:6}}>{p.name}</div>
                         {p.frequency&&<div style={{fontSize:".6rem",background:"#f0e8f4",borderRadius:5,padding:"2px 7px",color:"#7a6a8a",display:"inline-block",marginBottom:6}}>{p.frequency}</div>}
                         {p.notes&&<div style={{fontSize:".7rem",color:"#8a6858",fontStyle:"italic",lineHeight:1.5,marginBottom:10}}>{p.notes}</div>}
-                        {i===idx&&(p.link||isDraft)&&<div style={{display:"flex",gap:7,marginTop:p.notes?0:8}}>
+                        {i===idx&&(p.link||isDraft)&&<div style={{marginTop:p.notes?0:8}}>
                           {p.link&&<button onClick={e=>{e.stopPropagation();openUrl(p.link);}}
-                            style={{flex:1,background:"#b07a5e",color:"#fff",border:"none",borderRadius:9,padding:"9px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500}}>Buy Now</button>}
-                          {isDraft&&<button onClick={async e=>{e.stopPropagation();await removeProduct(p.snapProdId,p.name);setFeaturedView(null);}}
-                            style={{background:"none",color:"#c07060",border:"1.5px solid #f0c8c0",borderRadius:9,padding:"9px 11px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer"}}>Remove</button>}
+                            style={{width:"100%",background:"#b07a5e",color:"#fff",border:"none",borderRadius:9,padding:"9px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500,marginBottom:isDraft?6:0}}>Buy Now</button>}
+                          {isDraft&&(
+                            removeConfirm===p.snapProdId
+                              ? <div style={{display:"flex",gap:6,alignItems:"center",background:"#fff0ee",borderRadius:9,padding:"8px 10px"}}>
+                                  <span style={{flex:1,fontSize:".68rem",color:"#c07060"}}>Remove from routine?</span>
+                                  <button onClick={async e=>{e.stopPropagation();await removeProduct(p.snapProdId,p.name);setFeaturedView(null);setRemoveConfirm(null);}}
+                                    style={{background:"#c07060",border:"none",borderRadius:7,padding:"5px 10px",color:"#fff",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>Yes</button>
+                                  <button onClick={e=>{e.stopPropagation();setRemoveConfirm(null);}}
+                                    style={{background:"none",border:"1px solid #e8d8cc",borderRadius:7,padding:"5px 10px",color:"#a08070",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+                                </div>
+                              : <button onClick={e=>{e.stopPropagation();setRemoveConfirm(p.snapProdId);}}
+                                  style={{width:"100%",background:"none",color:"#c07060",border:"1.5px solid #f0c8c0",borderRadius:9,padding:"8px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",textAlign:"center"}}>Remove from routine</button>
+                          )}
                         </div>}
                       </div>
                     </div>
@@ -2033,12 +2047,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                 </div>
                 <div style={{textAlign:"center",marginTop:5,fontSize:".62rem",color:"#c0b0a8",letterSpacing:".06em"}}>{idx+1} of {catProds.length}</div>
 
-                {/* Edit form — shows below carousel when pencil tapped */}
-                {showForm&&editProd&&(
-                  <div style={{marginTop:16}}>
-                    <ProductForm key={editProd.id} initialData={editProd} isEditingProd={isEditingProd} onSave={save} onClose={handleCloseForm}/>
-                  </div>
-                )}
+                {/* Edit form rendered as bottom sheet — see below MyProductsPage return */}
               </div>
             );
           })()}
@@ -2047,16 +2056,24 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
           {!featuredView&&(
             <>
               {snapProducts.length===0&&!showForm&&!chooseCat&&!isDraft&&(
-                <div style={{textAlign:"center",padding:"48px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No products in your current routine yet</div>
+                <div style={{textAlign:"center",padding:"52px 16px 44px"}}>
+                  <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.9rem",fontWeight:300,fontStyle:"italic",color:"#b07a5e",marginBottom:10}}>Your ritual begins here</div>
+                  <div style={{fontSize:".78rem",color:"#a08070",lineHeight:1.8,marginBottom:28,maxWidth:260,margin:"0 auto 28px"}}>Add your first product to start building a routine you can track, analyze, and look back on.</div>
+                  <button onClick={()=>setChooseCat(true)}
+                    style={{background:"#b07a5e",border:"none",borderRadius:12,padding:"11px 32px",color:"#fff",fontSize:".82rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500,letterSpacing:".04em"}}>
+                    Begin my routine
+                  </button>
+                </div>
               )}
 
-              {(snapProducts.length>0||isDraft)&&(
+              {(snapProducts.length>0||isDraft||chooseCat)&&(
                 <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:20,padding:"18px",marginBottom:16}}>
 
                   {/* Card header: date + action buttons */}
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
                     <div>
-                      {activeSnap&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.05rem",fontStyle:"italic",color:"#5a3a27"}}>{new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})} — Present</div>}
+                      {activeSnap&&<div style={{fontSize:".58rem",letterSpacing:".14em",textTransform:"uppercase",color:"#c0a898",marginBottom:3}}>Current Routine</div>}
+                      {activeSnap&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>Since {new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>}
                       {activeSnap&&<div style={{fontSize:".7rem",color:"#a08070",marginTop:3}}>{snapProducts.length} product{snapProducts.length!==1?"s":""}{skinProds.length>0?` · ${skinProds.length} skin`:""}{ hairProds.length>0?` · ${hairProds.length} hair`:""}{ txProds.length>0?` · ${txProds.length} treatment`:""}</div>}
                       {isDraft&&draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:500,color:"#c07a28",letterSpacing:".04em"}}>Building your routine</div>}
                       {isDraft&&!draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:500,color:"#7a8a5a",letterSpacing:".04em"}}>Editing your routine</div>}
@@ -2152,8 +2169,39 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
               ✦ Compare Routines
             </button>
           )}
-          {pastSnaps.length===0&&!showCompare&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No past snapshots yet — they appear here when your routine changes</div>}
-          {!showCompare&&pastSnaps.map(snap=><SnapCard key={snap.id} snap={snap} onDeleteSnapshot={onDeleteSnapshot}/>)}
+          {pastSnaps.length===0&&!showCompare&&(
+            <div style={{textAlign:"center",padding:"40px 16px"}}>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",fontStyle:"italic",color:"#b09080",marginBottom:8}}>No history yet</div>
+              <div style={{fontSize:".74rem",color:"#c0a898",lineHeight:1.7}}>Your past routines will appear here each time you update what you're using.</div>
+            </div>
+          )}
+          {!showCompare&&pastSnaps.length>0&&(
+            <div style={{position:"relative",paddingLeft:24}}>
+              {/* Timeline spine */}
+              <div style={{position:"absolute",left:6,top:20,bottom:20,width:1.5,background:"linear-gradient(to bottom,#e8d8cc,#f4ece6)"}}/>
+              {pastSnaps.map((snap,i)=>(
+                <div key={snap.id} style={{position:"relative",marginBottom:12}}>
+                  {/* Timeline dot */}
+                  <div style={{position:"absolute",left:-24,top:20,width:13,height:13,borderRadius:"50%",
+                    background:i===0?"#b07a5e":"#fdf6f0",
+                    border:`2px solid ${i===0?"#b07a5e":"#d0c0b8"}`,
+                    boxShadow:i===0?"0 0 0 3px rgba(176,122,94,.12)":"none"}}/>
+                  <SnapCard snap={snap} onDeleteSnapshot={onDeleteSnapshot}/>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Bottom sheet — edit form from carousel pencil */}
+      {showForm&&editProd&&isEditingProd&&(
+        <>
+          <div className="bottom-sheet-overlay" onClick={handleCloseForm}/>
+          <div className="bottom-sheet">
+            <div style={{width:36,height:4,borderRadius:2,background:"#e8d8cc",margin:"0 auto 20px"}}/>
+            <ProductForm key={editProd.id} initialData={editProd} isEditingProd={isEditingProd} onSave={save} onClose={handleCloseForm}/>
+          </div>
         </>
       )}
 
