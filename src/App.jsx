@@ -2821,12 +2821,7 @@ export default function App({ user }) {
       if (!res.ok) return;
       const data = await res.json();
       if (data.imageUrl) {
-        setProducts(prev => prev.map(x => x.id===p.id ? {
-          ...x,
-          image: data.imageUrl,
-          ...(data.scrapedName && !x.name ? { name: data.scrapedName } : {}),
-          ...(data.scrapedBrand && !x.brand ? { brand: data.scrapedBrand } : {}),
-        } : x));
+        setProducts(prev => prev.map(x => x.id===p.id ? {...x, image: data.imageUrl} : x));
       }
     } catch(e) { console.error("Image fetch error:", e); }
   };

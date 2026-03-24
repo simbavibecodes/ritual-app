@@ -46,30 +46,25 @@ async function scrapeFromLink(link) {
       return null;
     }
     const html = await res.text();
-    return {
-      image: getOGTag(html, "image"),
-      title: getOGTag(html, "title"),
-      siteName: getOGTag(html, "site_name"),
-    };
+    return getOGTag(html, "image");
   } catch (e) {
     console.error("Scrape error:", e.message);
     return null;
   }
 }
 
-async function googleImageSearch(query, apiKey, searchEngineId) {
-  const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query + " beauty product")}&searchType=image&num=5&imgType=photo`;
-  console.log("Google search:", url.replace(apiKey, "REDACTED"));
-  const res = await fetch(url);
+async function bingImageSearch(query, apiKey) {
+  const url = `https://api.bing.microsoft.com/v7.0/images/search?q=${encodeURIComponent(query + " beauty product")}&count=5&imageType=Photo`;
+  const res = await fetch(url, {
+    headers: { "Ocp-Apim-Subscription-Key": apiKey },
+  });
   const data = await res.json();
   if (!res.ok) {
-    const reason = data?.error?.errors?.[0]?.reason || "unknown";
-    console.error("Google error:", res.status, reason, JSON.stringify(data));
+    console.error("Bing error:", res.status, JSON.stringify(data));
     return null;
   }
-  const items = data.items || [];
-  const best = items.find(i => i.link?.includes("sephora")) || items[0];
-  return best?.link || null;
+  const values = data.value || [];
+  return values[0]?.contentUrl || null;
 }
 
 module.exports = async function handler(req, res) {
@@ -82,71 +77,39 @@ module.exports = async function handler(req, res) {
   const { productId, userId, name, brand, link } = req.body;
   if (!productId || !userId) return res.status(400).json({ error: "productId and userId required" });
 
-  const googleApiKey = process.env.GOOGLE_API_KEY;
-  const searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID;
+  const bingApiKey = process.env.BING_API_KEY;
   const productLabel = [brand, name].filter(Boolean).join(" ");
 
   let imageUrl = null;
-  let scrapedName = null;
-  let scrapedBrand = null;
 
-  // ── 1. Sephora direct image URL (no scraping needed) ──
+  // ── 1. Sephora direct image URL ──
   if (link) {
-    const sephoraImage = sephoraImageFromUrl(link);
-    if (sephoraImage) {
-      imageUrl = sephoraImage;
-      console.log("Got image from Sephora CDN:", imageUrl);
-    }
+    imageUrl = sephoraImageFromUrl(link);
+    if (imageUrl) console.log("Got image from Sephora CDN:", imageUrl);
   }
 
-  // ── 2. Scrape OG tags from product link (non-Sephora) ──
+  // ── 2. OG tag scrape (non-Sephora links) ──
   if (!imageUrl && link) {
-    const scraped = await scrapeFromLink(link);
-    if (scraped?.image) {
-      imageUrl = scraped.image;
-      console.log("Got image from link scrape:", imageUrl);
-    }
-    // Use scraped title/brand only if not already provided by user
-    if (scraped?.title && !name) scrapedName = scraped.title;
-    if (scraped?.siteName && !brand) scrapedBrand = scraped.siteName;
+    imageUrl = await scrapeFromLink(link);
+    if (imageUrl) console.log("Got image from scrape:", imageUrl);
   }
 
-  // ── 3. Google image search ──
-  if (!imageUrl && productLabel && googleApiKey && searchEngineId) {
+  // ── 3. Bing Image Search (no link, or link yielded no image) ──
+  if (!imageUrl && productLabel && bingApiKey) {
     try {
-      imageUrl = await googleImageSearch(productLabel, googleApiKey, searchEngineId);
-      if (imageUrl) console.log("Got image from Google:", imageUrl);
+      imageUrl = await bingImageSearch(productLabel, bingApiKey);
+      if (imageUrl) console.log("Got image from Bing:", imageUrl);
     } catch (e) {
-      console.error("Google image search error:", e.message);
-    }
-  }
-
-  // ── 4. Open Beauty Facts fallback ──
-  if (!imageUrl && name) {
-    try {
-      const obfRes = await fetch(`https://world.openbeautyfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(productLabel)}&search_simple=1&action=process&json=1&page_size=5`);
-      if (obfRes.ok) {
-        const data = await obfRes.json();
-        const product = (data.products || []).find(p => p.image_front_url || p.image_url);
-        if (product) {
-          imageUrl = product.image_front_url || product.image_url;
-          console.log("Got image from Open Beauty Facts:", imageUrl);
-        }
-      }
-    } catch (e) {
-      console.error("Open Beauty Facts error:", e.message);
+      console.error("Bing image search error:", e.message);
     }
   }
 
   if (!imageUrl) return res.status(200).json({ success: false, message: "No image found" });
 
-  // ── 5. Save to Supabase ──
+  // ── 4. Save to Supabase ──
   try {
-    const update = { image: imageUrl };
-    if (scrapedName) update.name = scrapedName;
-    if (scrapedBrand) update.brand = scrapedBrand;
-    await supabaseAdmin.from("products").update(update).eq("id", productId).eq("user_id", userId);
-    return res.status(200).json({ success: true, imageUrl, scrapedName, scrapedBrand });
+    await supabaseAdmin.from("products").update({ image: imageUrl }).eq("id", productId).eq("user_id", userId);
+    return res.status(200).json({ success: true, imageUrl });
   } catch (e) {
     console.error("Supabase update error:", e);
     return res.status(500).json({ error: "Failed to save image" });
