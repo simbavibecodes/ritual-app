@@ -2098,12 +2098,15 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
   );
 }
 
-function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsProp, schedules, treatments, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose, initialPlan, initialTreatment }) {
+function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsProp, schedules, treatments, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose, onAddItem, initialPlan, initialTreatment }) {
   const [screen, setScreen]=useState(initialPlan?"editPlan":initialTreatment?"editTreatment":"chooseType"); // chooseType | editPlan | editTreatment
   const [editing, setEditing]=useState(initialPlan?{...initialPlan,itemIds:initialPlan.itemIds||[initialPlan.itemId].filter(Boolean),dates:initialPlan.dates||[],startDate:initialPlan.startDate||fmt(new Date())}:{id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),reminder:false,time:"08:00",location:""});
   const [editTx, setEditTx]=useState(initialTreatment?{...initialTreatment}:{id:uid(),name:"",type:"skin",dates:[]});
   const [showItemPick, setShowItemPick]=useState(false);
   const [calRangeStart, setCalRangeStart]=useState(null);
+  const [newStepLabel, setNewStepLabel]=useState("");
+  const [newStepEmoji, setNewStepEmoji]=useState("🌿");
+  const [showNewStepEmoji, setShowNewStepEmoji]=useState(false);
 
   const startNewPlan=()=>{ setEditing({id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),reminder:false,time:"08:00",location:""}); setScreen("editPlan"); };
   const startEditPlan=s=>{ setEditing({...s,itemIds:s.itemIds||[s.itemId].filter(Boolean),dates:s.dates||[],startDate:s.startDate||fmt(new Date())}); setScreen("editPlan"); };
@@ -2192,7 +2195,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             // New plan — full selectable list
             <>
               <div className="modal-sub">Steps — select one or more</div>
-              <div style={{marginBottom:14,display:"flex",flexDirection:"column",gap:6}}>
+              <div style={{marginBottom:8,display:"flex",flexDirection:"column",gap:6}}>
                 {(editing._category==="hair"?hairItems:editing._category==="skin"?skinItems:allItems).map(it=>{
                   const on=(editing.itemIds||[]).includes(it.id);
                   return (
@@ -2207,6 +2210,32 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                   );
                 })}
               </div>
+              {onAddItem&&<div style={{marginBottom:14}}>
+                <div className="row" style={{gap:6}}>
+                  <button className="epick-btn" onClick={()=>setShowNewStepEmoji(p=>!p)}>{newStepEmoji}</button>
+                  <input className="ifield" style={{flex:1}} placeholder="Add a new step…" value={newStepLabel}
+                    onChange={e=>setNewStepLabel(e.target.value)}
+                    onKeyDown={e=>{
+                      if(e.key==="Enter"&&newStepLabel.trim()){
+                        const item={id:uid(),label:newStepLabel.trim(),emoji:newStepEmoji};
+                        onAddItem(editing._category==="hair"?"hair":"skin", item);
+                        setEditing(ed=>({...ed,itemIds:[...(ed.itemIds||[]),item.id]}));
+                        setNewStepLabel(""); setNewStepEmoji("🌿"); setShowNewStepEmoji(false);
+                      }
+                    }}/>
+                  <button className="confirm-btn" disabled={!newStepLabel.trim()} onClick={()=>{
+                    if(!newStepLabel.trim()) return;
+                    const item={id:uid(),label:newStepLabel.trim(),emoji:newStepEmoji};
+                    onAddItem(editing._category==="hair"?"hair":"skin", item);
+                    setEditing(ed=>({...ed,itemIds:[...(ed.itemIds||[]),item.id]}));
+                    setNewStepLabel(""); setNewStepEmoji("🌿"); setShowNewStepEmoji(false);
+                  }}>+ Add</button>
+                </div>
+                {showNewStepEmoji&&<div className="egrid" style={{marginTop:6}}>{EMOJI_OPTIONS.flat().map(em=>(
+                  <span key={em} className={`eopt ${newStepEmoji===em?"on":""}`}
+                    onClick={()=>{setNewStepEmoji(em);setShowNewStepEmoji(false)}}>{em}</span>
+                ))}</div>}
+              </div>}
             </>
           )}
           {editing._category==="treatment"&&<>
@@ -3425,10 +3454,11 @@ export default function App({ user }) {
         onDelete={id=>{ confirmDeleteSched(id); setSelectedPlan(null); }}
         onSaveTreatment={async tx=>{ await saveTreatment(tx); setSelectedPlan(null); }}
         onDeleteTreatment={id=>{ confirmDeleteTreatment(id); setSelectedPlan(null); }}
+        onAddItem={(type,item)=>addItem(type,item)}
         onClose={()=>setSelectedPlan(null)}
         initialPlan={selectedPlan.type==="plan"?selectedPlan.data:null}
         initialTreatment={selectedPlan.type==="treatment"?selectedPlan.data:null}/>}
-      {modal==="plan"&&<PlanModal allItems={allItems} skinItems={skinR} hairItems={hairR} schedules={schedules} treatments={treatments} onSave={saveSched} onSaveMany={saveSchedMany} onDelete={deleteSched} onSaveTreatment={saveTreatment} onDeleteTreatment={deleteTreatment} onClose={()=>setModal(null)}/>}
+      {modal==="plan"&&<PlanModal allItems={allItems} skinItems={skinR} hairItems={hairR} schedules={schedules} treatments={treatments} onSave={saveSched} onSaveMany={saveSchedMany} onDelete={deleteSched} onSaveTreatment={saveTreatment} onDeleteTreatment={deleteTreatment} onAddItem={(type,item)=>addItem(type,item)} onClose={()=>setModal(null)}/>}
       {modal==="freq"&&<FreqModal allItems={allItems} tracked={freqTracked} period={freqPeriod} onToggle={id=>setFreqTracked(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id])} onPeriod={async p=>{ setFreqPeriod(p); await persist({freqPeriod:p}); }} onClose={()=>setModal(null)}/>}
       {modal==="dayEdit"&&selectedDay&&<DayEditModal date={selectedDay} entry={getE(selectedDay)} skinRoutines={skinR} hairRoutines={hairR} onSave={data=>saveDayEdit(selectedDay,data)} onClose={()=>setModal(null)}/>}
       {modal==="rangeApply"&&rangeStart&&rangeEnd&&<RangeApplyModal rangeStart={rangeStart} rangeEnd={rangeEnd} skinRoutines={skinR} hairRoutines={hairR} onApply={applyRange} onClose={()=>{ setModal(null); setRangeStart(null); setRangeEnd(null); setRangeMode(false); }}/>}
