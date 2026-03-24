@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { supabase } from "./supabase";
 
 const DEFAULT_SKIN = [
@@ -1609,6 +1609,14 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   const [unsavedWarning, setUnsavedWarning] = useState(false);
   const [pendingNav, setPendingNav] = useState(null); // callback to run after discard/save
   const touchStartRef = useRef(null);
+  const carouselScrollRef = useRef(null);
+
+  // Scroll carousel to correct position when featured view opens or category changes
+  useLayoutEffect(() => {
+    if (featuredView && carouselScrollRef.current) {
+      carouselScrollRef.current.scrollLeft = featuredView.index * 200;
+    }
+  }, [featuredView?.category]);
 
   const draftSnap    = snapshots.find(s=>!s.ended_at && s.is_base);
   const currentSnap  = snapshots.find(s=>!s.ended_at && !s.is_base);
@@ -1835,77 +1843,72 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                   <div style={{fontSize:".66rem",color:"#c0b0a8",flexShrink:0}}>{catProds.length} products</div>
                 </div>
 
-                {/* Carousel */}
-                <div style={{overflow:"hidden"}}
-                  onTouchStart={e=>{touchStartRef.current=e.touches[0].clientX;}}
-                  onTouchEnd={e=>{
-                    if(touchStartRef.current===null) return;
-                    const diff=touchStartRef.current-e.changedTouches[0].clientX;
-                    if(Math.abs(diff)>40){
-                      if(diff>0&&nextP) goTo(idx+1);
-                      if(diff<0&&prevP) goTo(idx-1);
-                    }
-                    touchStartRef.current=null;
+                {/* Carousel — native CSS scroll snap */}
+                <div
+                  ref={carouselScrollRef}
+                  style={{display:"flex",gap:10,overflowX:"scroll",scrollSnapType:"x mandatory",
+                    scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch",
+                    paddingLeft:"calc(50% - 95px)",paddingRight:"calc(50% - 95px)"}}
+                  onScroll={e=>{
+                    const i = Math.round(e.currentTarget.scrollLeft / 200);
+                    const clamped = Math.max(0, Math.min(i, catProds.length-1));
+                    if (clamped !== idx) setFeaturedView(f=>({...f,index:clamped}));
                   }}>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
-                    {/* Left peek */}
-                    {prevP
-                      ?<div onClick={()=>goTo(idx-1)} style={{flexShrink:0,width:60,height:194,background:"#fff0e8",border:"1.5px solid #e8d8cc",borderRadius:18,overflow:"hidden",opacity:.45,transform:"scale(.86)",marginRight:-12,cursor:"pointer"}}>
-                        {prevP.image?<img src={prevP.image} alt="" style={{width:"100%",height:118,objectFit:"cover",display:"block"}}/>:<div style={{width:"100%",height:118,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem"}}>{catEmoji(featuredView.category)}</div>}
-                        <div style={{padding:"6px 7px"}}><div style={{fontSize:".58rem",fontWeight:500,color:"#3a2e27",lineHeight:1.2,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{prevP.name}</div></div>
-                      </div>
-                      :<div style={{width:24,flexShrink:0}}/>
-                    }
-
-                    {/* Main card */}
-                    <div style={{flexShrink:0,width:194,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:20,overflow:"hidden",boxShadow:"0 6px 28px rgba(90,50,30,.14)",zIndex:2}}>
-                      <div style={{position:"relative",width:"100%",height:154,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"3.5rem",overflow:"hidden",flexShrink:0}}>
-                        {curr.image?<img src={curr.image} alt="" style={{width:"100%",height:154,objectFit:"cover",display:"block"}}/>:<div>{catEmoji(featuredView.category)}</div>}
-                        {/* Pencil edit icon */}
-                        {isDraft&&<button onClick={e=>{e.stopPropagation();openEditForm(curr);}}
-                          style={{position:"absolute",top:8,right:8,width:28,height:28,borderRadius:"50%",background:"rgba(253,246,240,.9)",border:"1px solid rgba(232,216,204,.8)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:"0 1px 4px rgba(0,0,0,.1)"}}>
+                  {catProds.map((p,i)=>(
+                    <div key={p.id} style={{flexShrink:0,width:190,scrollSnapAlign:"center",
+                      background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:18,overflow:"hidden",
+                      opacity:i===idx?1:.5,transform:i===idx?"scale(1)":"scale(0.92)",
+                      transition:"opacity .2s,transform .2s",
+                      boxShadow:i===idx?"0 4px 20px rgba(90,50,30,.12)":"none"}}>
+                      <div style={{position:"relative",height:148,background:"#f0e0d4",
+                        display:"flex",alignItems:"center",justifyContent:"center",fontSize:"3rem",overflow:"hidden"}}>
+                        {p.image?<img src={p.image} alt="" style={{width:"100%",height:148,objectFit:"cover",display:"block"}}/>:<div>{catEmoji(featuredView.category)}</div>}
+                        {isDraft&&i===idx&&<button onClick={e=>{e.stopPropagation();openEditForm(p);}}
+                          style={{position:"absolute",top:8,right:8,width:28,height:28,borderRadius:"50%",
+                            background:"rgba(253,246,240,.9)",border:"1px solid rgba(232,216,204,.8)",
+                            display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",
+                            boxShadow:"0 1px 4px rgba(0,0,0,.1)"}}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7a5c48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                             <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                           </svg>
                         </button>}
                       </div>
-                      <div style={{padding:"13px 15px 15px"}}>
-                        {curr.brand&&<div style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase",marginBottom:3}}>{curr.brand}</div>}
-                        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.08rem",color:"#3a2e27",lineHeight:1.25,marginBottom:curr.frequency?5:8}}>{curr.name}</div>
-                        {curr.frequency&&<div style={{fontSize:".62rem",background:"#f0e8f4",borderRadius:5,padding:"2px 7px",color:"#7a6a8a",display:"inline-block",marginBottom:8}}>{curr.frequency}</div>}
-                        {curr.notes&&<div style={{fontSize:".7rem",color:"#8a6858",fontStyle:"italic",lineHeight:1.5,marginBottom:10}}>{curr.notes}</div>}
-                        <div style={{display:"flex",gap:7}}>
-                          {curr.link&&<button onClick={()=>window.open(curr.link,"_blank")} style={{flex:1,background:"#b07a5e",color:"#fff",border:"none",borderRadius:9,padding:"9px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500}}>Buy Now</button>}
-                          {isDraft&&<button onClick={async()=>{await removeProduct(curr.snapProdId,curr.name);setFeaturedView(null);}}
-                            style={{background:"none",color:"#c07060",border:"1.5px solid #f0c8c0",borderRadius:9,padding:"9px 11px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer"}}>Remove</button>}
-                        </div>
+                      <div style={{padding:"9px 11px 11px"}}>
+                        <div style={{fontSize:".74rem",fontWeight:500,color:"#3a2e27",lineHeight:1.2,
+                          overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{p.name}</div>
+                        {p.brand&&<div style={{fontSize:".62rem",color:"#a08070",marginTop:1,
+                          overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{p.brand}</div>}
                       </div>
                     </div>
+                  ))}
+                </div>
 
-                    {/* Right peek */}
-                    {nextP
-                      ?<div onClick={()=>goTo(idx+1)} style={{flexShrink:0,width:60,height:194,background:"#fff0e8",border:"1.5px solid #e8d8cc",borderRadius:18,overflow:"hidden",opacity:.45,transform:"scale(.86)",marginLeft:-12,cursor:"pointer"}}>
-                        {nextP.image?<img src={nextP.image} alt="" style={{width:"100%",height:118,objectFit:"cover",display:"block"}}/>:<div style={{width:"100%",height:118,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem"}}>{catEmoji(featuredView.category)}</div>}
-                        <div style={{padding:"6px 7px"}}><div style={{fontSize:".58rem",fontWeight:500,color:"#3a2e27",lineHeight:1.2,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{nextP.name}</div></div>
-                      </div>
-                      :<div style={{width:24,flexShrink:0}}/>
-                    }
-                  </div>
+                {/* Dots */}
+                <div style={{display:"flex",gap:5,justifyContent:"center",marginTop:12}}>
+                  {catProds.map((_,i)=>(
+                    <div key={i}
+                      onClick={()=>{
+                        setFeaturedView(f=>({...f,index:i}));
+                        carouselScrollRef.current?.scrollTo({left:i*200,behavior:"smooth"});
+                      }}
+                      style={{height:6,borderRadius:3,cursor:"pointer",transition:"all .2s",
+                        background:i===idx?"#b07a5e":"#e8d8cc",width:i===idx?18:6}}/>
+                  ))}
+                </div>
+                <div style={{textAlign:"center",marginTop:5,fontSize:".62rem",color:"#c0b0a8",letterSpacing:".06em"}}>{idx+1} of {catProds.length}</div>
 
-                  {/* Dots */}
-                  <div style={{display:"flex",gap:5,justifyContent:"center",marginTop:14}}>
-                    {catProds.map((_,i)=>(
-                      <div key={i} onClick={()=>goTo(i)}
-                        style={{height:6,borderRadius:3,cursor:"pointer",transition:"all .2s",background:i===idx?"#b07a5e":"#e8d8cc",width:i===idx?18:6}}/>
-                    ))}
+                {/* Detail panel for active card */}
+                <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"14px 16px",marginTop:14}}>
+                  {curr.brand&&<div style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase",marginBottom:3}}>{curr.brand}</div>}
+                  <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",color:"#3a2e27",lineHeight:1.3,marginBottom:curr.frequency||curr.notes?8:12}}>{curr.name}</div>
+                  {curr.frequency&&<div style={{fontSize:".62rem",background:"#f0e8f4",borderRadius:5,padding:"2px 7px",color:"#7a6a8a",display:"inline-block",marginBottom:8}}>{curr.frequency}</div>}
+                  {curr.notes&&<div style={{fontSize:".72rem",color:"#8a6858",fontStyle:"italic",lineHeight:1.5,marginBottom:10}}>{curr.notes}</div>}
+                  <div style={{display:"flex",gap:7}}>
+                    {curr.link&&<button onClick={()=>window.open(curr.link,"_blank")} style={{flex:1,background:"#b07a5e",color:"#fff",border:"none",borderRadius:9,padding:"9px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500}}>Buy Now</button>}
+                    {isDraft&&<button onClick={async()=>{await removeProduct(curr.snapProdId,curr.name);setFeaturedView(null);}}
+                      style={{background:"none",color:"#c07060",border:"1.5px solid #f0c8c0",borderRadius:9,padding:"9px 11px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer"}}>Remove</button>}
                   </div>
-                  <div style={{textAlign:"center",marginTop:5,fontSize:".62rem",color:"#c0b0a8",letterSpacing:".06em"}}>{idx+1} of {catProds.length}</div>
-                  {catProds.length>1&&<div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginTop:10,fontSize:".62rem",color:"#d0b8a8",letterSpacing:".06em"}}>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M5 12l5-5M5 12l5 5"/></svg>
-                    swipe to browse
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M14 7l5 5-5 5"/></svg>
-                  </div>}
                 </div>
 
                 {/* Edit form — shows below carousel when pencil tapped */}
