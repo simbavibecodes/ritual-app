@@ -1808,7 +1808,18 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
 
       <div style={{display:"flex",gap:0,marginBottom:20,borderRadius:12,overflow:"hidden",border:"1.5px solid #e8d8cc"}}>
         {[["current","Current Routine"],["history","Snapshot History"]].map(([v,l])=>(
-          <button key={v} onClick={()=>setTab(v)}
+          <button key={v}
+            onClick={()=>{
+              if (showForm) {
+                if (!window.confirm("You have unsaved changes. Leave without saving?")) return;
+                handleCloseForm();
+              }
+              setTab(v);
+              setFeaturedView(null);
+              setShowAnalysis(false);
+              setShowCompare(false);
+              setChooseCat(false);
+            }}
             style={{flex:1,padding:"10px",fontSize:".78rem",cursor:"pointer",border:"none",fontFamily:"'DM Sans',sans-serif",
               background:tab===v?"#b07a5e":"#fff8f3",color:tab===v?"#fff":"#a08070",transition:"all .15s"}}>
             {l}
