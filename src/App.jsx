@@ -2574,7 +2574,7 @@ export default function App({ user }) {
   const [rangeEnd,    setRangeEnd]    = useState(null);
   const [hoverDay,    setHoverDay]    = useState(null);
   const [curPhotos,   setCurPhotos]   = useState([]);
-  const [userName,    setUserName]    = useState("");
+  const [userName,    setUserName]    = useState(user?.user_metadata?.display_name || "");
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [hairLengths,   setHairLengths]   = useState({});
   const [purchases,     setPurchases]     = useState([]);
@@ -2589,13 +2589,35 @@ export default function App({ user }) {
   const [prefillPurchase, setPrefillPurchase] = useState(null); // when moving wishlist item to purchases
   const [treatments,    setTreatments]    = useState([]); // [{id, name, type(skin/hair), dates:[], completedDates:[]}]
 
-  // Load all data from Supabase on mount
+  // Load all data from Supabase on mount — all queries run in parallel
   useEffect(()=>{
     (async()=>{
       if(!user) return;
       try {
-        // Load entries
-        const { data: entryRows } = await supabase.from("entries").select("*").eq("user_id", user.id);
+        const [
+          { data: entryRows },
+          { data: routineRows },
+          { data: schedRows, error: schedErr },
+          { data: freqRows },
+          { data: hlRows },
+          { data: purchRows },
+          { data: txRows },
+          { data: prodRows },
+          { data: wishRows },
+          { data: snapRows },
+        ] = await Promise.all([
+          supabase.from("entries").select("*").eq("user_id", user.id),
+          supabase.from("routines").select("*").eq("user_id", user.id),
+          supabase.from("schedules").select("*").eq("user_id", user.id),
+          supabase.from("freq_settings").select("*").eq("user_id", user.id).single(),
+          supabase.from("hair_lengths").select("*").eq("user_id", user.id),
+          supabase.from("purchases").select("*").eq("user_id", user.id).order("date", {ascending:false}),
+          supabase.from("treatments").select("*").eq("user_id", user.id),
+          supabase.from("products").select("*").eq("user_id", user.id).order("created_at", {ascending:false}),
+          supabase.from("wishlist").select("*").eq("user_id", user.id).order("created_at", {ascending:false}),
+          supabase.from("snapshots").select("*, snapshot_products(*)").eq("user_id", user.id).order("started_at", {ascending:false}),
+        ]);
+
         if (entryRows) {
           const map = {};
           entryRows.forEach(r => { map[r.date] = {
@@ -2606,62 +2628,28 @@ export default function App({ user }) {
           }; });
           setEntries(map);
         }
-        // Load routines
-        const { data: routineRows } = await supabase.from("routines").select("*").eq("user_id", user.id);
         if (routineRows) {
           const sk = routineRows.find(r=>r.type==="skin");
           const ha = routineRows.find(r=>r.type==="hair");
           if (sk) setSkinR(sk.items);
           if (ha) setHairR(ha.items);
         }
-        // Load schedules
-        const { data: schedRows, error: schedErr } = await supabase.from("schedules").select("*").eq("user_id", user.id);
         if (schedErr) console.error("Schedule load error:", schedErr);
         if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days||[], dates:r.dates||[], startDate:r.start_date||null, reminder:r.reminder, time:r.time, location:r.location||'' })));
-        // Load freq settings
-        const { data: freqRows } = await supabase.from("freq_settings").select("*").eq("user_id", user.id).single();
         if (freqRows) { setFreqTracked(freqRows.tracked||[]); setFreqPeriod(freqRows.period||"year"); }
-        // Load hair lengths
-        const { data: hlRows } = await supabase.from("hair_lengths").select("*").eq("user_id", user.id);
         if (hlRows) {
           const map = {};
           hlRows.forEach(r => { map[r.month] = r.length_cm; });
           setHairLengths(map);
         }
-        // Load purchases
-        const { data: purchRows } = await supabase.from("purchases").select("*").eq("user_id", user.id).order("date", {ascending:false});
         if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[], image:r.image||'', link:r.link||'', frequency:r.frequency||'' })));
-        // Load treatments
-        const { data: txRows } = await supabase.from("treatments").select("*").eq("user_id", user.id);
         if (txRows) setTreatments(txRows.map(r=>({ id:r.id, name:r.name, type:r.type, dates:r.dates||[], completedDates:r.completed_dates||[], location:r.location||'' })));
-        // Load products library
-        const { data: prodRows } = await supabase.from("products").select("*").eq("user_id", user.id).order("created_at", {ascending:false});
-        if (prodRows) {
-          const mapped = prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[] }));
-          setProducts(mapped);
-          // Backfill images disabled — re-enable once Google API is confirmed working
-          // const uid = user.id;
-          // mapped.filter(p => !p.image && p.link).forEach((p, i) => {
-          //   setTimeout(() => {
-          //     fetch("/api/images", {
-          //       method: "POST",
-          //       headers: { "Content-Type": "application/json" },
-          //       body: JSON.stringify({ productId: p.id, userId: uid, link: p.link||"", name: p.name, brand: p.brand||"" })
-          //     }).then(r => r.ok ? r.json() : null).then(data => {
-          //       if (data?.imageUrl) setProducts(prev => prev.map(x => x.id===p.id ? {...x, image: data.imageUrl} : x));
-          //     }).catch(()=>{});
-          //   }, i * 3000); // 3 seconds apart to stay under quota
-          // });
-        }
-        // Load wishlist
-        const { data: wishRows } = await supabase.from("wishlist").select("*").eq("user_id", user.id).order("created_at", {ascending:false});
+        if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[] })));
         if (wishRows) setWishlist(wishRows.map(r=>({ id:r.id, product_id:r.product_id||null, name:r.name||"", brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], priority:r.priority||0 })));
-        // Load snapshots
-        const { data: snapRows } = await supabase.from("snapshots").select("*, snapshot_products(*)").eq("user_id", user.id).order("started_at", {ascending:false});
         if (snapRows) setSnapshots(snapRows.map(r=>({ id:r.id, label:r.label||"", started_at:r.started_at, ended_at:r.ended_at||null, is_base:r.is_base||false, products:r.snapshot_products||[] })));
-        // Load user name from profile metadata
-        const { data: { user: freshUser } } = await supabase.auth.getUser();
-        const name = freshUser?.user_metadata?.display_name || "";
+
+        // Show name prompt only if name isn't already set from auth metadata
+        const name = user?.user_metadata?.display_name || "";
         if (name) setUserName(name);
         else setShowNamePrompt(true);
       } catch(e) { console.error("Load error", e); }
