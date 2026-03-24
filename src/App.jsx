@@ -33,6 +33,17 @@ const EMOJI_OPTIONS = [
 ];
 const DOW = ["Mo","Tu","We","Th","Fr","Sa","Su"]; // Week starts Monday
 
+const HomeIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/>
+    <path d="M9 21V12h6v9"/>
+  </svg>
+);
+
+const HamburgerBtn = ({onClick}) => (
+  <button className="hamburger-btn" onClick={onClick}><span/><span/><span/></button>
+);
+
 const fmt      = d => d.toLocaleDateString("en-CA");
 const parse    = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
 const dispLong = s => parse(s).toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
@@ -636,7 +647,7 @@ function ProductSearch({ category, onSelect }) {
   );
 }
 
-function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, onBack }) {
+function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, onBack, onHome, onMenuOpen }) {
   const today = fmt(new Date());
   const thisYear = new Date().getFullYear().toString();
   const [showForm, setShowForm] = useState(false);
@@ -738,9 +749,10 @@ function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, o
         .grand-total{background:linear-gradient(135deg,#f9ede4,#fdf6f0);border:1.5px solid #e8c8b4;border-radius:14px;padding:14px 18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
       `}</style>
       <div className="header" style={{position:"relative"}}>
-        <button onClick={onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1.2rem",padding:"8px"}}>←</button>
+        <button onClick={onHome||onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
         <div className="header-title">My <span>Purchases</span></div>
         <div className="header-sub">Skin · Hair Spending</div>
+        {onMenuOpen&&<HamburgerBtn onClick={onMenuOpen}/>}
       </div>
 
       {grandTotal>0&&(
@@ -899,7 +911,7 @@ function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, o
 
 
 // ── WISHLIST PAGE ──────────────────────────────────────────────
-function WishlistPage({ wishlist, products, onSave, onDelete, onMoveToCart, onBack }) {
+function WishlistPage({ wishlist, products, onSave, onDelete, onMoveToCart, onBack, onHome, onMenuOpen }) {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [chooseCat, setChooseCat] = useState(false);
@@ -919,9 +931,10 @@ function WishlistPage({ wishlist, products, onSave, onDelete, onMoveToCart, onBa
         .wish-meta{font-size:.72rem;color:#a08070}
       `}</style>
       <div className="header" style={{position:"relative"}}>
-        <button onClick={onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1.2rem",padding:"8px"}}>←</button>
+        <button onClick={onHome||onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
         <div className="header-title">My <span>Wishlist</span></div>
         <div className="header-sub">{wishlist.length} item{wishlist.length!==1?"s":""} saved</div>
+        {onMenuOpen&&<HamburgerBtn onClick={onMenuOpen}/>}
       </div>
 
       {chooseCat&&(
@@ -1581,7 +1594,7 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
   );
 }
 
-function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onRemoveFromSnapshot, onFinalizeBase, onDeleteSnapshot, onFetchIngredients, onBack }) {
+function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onRemoveFromSnapshot, onFinalizeBase, onDeleteSnapshot, onFetchIngredients, onBack, onHome, onMenuOpen }) {
   const [tab, setTab] = useState("current");
   const [editMode, setEditMode] = useState(false); // draft edit mode on finalized routine
   const [showForm, setShowForm] = useState(false);
@@ -1800,9 +1813,10 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   return (
     <div className="app">
       <div className="header" style={{position:"relative"}}>
-        <button onClick={()=>tryNavigateAway(onBack)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1.2rem",padding:"8px"}}>←</button>
+        <button onClick={()=>tryNavigateAway(onHome||onBack)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
         <div className="header-title">My <span>Products</span></div>
         <div className="header-sub">{products.length} in library</div>
+        {onMenuOpen&&<HamburgerBtn onClick={onMenuOpen}/>}
       </div>
 
       <div style={{display:"flex",gap:0,marginBottom:20,borderRadius:12,overflow:"hidden",border:"1.5px solid #e8d8cc"}}>
@@ -2840,7 +2854,7 @@ export default function App({ user }) {
     setProducts(prev => { const idx=prev.findIndex(x=>x.id===p.id); return idx>=0?prev.map(x=>x.id===p.id?p:x):[p,...prev]; });
     // Background lookups — fire and forget
     if (!p.ingredients?.length && p.name) fetchIngredients(p);
-    if (!p.image && (p.link || p.name)) fetchProductImage(p);
+    if (p.link || (!p.image && p.name)) fetchProductImage(p);
   };
 
   const fetchProductImage = async (p) => {
@@ -3105,8 +3119,10 @@ export default function App({ user }) {
   const checked=activeTab==="skin"?entry.skin:entry.hair;
   const done=checked.filter(id=>routines.find(r=>r.id===id)).length;
 
+  const goHome = () => { setView("log"); setActiveDate(today); setPageView(null); };
+
   if (pageView==="purchases") return (
-    <div><style>{STYLES}</style><PurchasesPage purchases={purchases} prefill={prefillPurchase} onClearPrefill={()=>setPrefillPurchase(null)} onSave={savePurchase} onDelete={confirmDeletePurchase} onBack={()=>setPageView(null)}/></div>
+    <div><style>{STYLES}</style><PurchasesPage purchases={purchases} prefill={prefillPurchase} onClearPrefill={()=>setPrefillPurchase(null)} onSave={savePurchase} onDelete={confirmDeletePurchase} onBack={()=>setPageView(null)} onHome={goHome} onMenuOpen={()=>setSideMenu(true)}/></div>
   );
   if (pageView==="products") return (
     <div><style>{STYLES}</style><MyProductsPage
@@ -3121,7 +3137,9 @@ export default function App({ user }) {
       onFinalizeBase={finalizeBase}
       onDeleteSnapshot={deleteSnapshot}
       onFetchIngredients={fetchIngredients}
-      onBack={()=>setPageView(null)}/></div>
+      onBack={()=>setPageView(null)}
+      onHome={goHome}
+      onMenuOpen={()=>setSideMenu(true)}/></div>
   );
   if (pageView==="wishlist") return (
     <div><style>{STYLES}</style><WishlistPage
@@ -3130,14 +3148,17 @@ export default function App({ user }) {
       onSave={saveWishlistItem}
       onDelete={confirmDeleteWishlistItem}
       onMoveToCart={async(item)=>{ const prefill=await moveWishlistToPurchase(item); setPrefillPurchase(prefill); setPageView("purchases"); }}
-      onBack={()=>setPageView(null)}/></div>
+      onBack={()=>setPageView(null)}
+      onHome={goHome}
+      onMenuOpen={()=>setSideMenu(true)}/></div>
   );
   if (pageView==="account") return (
     <div className="app">
       <style>{STYLES}</style>
       <div className="header" style={{position:"relative"}}>
-        <button onClick={()=>setPageView(null)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1.2rem",padding:"8px"}}>{"← Back"}</button>
+        <button onClick={()=>{setView("log");setActiveDate(today);setPageView(null);}} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
         <div className="header-title">My <span>Account</span></div>
+        <HamburgerBtn onClick={()=>setSideMenu(true)}/>
       </div>
       <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Coming soon</div>
     </div>
@@ -3148,15 +3169,13 @@ export default function App({ user }) {
       <style>{STYLES}</style>
       <div className="app">
         <div className="header" style={{position:"relative"}}>
-          <div className="header-title" style={{cursor:"pointer"}} onClick={()=>{setView("log");setPageView(null);}}>{userName ? userName+"'s" : "My"} <span>Ritual</span></div>
+          <button onClick={()=>{setView("log");setActiveDate(today);setPageView(null);}} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
+          <div className="header-title">{userName ? userName+"'s" : "My"} <span>Ritual</span></div>
           <div className="header-sub">Your Beauty HQ</div>
-          <button className="hamburger-btn" onClick={()=>setSideMenu(true)}>
-            <span/><span/><span/>
-          </button>
+          <HamburgerBtn onClick={()=>setSideMenu(true)}/>
         </div>
 
         <div className="top-tabs">
-          <button className={`top-tab ${view==="log"&&activeDate===today?"active":""}`} onClick={()=>{setView("log");setActiveDate(today);}}>🏠</button>
           {[["log","Log"],["history","History"],["plan","Plan"],["frequency","Stats"]].map(([v,l])=>(
             <button key={v} className={`top-tab ${view===v?"active":""}`} onClick={()=>setView(v)}>{l}</button>
           ))}
