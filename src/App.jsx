@@ -578,93 +578,8 @@ function SpendingSummary({ purchases, period, onGoToPurchases }) {
   );
 }
 
-function ProductSearch({ category, onSelect }) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
-
-  const search = async () => {
-    if (!query.trim()) return;
-    setLoading(true); setSearched(true);
-    const q = query.trim();
-
-    // Search OpenBeautyFacts and global DB in parallel
-    const [openResults, globalResults] = await Promise.all([
-      fetch("https://world.openbeautyfacts.org/cgi/search.pl?search_terms=" + encodeURIComponent(q) + "&search_simple=1&action=process&json=1&page_size=8")
-        .then(r => r.json())
-        .then(data => (data.products || []).filter(p => p.product_name).map(p => ({...p, _source:"open"})))
-        .catch(() => []),
-      (async () => {
-        try {
-          const supaUrl = import.meta.env.VITE_SUPABASE_URL;
-          const supaKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-          const res = await fetch(
-            supaUrl + "/rest/v1/global_products?or=(name.ilike.*" + encodeURIComponent(q) + "*,brand.ilike.*" + encodeURIComponent(q) + "*)&limit=5&order=search_count.desc",
-            { headers: { apikey: supaKey, Authorization: "Bearer " + supaKey } }
-          );
-          const data = res.ok ? await res.json() : [];
-          return (data || []).map(p => ({
-            product_name: p.name, brands: p.brand, image_small_url: "",
-            global_product_id: p.id, ingredients: p.ingredients || [], _source: "global"
-          }));
-        } catch(e) { return []; }
-      })()
-    ]);
-
-    // Merge — global first, then open results not already covered by name match
-    const globalNames = new Set(globalResults.map(p => p.product_name.toLowerCase()));
-    const deduped = openResults.filter(p => !globalNames.has((p.product_name||"").toLowerCase()));
-    setResults([...globalResults, ...deduped]);
-    setLoading(false);
-  };
-
-  return (
-    <div style={{marginBottom:12}}>
-      <div style={{fontSize:".7rem",color:"#a08070",marginBottom:6,letterSpacing:".08em",textTransform:"uppercase"}}>Search Product Database</div>
-      <div style={{display:"flex",gap:8,marginBottom:8}}>
-        <input className="ifield" style={{flex:1}} placeholder="Search by product name…" value={query}
-          onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&search()}/>
-        <button onClick={search}
-          style={{background:"#b07a5e",border:"none",borderRadius:10,padding:"8px 14px",color:"#fff",cursor:"pointer",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>
-          {loading?"…":"Search"}
-        </button>
-      </div>
-      {searched&&results.length===0&&!loading&&<div style={{fontSize:".78rem",color:"#a08070",fontStyle:"italic",marginBottom:8}}>No results — fill in manually below</div>}
-      {results.length>0&&(
-        <div style={{maxHeight:220,overflowY:"auto",border:"1px solid #e8d8cc",borderRadius:12,marginBottom:8}}>
-          {results.map((p,i)=>(
-            <div key={i}
-              onClick={()=>onSelect({
-                name:p.product_name||"",
-                brand:p.brands||"",
-                image:p.image_small_url||"",
-                link:"",
-                global_product_id:p.global_product_id||null,
-                ingredients:p.ingredients||[]
-              })}
-              style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderBottom:"1px solid #f0e0d4",cursor:"pointer",background:"#fff8f3"}}
-              onMouseEnter={e=>e.currentTarget.style.background="#fdf0e8"}
-              onMouseLeave={e=>e.currentTarget.style.background="#fff8f3"}>
-              {p.image_small_url
-                ?<img src={p.image_small_url} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:8,flexShrink:0}}/>
-                :<div style={{width:36,height:36,borderRadius:8,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",flexShrink:0}}>{category==="skin"?"🌿":category==="treatment"?"💉":"✨"}</div>
-              }
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:".82rem",color:"#3a2e27",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.product_name}</div>
-                <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  {p.brands&&<span style={{fontSize:".72rem",color:"#a08070"}}>{p.brands}</span>}
-                  {p._source==="global"&&<span style={{fontSize:".62rem",background:p.ingredients?.length?"#e8f4e8":"#f0e8e0",color:p.ingredients?.length?"#5a8a5a":"#a08070",borderRadius:6,padding:"1px 6px"}}>{p.ingredients?.length?"✓ ingredients known":"in our DB"}</span>}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      <div style={{fontSize:".7rem",color:"#c0b0a8",textAlign:"center",marginBottom:4}}>or fill in manually ↓</div>
-    </div>
-  );
-}
+// ProductSearch removed — Open Beauty Facts data was low quality.
+// Global product autofill will be re-introduced when the in-house catalog has sufficient data.
 
 function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, onBack, onHome, onMenuOpen }) {
   const today = fmt(new Date());
@@ -812,7 +727,6 @@ function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, o
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{purchases.find(p=>p.id===editP.id)?"Edit":"Add"} Purchase</div>
             <button onClick={()=>{setShowForm(false);setEditP(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
           </div>
-          <ProductSearch category={editP.category} onSelect={({name,brand,image})=>setEditP(p=>({...p,name,brand,image:image||""}))}/>
           <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editP.name} onChange={e=>setEditP(p=>({...p,name:e.target.value}))}/>
           <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand (optional)" value={editP.brand} onChange={e=>setEditP(p=>({...p,brand:e.target.value}))}/>
           <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL (optional — enables Buy Now)" value={editP.link||""} onChange={e=>setEditP(p=>({...p,link:e.target.value}))}/>
@@ -978,7 +892,6 @@ function WishlistPage({ wishlist, products, onSave, onDelete, onMoveToCart, onBa
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{wishlist.find(w=>w.id===editItem.id)?"Edit":"Add to"} Wishlist</div>
             <button onClick={()=>{setShowForm(false);setEditItem(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
           </div>
-          <ProductSearch category={editItem.category} onSelect={({name,brand,image,link})=>setEditItem(p=>({...p,name,brand,image:image||"",link:link||""}))}/>
           <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editItem.name} onChange={e=>setEditItem(p=>({...p,name:e.target.value}))}/>
           <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand (optional)" value={editItem.brand} onChange={e=>setEditItem(p=>({...p,brand:e.target.value}))}/>
           <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={editItem.link||""} onChange={e=>setEditItem(p=>({...p,link:e.target.value}))}/>
@@ -1549,7 +1462,6 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
         <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{isEditingProd?"Edit Product":"Add Product"}</div>
         <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
       </div>
-      {!isEditingProd&&<ProductSearch category={p.category} onSelect={({name,brand,image,link,global_product_id,ingredients})=>setP(prev=>({...prev,name,brand,image:image||"",link:link||"",global_product_id:global_product_id||null,ingredients:ingredients||[]}))}/>}
       <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name" value={p.name} onChange={e=>setP(prev=>({...prev,name:e.target.value}))} autoFocus/>
       <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={p.brand||""} onChange={e=>setP(prev=>({...prev,brand:e.target.value}))}/>
       {isEditingProd&&<div style={{fontSize:".64rem",color:"#c0a898",fontStyle:"italic",marginTop:-6,marginBottom:10}}>Name and brand changes apply across your routine history.</div>}
@@ -1640,6 +1552,94 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
       <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={p.notes||""} onChange={e=>setP(prev=>({...prev,notes:e.target.value}))}/>
       <button className="save-btn" onClick={()=>onSave(p)} disabled={!p.name.trim()} style={{opacity:p.name.trim()?1:.4}}>
         {isEditingProd?"Save Changes":"Add to My Routine"}
+      </button>
+    </div>
+  );
+}
+
+function SlimEditForm({ initialData, onSave, onClose }) {
+  const [p, setP] = useState(initialData);
+  const raw = p.frequency||"";
+  const isDaily = raw==="Daily";
+  const match = raw.match(/^(\d+)x (week|month)$/);
+  const count = match?parseInt(match[1]):(isDaily?1:1);
+  const period = match?match[2]:(isDaily?"day":"week");
+  const enabled = !!raw;
+  const setFreq = (c,per) => {
+    if (per==="day") setP(prev=>({...prev,frequency:"Daily"}));
+    else setP(prev=>({...prev,frequency:c+"x "+per}));
+  };
+  const bump = delta => {
+    const next = Math.min(7,Math.max(1,count+delta));
+    setFreq(next, period==="day"?"week":period);
+  };
+  const catLabel = p.category==="skin"?"Skin":p.category==="treatment"?"Treatment":"Hair";
+  return (
+    <div>
+      {/* Product identity row */}
+      <div style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:20}}>
+        {p.image&&<img src={p.image} alt="" style={{width:64,height:64,borderRadius:10,objectFit:"cover",flexShrink:0,border:"1px solid #f0e0d4"}}/>}
+        <div style={{flex:1}}>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.5rem",color:"#3a2e27",lineHeight:1.1,marginBottom:2}}>{p.name}</div>
+          <div style={{fontSize:".78rem",color:"#a08070",marginBottom:6}}>{p.brand}</div>
+          <div style={{display:"inline-block",background:"#f7f0ea",borderRadius:6,padding:"3px 10px",fontSize:".64rem",color:"#b07a5e",letterSpacing:".06em",textTransform:"uppercase",fontWeight:600}}>{catLabel}</div>
+        </div>
+        <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#c0a898",lineHeight:1,padding:0,flexShrink:0}}>×</button>
+      </div>
+
+      {/* Fields */}
+      <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
+        <input className="ifield" style={{width:"100%"}} placeholder="Product name" value={p.name} onChange={e=>setP(prev=>({...prev,name:e.target.value}))} autoFocus/>
+        <input className="ifield" style={{width:"100%"}} placeholder="Brand" value={p.brand||""} onChange={e=>setP(prev=>({...prev,brand:e.target.value}))}/>
+        <div style={{fontSize:".62rem",color:"#c0a898",fontStyle:"italic",marginTop:-4}}>Name & brand changes apply across your routine history.</div>
+        <div style={{display:"flex",gap:8}}>
+          <input className="ifield" style={{flex:1}} placeholder="Product URL" value={p.link||""} onChange={e=>setP(prev=>({...prev,link:e.target.value}))}/>
+          <input className="ifield" style={{width:80}} placeholder="Price" type="number" min="0" step="0.01" value={p.price||""} onChange={e=>setP(prev=>({...prev,price:e.target.value}))}/>
+        </div>
+      </div>
+
+      {/* Frequency */}
+      <div style={{marginBottom:14}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+          <div style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase"}}>Frequency</div>
+          {enabled&&<button onClick={()=>setP(prev=>({...prev,frequency:""}))} style={{background:"none",border:"none",fontSize:".62rem",color:"#c0a898",cursor:"pointer",padding:0}}>Clear</button>}
+        </div>
+        <div style={{display:"flex",gap:6}}>
+          {["day","week","month"].map(per=>(
+            <button key={per} onClick={()=>setFreq(per==="day"?1:count,per)}
+              style={{flex:1,padding:"8px 4px",borderRadius:10,border:"1.5px solid",cursor:"pointer",
+                fontFamily:"'DM Sans',sans-serif",fontSize:".74rem",fontWeight:500,
+                background:enabled&&period===per?"#b07a5e":"#fff8f3",
+                color:enabled&&period===per?"#fff":"#a08070",
+                borderColor:enabled&&period===per?"#b07a5e":"#e8d8cc",transition:"all .15s"}}>
+              {per==="day"?"Daily":per==="week"?"Weekly":"Monthly"}
+            </button>
+          ))}
+        </div>
+        {enabled&&period!=="day"&&(
+          <div style={{display:"flex",alignItems:"center",gap:10,marginTop:10,justifyContent:"center"}}>
+            <button onClick={()=>bump(-1)} disabled={count<=1}
+              style={{width:32,height:32,borderRadius:"50%",border:"1.5px solid #e8d8cc",background:"#fff8f3",
+                color:count<=1?"#d0c0b8":"#7a5c48",cursor:count<=1?"default":"pointer",fontSize:"1.1rem",
+                display:"flex",alignItems:"center",justifyContent:"center"}}>−</button>
+            <div style={{minWidth:60,textAlign:"center"}}>
+              <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.5rem",color:"#3a2e27"}}>{count}</span>
+              <span style={{fontSize:".66rem",color:"#a08070",marginLeft:4}}>× per {period}</span>
+            </div>
+            <button onClick={()=>bump(1)} disabled={count>=7}
+              style={{width:32,height:32,borderRadius:"50%",border:"1.5px solid #e8d8cc",background:"#fff8f3",
+                color:count>=7?"#d0c0b8":"#7a5c48",cursor:count>=7?"default":"pointer",fontSize:"1.1rem",
+                display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
+          </div>
+        )}
+      </div>
+
+      <input className="ifield" style={{width:"100%",marginBottom:18}} placeholder="Notes" value={p.notes||""} onChange={e=>setP(prev=>({...prev,notes:e.target.value}))}/>
+      <button onClick={()=>onSave(p)} disabled={!p.name.trim()}
+        style={{width:"100%",padding:"13px",background:p.name.trim()?"#b07a5e":"#e8d8cc",border:"none",borderRadius:12,
+          color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:".84rem",fontWeight:600,cursor:p.name.trim()?"pointer":"default",
+          letterSpacing:".04em",transition:"background .15s"}}>
+        Save Changes
       </button>
     </div>
   );
@@ -1860,22 +1860,42 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
     const txP=prods.filter(p=>p.category==="treatment");
     const startLabel = new Date(snap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
     const endLabel = snap.ended_at ? new Date(snap.ended_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}) : "Present";
-    const MiniCard = ({p,emoji}) => (
-      <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"10px 14px",marginBottom:6,display:"flex",gap:10,alignItems:"center"}}>
-        {p.image?<img src={p.image} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:8,flexShrink:0}}/>:<div style={{width:36,height:36,borderRadius:8,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",flexShrink:0}}>{emoji}</div>}
-        <div><div style={{fontSize:".84rem",fontWeight:500,color:"#3a2e27"}}>{p.name}</div>{p.brand&&<div style={{fontSize:".7rem",color:"#a08070"}}>{p.brand}</div>}</div>
-      </div>
-    );
+    const SnapCatRow = ({cat, label, catProds}) => {
+      if (!catProds.length) return null;
+      return (
+        <div style={{marginBottom:14}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
+            <div style={{fontSize:".64rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070"}}>{label}</div>
+            <div style={{fontSize:".6rem",color:"#c0b0a8"}}>{catProds.length} product{catProds.length!==1?"s":""}</div>
+          </div>
+          <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,scrollbarWidth:"none",WebkitOverflowScrolling:"touch",paddingRight:4}}>
+            {catProds.map(p=>(
+              <div key={p.id} style={{flexShrink:0,width:96,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:13,overflow:"hidden"}}>
+                {p.image
+                  ?<img src={p.image} alt="" style={{width:"100%",height:76,objectFit:"cover",display:"block"}}/>
+                  :<div style={{width:"100%",height:76,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem"}}>{catEmoji(cat)}</div>
+                }
+                <div style={{padding:"7px 8px 8px"}}>
+                  <div style={{fontSize:".7rem",fontWeight:500,color:"#3a2e27",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
+                  {p.brand&&<div style={{fontSize:".6rem",color:"#a08070",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.brand}</div>}
+                  {p.frequency&&<div style={{fontSize:".56rem",background:"#f0e8f4",borderRadius:5,padding:"1px 5px",color:"#7a6a8a",display:"inline-block",marginTop:3}}>{p.frequency}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    };
     return (
       <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"16px 18px",marginBottom:12,cursor:"pointer"}} onClick={()=>setOpen(o=>!o)}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
           <div>
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>{startLabel} — {endLabel}</div>
-            <div style={{fontSize:".72rem",color:"#a08070",marginTop:3}}>{prods.length} product{prods.length!==1?"s":""} · {skinP.length} skin · {hairP.length} hair{txP.length>0?` · ${txP.length} treatment`:""}</div>
+            <div style={{fontSize:".72rem",color:"#a08070",marginTop:3}}>{prods.length} product{prods.length!==1?"s":""}{skinP.length>0?` · ${skinP.length} skin`:""}{ hairP.length>0?` · ${hairP.length} hair`:""}{ txP.length>0?` · ${txP.length} treatment`:""}</div>
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
             <button onClick={e=>{e.stopPropagation();setSnapAnalysis(v=>!v);}} style={{background:"none",border:"1px solid #e8d8cc",borderRadius:8,padding:"4px 10px",color:"#a08070",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
-              {snapAnalysis?"Close":"Analyze my routine"}
+              {snapAnalysis?"Close":"Analyze"}
             </button>
             {open&&<button onClick={e=>{e.stopPropagation();setConfirmDel(true);}} style={{background:"none",border:"1px solid #f0c8c0",borderRadius:8,padding:"4px 10px",color:"#c07060",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
               Delete
@@ -1903,10 +1923,10 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
             </button>
           </div>
         </div>}
-        {open&&<div style={{marginTop:14,borderTop:"1px solid #f0e0d4",paddingTop:12}} onClick={e=>e.stopPropagation()}>
-          {skinP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8}}>🌿 Skin</div>{skinP.map(p=><MiniCard key={p.id} p={p} emoji="🌿"/>)}</>}
-          {hairP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8,marginTop:12}}>✨ Hair</div>{hairP.map(p=><MiniCard key={p.id} p={p} emoji="✨"/>)}</>}
-          {txP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8,marginTop:12}}>💉 Treatments</div>{txP.map(p=><MiniCard key={p.id} p={p} emoji="💉"/>)}</>}
+        {open&&<div style={{marginTop:14,borderTop:"1px solid #f0e0d4",paddingTop:14}} onClick={e=>e.stopPropagation()}>
+          <SnapCatRow cat="skin" label="🌿 Skin" catProds={skinP}/>
+          <SnapCatRow cat="hair" label="✨ Hair" catProds={hairP}/>
+          <SnapCatRow cat="treatment" label="💉 Treatments" catProds={txP}/>
         </div>}
       </div>
     );
@@ -2194,13 +2214,13 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
         </>
       )}
 
-      {/* Bottom sheet — edit form from carousel pencil */}
+      {/* Bottom sheet — slim edit form from carousel pencil */}
       {showForm&&editProd&&isEditingProd&&(
         <>
           <div className="bottom-sheet-overlay" onClick={handleCloseForm}/>
           <div className="bottom-sheet">
             <div style={{width:36,height:4,borderRadius:2,background:"#e8d8cc",margin:"0 auto 20px"}}/>
-            <ProductForm key={editProd.id} initialData={editProd} isEditingProd={isEditingProd} onSave={save} onClose={handleCloseForm}/>
+            <SlimEditForm key={editProd.id} initialData={editProd} onSave={save} onClose={handleCloseForm}/>
           </div>
         </>
       )}
