@@ -1531,9 +1531,12 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
         <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
       </div>
       {!isEditingProd&&<ProductSearch category={p.category} onSelect={({name,brand,image,link,global_product_id,ingredients})=>setP(prev=>({...prev,name,brand,image:image||"",link:link||"",global_product_id:global_product_id||null,ingredients:ingredients||[]}))}/>}
-      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={p.name} onChange={e=>setP(prev=>({...prev,name:e.target.value}))} autoFocus/>
-      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand (optional)" value={p.brand||""} onChange={e=>setP(prev=>({...prev,brand:e.target.value}))}/>
-      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={p.link||""} onChange={e=>setP(prev=>({...prev,link:e.target.value}))}/>
+      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name" value={p.name} onChange={e=>setP(prev=>({...prev,name:e.target.value}))} autoFocus/>
+      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={p.brand||""} onChange={e=>setP(prev=>({...prev,brand:e.target.value}))}/>
+      <div style={{display:"flex",gap:8,marginBottom:10}}>
+        <input className="ifield" style={{flex:1}} placeholder="Product URL" value={p.link||""} onChange={e=>setP(prev=>({...prev,link:e.target.value}))}/>
+        <input className="ifield" style={{width:88}} placeholder="Price" type="number" min="0" step="0.01" value={p.price||""} onChange={e=>setP(prev=>({...prev,price:e.target.value}))}/>
+      </div>
       <div style={{display:"flex",gap:8,marginBottom:10}}>
         {["skin","hair","treatment"].map(cat=>(
           <button key={cat} className={`dow-chip ${p.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
@@ -1552,41 +1555,36 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
         ))}
       </div>
       <div style={{marginBottom:12}}>
-        <div style={{fontSize:".7rem",color:"#a08070",marginBottom:8,letterSpacing:".08em",textTransform:"uppercase"}}>Frequency <span style={{textTransform:"none",letterSpacing:0,color:"#c0b0a8"}}>(optional)</span></div>
-        <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+        <div style={{fontSize:".66rem",color:"#a08070",marginBottom:7,letterSpacing:".08em",textTransform:"uppercase"}}>Frequency</div>
+        <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
           <button className={`dow-chip ${p.frequency==="Daily"?"on":""}`}
-            style={{fontSize:".74rem",padding:"5px 14px",fontWeight:p.frequency==="Daily"?600:400}}
+            style={{fontSize:".74rem",padding:"5px 12px"}}
             onClick={()=>setP(prev=>({...prev,frequency:prev.frequency==="Daily"?"":"Daily"}))}>
             Daily
           </button>
-          <span style={{color:"#d0b8a8",fontSize:".8rem"}}>or</span>
-          <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-            {[2,3,4,5,6,7].map(n=>{
-              const unit = p._freqUnit||"week";
-              const val = n+"x "+unit;
-              const active = p.frequency===val;
-              return <button key={n} className={"dow-chip "+(active?"on":"")}
-                style={{fontSize:".78rem",padding:"5px 10px",minWidth:36}}
-                onClick={()=>setP(prev=>({...prev,frequency:active?"":val,_freqUnit:unit}))}>
-                {n}x
-              </button>;
-            })}
-          </div>
-          <div style={{display:"flex",gap:4}}>
-            {["week","month"].map(u=>{
-              const n = p.frequency?.match(/^(\d+)x /)?.[1];
-              const active = p._freqUnit===u||(p.frequency&&p.frequency.endsWith(u)&&!p._freqUnit);
-              return <button key={u} className={"dow-chip "+((active&&p.frequency!=="Daily")?"on":"")}
-                style={{fontSize:".74rem",padding:"5px 12px"}}
-                onClick={()=>{ const num=n||2; setP(prev=>({...prev,_freqUnit:u,frequency:num+"x "+u})); }}>
-                {u}
-              </button>;
-            })}
-          </div>
+          {[2,3,4,5,6,7].map(n=>{
+            const unit = p._freqUnit||"week";
+            const val = n+"x "+unit;
+            const active = p.frequency===val;
+            return <button key={n} className={"dow-chip "+(active?"on":"")}
+              style={{fontSize:".74rem",padding:"5px 10px",minWidth:36}}
+              onClick={()=>setP(prev=>({...prev,frequency:active?"":val,_freqUnit:unit}))}>
+              {n}x
+            </button>;
+          })}
+          {["week","month"].map(u=>{
+            const n = p.frequency?.match(/^(\d+)x /)?.[1];
+            const active = p._freqUnit===u||(p.frequency&&p.frequency.endsWith(u)&&!p._freqUnit);
+            return <button key={u} className={"dow-chip "+((active&&p.frequency!=="Daily")?"on":"")}
+              style={{fontSize:".74rem",padding:"5px 11px"}}
+              onClick={()=>{ const num=n||2; setP(prev=>({...prev,_freqUnit:u,frequency:num+"x "+u})); }}>
+              {u}
+            </button>;
+          })}
         </div>
         {p.frequency&&<div style={{marginTop:6,fontSize:".72rem",color:"#b07a5e",fontStyle:"italic"}}>→ {p.frequency}</div>}
       </div>
-      <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes (optional)" value={p.notes||""} onChange={e=>setP(prev=>({...prev,notes:e.target.value}))}/>
+      <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={p.notes||""} onChange={e=>setP(prev=>({...prev,notes:e.target.value}))}/>
       <button className="save-btn" onClick={()=>onSave(p)} disabled={!p.name.trim()} style={{opacity:p.name.trim()?1:.4}}>
         {isEditingProd?"Save Changes":"Add to My Routine"}
       </button>
@@ -1631,7 +1629,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   const hairProds = snapProducts.filter(p=>p.category==="hair");
   const txProds   = snapProducts.filter(p=>p.category==="treatment");
 
-  const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, image:"", link:"", notes:"", tags:[], frequency:"" });
+  const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, image:"", link:"", price:"", notes:"", tags:[], frequency:"" });
 
   const handleCloseForm = useCallback(() => { setShowForm(false); setEditProd(null); setIsEditingProd(false); }, []);
   const handleSetEditProd = useCallback((fn) => setEditProd(fn), []);
@@ -1900,7 +1898,10 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
 
                 {/* Detail panel for active card */}
                 <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"14px 16px",marginTop:14}}>
-                  {curr.brand&&<div style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase",marginBottom:3}}>{curr.brand}</div>}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:3}}>
+                    {curr.brand&&<div style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase"}}>{curr.brand}</div>}
+                    {curr.price&&<div style={{fontSize:".72rem",fontWeight:500,color:"#3a2e27"}}>$ {parseFloat(curr.price).toFixed(2)}</div>}
+                  </div>
                   <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",color:"#3a2e27",lineHeight:1.3,marginBottom:curr.frequency||curr.notes?8:12}}>{curr.name}</div>
                   {curr.frequency&&<div style={{fontSize:".62rem",background:"#f0e8f4",borderRadius:5,padding:"2px 7px",color:"#7a6a8a",display:"inline-block",marginBottom:8}}>{curr.frequency}</div>}
                   {curr.notes&&<div style={{fontSize:".72rem",color:"#8a6858",fontStyle:"italic",lineHeight:1.5,marginBottom:10}}>{curr.notes}</div>}
@@ -2727,7 +2728,7 @@ export default function App({ user }) {
         }
         if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[], image:r.image||'', link:r.link||'', frequency:r.frequency||'' })));
         if (txRows) setTreatments(txRows.map(r=>({ id:r.id, name:r.name, type:r.type, dates:r.dates||[], completedDates:r.completed_dates||[], location:r.location||'' })));
-        if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[] })));
+        if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", price:r.price||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[] })));
         if (wishRows) setWishlist(wishRows.map(r=>({ id:r.id, product_id:r.product_id||null, name:r.name||"", brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], priority:r.priority||0 })));
         if (snapRows) setSnapshots(snapRows.map(r=>({ id:r.id, label:r.label||"", started_at:r.started_at, ended_at:r.ended_at||null, is_base:r.is_base||false, products:r.snapshot_products||[] })));
 
@@ -2920,7 +2921,7 @@ export default function App({ user }) {
   // ── Products CRUD ──
   const saveProduct = async (p) => {
     if (!user) return;
-    const row = { id:p.id, user_id:user.id, name:p.name, brand:p.brand||"", category:p.category||"skin", image:p.image||"", link:p.link||"", notes:p.notes||"", tags:p.tags||[], frequency:p.frequency||"", global_product_id:p.global_product_id||null, ingredients:p.ingredients||[] };
+    const row = { id:p.id, user_id:user.id, name:p.name, brand:p.brand||"", category:p.category||"skin", image:p.image||"", link:p.link||"", price:p.price||null, notes:p.notes||"", tags:p.tags||[], frequency:p.frequency||"", global_product_id:p.global_product_id||null, ingredients:p.ingredients||[] };
     await supabase.from("products").upsert(row, {onConflict:"id"});
     setProducts(prev => { const idx=prev.findIndex(x=>x.id===p.id); return idx>=0?prev.map(x=>x.id===p.id?p:x):[p,...prev]; });
     // Background lookups — fire and forget
