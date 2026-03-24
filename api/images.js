@@ -1,10 +1,4 @@
 // api/images.js
-const { createClient } = require("@supabase/supabase-js");
-
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
 
 // Extract Open Graph meta tags from HTML
 function getOGTag(html, prop) {
@@ -74,8 +68,7 @@ module.exports = async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { productId, userId, name, brand, link } = req.body;
-  if (!productId || !userId) return res.status(400).json({ error: "productId and userId required" });
+  const { name, brand, link } = req.body;
 
   const bingApiKey = process.env.BING_API_KEY;
   const productLabel = [brand, name].filter(Boolean).join(" ");
@@ -106,12 +99,5 @@ module.exports = async function handler(req, res) {
 
   if (!imageUrl) return res.status(200).json({ success: false, message: "No image found" });
 
-  // ── 4. Save to Supabase ──
-  try {
-    await supabaseAdmin.from("products").update({ image: imageUrl }).eq("id", productId).eq("user_id", userId);
-    return res.status(200).json({ success: true, imageUrl });
-  } catch (e) {
-    console.error("Supabase update error:", e);
-    return res.status(500).json({ error: "Failed to save image" });
-  }
+  return res.status(200).json({ success: true, imageUrl });
 };

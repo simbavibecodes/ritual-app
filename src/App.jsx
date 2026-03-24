@@ -2847,17 +2847,15 @@ export default function App({ user }) {
 
   const fetchProductImage = async (p) => {
     try {
-      console.log("[img] fetching for", p.name, "link:", p.link);
       const res = await fetch("/api/images", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: p.id, userId: user.id, link: p.link||"", name: p.name, brand: p.brand||"" })
+        body: JSON.stringify({ link: p.link||"", name: p.name, brand: p.brand||"" })
       });
-      console.log("[img] response status:", res.status);
-      if (!res.ok) { console.error("[img] not ok:", res.status); return; }
+      if (!res.ok) return;
       const data = await res.json();
-      console.log("[img] response data:", data);
       if (data.imageUrl) {
+        await supabase.from("products").update({ image: data.imageUrl }).eq("id", p.id).eq("user_id", user.id);
         setProducts(prev => prev.map(x => x.id===p.id ? {...x, image: data.imageUrl} : x));
       }
     } catch(e) { console.error("Image fetch error:", e); }
