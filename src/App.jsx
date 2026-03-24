@@ -50,6 +50,20 @@ const dispLong = s => parse(s).toLocaleDateString("en-US",{weekday:"long",month:
 const uid      = () => crypto.randomUUID();
 // Platform-agnostic URL opener — swap body for Capacitor Browser plugin when going native
 const openUrl  = (url, target = "_blank") => window.open(url, target);
+// String similarity via normalised Levenshtein (0 = nothing in common, 1 = identical)
+const strSimilarity = (a="", b="") => {
+  a = a.toLowerCase().trim(); b = b.toLowerCase().trim();
+  if (a === b) return 1;
+  if (!a.length || !b.length) return 0;
+  const m = a.length, n = b.length;
+  let prev = Array.from({length:n+1},(_,j)=>j);
+  for (let i=1;i<=m;i++){
+    const cur=[i];
+    for(let j=1;j<=n;j++) cur[j]=a[i-1]===b[j-1]?prev[j-1]:1+Math.min(prev[j],cur[j-1],prev[j-1]);
+    prev=cur;
+  }
+  return 1 - prev[n]/Math.max(m,n);
+};
 function daysInMonth(y,m){ return new Date(y,m+1,0).getDate(); }
 function dateRange(start, end) {
   const dates=[], s=parse(start), e=parse(end);
@@ -1535,18 +1549,27 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
       {!isEditingProd&&<ProductSearch category={p.category} onSelect={({name,brand,image,link,global_product_id,ingredients})=>setP(prev=>({...prev,name,brand,image:image||"",link:link||"",global_product_id:global_product_id||null,ingredients:ingredients||[]}))}/>}
       <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name" value={p.name} onChange={e=>setP(prev=>({...prev,name:e.target.value}))} autoFocus/>
       <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={p.brand||""} onChange={e=>setP(prev=>({...prev,brand:e.target.value}))}/>
+      {isEditingProd&&<div style={{fontSize:".64rem",color:"#c0a898",fontStyle:"italic",marginTop:-6,marginBottom:10}}>Name and brand changes apply across your routine history.</div>}
       <div style={{display:"flex",gap:8,marginBottom:10}}>
         <input className="ifield" style={{flex:1}} placeholder="Product URL" value={p.link||""} onChange={e=>setP(prev=>({...prev,link:e.target.value}))}/>
         <input className="ifield" style={{width:88}} placeholder="Price" type="number" min="0" step="0.01" value={p.price||""} onChange={e=>setP(prev=>({...prev,price:e.target.value}))}/>
       </div>
-      <div style={{display:"flex",gap:8,marginBottom:10}}>
-        {["skin","hair","treatment"].map(cat=>(
-          <button key={cat} className={`dow-chip ${p.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
-            onClick={()=>setP(prev=>({...prev,category:cat}))}>
-            {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
-          </button>
-        ))}
-      </div>
+      {isEditingProd
+        ? <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+            <div style={{background:"#f0e8f4",borderRadius:8,padding:"6px 14px",fontSize:".74rem",color:"#7a6a8a",fontWeight:500}}>
+              {p.category==="skin"?"🌿 Skin":p.category==="treatment"?"💉 Treatment":"✨ Hair"}
+            </div>
+            <div style={{fontSize:".64rem",color:"#c0a898",fontStyle:"italic"}}>Category can't be changed — remove and re-add to change.</div>
+          </div>
+        : <div style={{display:"flex",gap:8,marginBottom:10}}>
+            {["skin","hair","treatment"].map(cat=>(
+              <button key={cat} className={`dow-chip ${p.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
+                onClick={()=>setP(prev=>({...prev,category:cat}))}>
+                {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
+              </button>
+            ))}
+          </div>
+      }
       <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
         {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
           <button key={tag} className={`dow-chip ${(p.tags||[]).includes(tag)?"on":""}`}
@@ -1619,7 +1642,7 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
   );
 }
 
-function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onRemoveFromSnapshot, onFinalizeBase, onDeleteSnapshot, onFetchIngredients, onBack, onHome, onMenuOpen }) {
+function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onUpdateSnapProduct, onUpdateSnapProductName, onRemoveFromSnapshot, onFinalizeBase, onDeleteSnapshot, onFetchIngredients, onBack, onHome, onMenuOpen }) {
   const [tab, setTab] = useState("current");
   const [editMode, setEditMode] = useState(false); // draft edit mode on finalized routine
   const [showForm, setShowForm] = useState(false);
@@ -1629,6 +1652,8 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   const [isEditingProd, setIsEditingProd] = useState(false);
   const [featuredView, setFeaturedView] = useState(null); // {category, index} — carousel detail view
   const [confirmFinalize, setConfirmFinalize] = useState(false);
+  const [routineSuccess, setRoutineSuccess] = useState(null); // {title, body}
+  const [newProductAlert, setNewProductAlert] = useState(null); // {data, originalId}
   const [showCompare, setShowCompare] = useState(false);
   const [draftChanges, setDraftChanges] = useState(null); // {added:[], removed:[], edited:[]} tracked during edit mode
   const [unsavedWarning, setUnsavedWarning] = useState(false);
@@ -1650,7 +1675,18 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   const pastSnaps    = snapshots.filter(s=>s.ended_at).sort((a,b)=>b.started_at.localeCompare(a.started_at));
 
   const snapProducts = activeSnap
-    ? activeSnap.products.map(sp=>({ snapProdId:sp.id, ...products.find(p=>p.id===sp.product_id) })).filter(p=>p&&p.id)
+    ? activeSnap.products.map(sp=>{
+        const prod = products.find(p=>p.id===sp.product_id);
+        if (!prod) return null;
+        return {
+          snapProdId: sp.id,
+          ...prod,
+          // Prefer snapshot-captured values — fall back to live product for old data
+          name:      sp.name_snapshot  || prod.name,
+          brand:     sp.brand_snapshot || prod.brand,
+          frequency: sp.frequency      || prod.frequency,
+        };
+      }).filter(Boolean)
     : [];
   const skinProds = snapProducts.filter(p=>p.category==="skin");
   const hairProds = snapProducts.filter(p=>p.category==="hair");
@@ -1698,7 +1734,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   };
 
   const openEditForm = (prod) => {
-    setEditProd({...prod});
+    setEditProd({...prod, _origName:prod.name, _origBrand:prod.brand||"", _origCategory:prod.category});
     setIsEditingProd(true);
     setShowForm(true);
     setChooseCat(false);
@@ -1707,19 +1743,61 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   const save = async (prodData) => {
     const data = prodData || editProd;
     if (!data.name.trim()) return;
-    await onSaveProduct(data);
-    if (!isEditingProd) {
+
+    if (isEditingProd) {
+      const origName     = data._origName     || data.name;
+      const origBrand    = data._origBrand    || "";
+      const origCategory = data._origCategory || data.category;
+      const nameChanged  = data.name !== origName;
+      const brandChanged = (data.brand||"") !== origBrand;
+      const catChanged   = data.category !== origCategory;
+
+      // ── Rule 1: category change → always a new product ──
+      if (catChanged) {
+        setNewProductAlert({data, originalId:data.id});
+        return;
+      }
+
+      // ── Rule 2: name or brand changed → run similarity ──
+      if (nameChanged || brandChanged) {
+        const nameSim  = strSimilarity(origName, data.name);
+        const brandSim = strSimilarity(origBrand, data.brand||"");
+        // Brand similarity only penalises when brand is actually set on both sides
+        const brandPenalty = (origBrand && data.brand) ? brandSim : 1;
+        if (nameSim < 0.85 || brandPenalty < 0.85) {
+          // Looks like a different product
+          setNewProductAlert({data, originalId:data.id});
+          return;
+        }
+        // Typo fix — update library + propagate corrected name/brand to all snapshots
+        await onSaveProduct(data);
+        await onUpdateSnapProductName(data.id, data.name, data.brand||"");
+      } else {
+        await onSaveProduct(data);
+      }
+
+      // ── Always: update frequency on the current snapshot row ──
+      const sp = activeSnap?.products.find(sp=>sp.product_id===data.id);
+      if (sp) {
+        const spUpdates = {};
+        if ((data.frequency||null) !== (sp.frequency||null)) spUpdates.frequency = data.frequency||null;
+        if (Object.keys(spUpdates).length) await onUpdateSnapProduct(sp.id, spUpdates);
+      }
+
+      if (draftChanges) setDraftChanges(prev=>({...prev, edited:[...prev.edited, data.name]}));
+    } else {
+      // ── Adding a new product ──
+      await onSaveProduct(data);
+      const meta = {name_snapshot:data.name, brand_snapshot:data.brand||"", frequency:data.frequency||null};
       if (activeSnap) {
         if (!activeSnap.products.find(p=>p.product_id===data.id)) {
-          await onAddToSnapshot(activeSnap.id, data.id);
+          await onAddToSnapshot(activeSnap.id, data.id, meta);
           if (draftChanges) setDraftChanges(prev=>({...prev, added:[...prev.added, data.name]}));
         }
       } else {
         const newSnapId = await onOpenSnapshot(true);
-        if (newSnapId) await onAddToSnapshot(newSnapId, data.id);
+        if (newSnapId) await onAddToSnapshot(newSnapId, data.id, meta);
       }
-    } else {
-      if (draftChanges) setDraftChanges(prev=>({...prev, edited:[...prev.edited, data.name]}));
     }
     setShowForm(false); setEditProd(null); setIsEditingProd(false);
   };
@@ -1743,14 +1821,18 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
         const newSnapId = await onOpenSnapshot(false);
         if (newSnapId) {
           for (const sp of activeSnap.products) {
-            await onAddToSnapshot(newSnapId, sp.product_id);
+            await onAddToSnapshot(newSnapId, sp.product_id, {
+              name_snapshot:  sp.name_snapshot  || null,
+              brand_snapshot: sp.brand_snapshot || null,
+              frequency:      sp.frequency      || null,
+            });
           }
         }
         // Notify
         const parts = [];
         if (draftChanges.added.length) parts.push(`Added: ${draftChanges.added.join(", ")}`);
         if (draftChanges.removed.length) parts.push(`Removed: ${draftChanges.removed.join(", ")}`);
-        alert("New snapshot created ✓\n\n" + parts.join("\n") + "\n\nYour previous routine has been saved to Snapshot History.");
+        setRoutineSuccess({ title: "Routine updated", body: (parts.length ? parts.join(" · ") + ". " : "") + "Your previous routine has been preserved in Snapshot History." });
       }
       // Edits only (link/frequency/notes) — no new snapshot, already saved
     }
@@ -1764,7 +1846,11 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
     const [open, setOpen] = useState(false);
     const [snapAnalysis, setSnapAnalysis] = useState(false);
     const [confirmDel, setConfirmDel] = useState(false);
-    const prods = snap.products.map(sp=>products.find(p=>p.id===sp.product_id)).filter(Boolean);
+    const prods = snap.products.map(sp=>{
+      const prod = products.find(p=>p.id===sp.product_id);
+      if (!prod) return null;
+      return {...prod, name:sp.name_snapshot||prod.name, brand:sp.brand_snapshot||prod.brand};
+    }).filter(Boolean);
     const skinP=prods.filter(p=>p.category==="skin");
     const hairP=prods.filter(p=>p.category==="hair");
     const txP=prods.filter(p=>p.category==="treatment");
@@ -1902,7 +1988,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                         {p.image
                           ?<img src={p.image} alt="" style={{width:"100%",height:220,objectFit:"cover",display:"block"}}/>
                           :<div>{catEmoji(featuredView.category)}</div>}
-                        {isDraft&&i===idx&&<button onClick={e=>{e.stopPropagation();openEditForm(p);}}
+                        {i===idx&&<button onClick={e=>{e.stopPropagation();openEditForm(p);}}
                           style={{position:"absolute",top:10,right:10,width:30,height:30,borderRadius:"50%",
                             background:"rgba(253,246,240,.92)",border:"1px solid rgba(232,216,204,.8)",
                             display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",
@@ -1972,14 +2058,14 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                     <div>
                       {activeSnap&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.05rem",fontStyle:"italic",color:"#5a3a27"}}>{new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})} — Present</div>}
                       {activeSnap&&<div style={{fontSize:".7rem",color:"#a08070",marginTop:3}}>{snapProducts.length} product{snapProducts.length!==1?"s":""}{skinProds.length>0?` · ${skinProds.length} skin`:""}{ hairProds.length>0?` · ${hairProds.length} hair`:""}{ txProds.length>0?` · ${txProds.length} treatment`:""}</div>}
-                      {isDraft&&draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:600,color:"#c07a28"}}>📋 Draft</div>}
-                      {isDraft&&!draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:600,color:"#7a8a5a"}}>✏️ Editing</div>}
+                      {isDraft&&draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:500,color:"#c07a28",letterSpacing:".04em"}}>Building your routine</div>}
+                      {isDraft&&!draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:500,color:"#7a8a5a",letterSpacing:".04em"}}>Editing your routine</div>}
                     </div>
                     <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0,marginLeft:10}}>
                       {!isDraft&&<button onClick={()=>setShowAnalysis(v=>!v)} style={{background:"#3a2e27",border:"none",borderRadius:9,padding:"6px 12px",color:"#f7ece4",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,whiteSpace:"nowrap"}}>{showAnalysis?"Close":"Analyze My Routine"}</button>}
-                      {!isDraft&&<button onClick={enterEditMode} style={{background:"none",border:"1.5px solid #e8d8cc",borderRadius:9,padding:"6px 10px",color:"#a08070",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>Something changed?</button>}
-                      {isDraft&&<button onClick={discardChanges} style={{background:"none",border:"1.5px solid #e8d8cc",borderRadius:9,padding:"6px 12px",color:"#a08070",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>Cancel</button>}
-                      {isDraft&&<button onClick={()=>setConfirmFinalize(true)} style={{background:"#b07a5e",border:"none",borderRadius:9,padding:"6px 14px",color:"#fff",fontSize:".76rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,whiteSpace:"nowrap"}}>Finalize</button>}
+                      {!isDraft&&<button onClick={enterEditMode} style={{background:"none",border:"1.5px solid #e8d8cc",borderRadius:9,padding:"6px 10px",color:"#a08070",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>Update Routine</button>}
+                      {isDraft&&<button onClick={discardChanges} style={{background:"none",border:"1.5px solid #e8d8cc",borderRadius:9,padding:"6px 12px",color:"#a08070",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>Discard</button>}
+                      {isDraft&&<button onClick={()=>setConfirmFinalize(true)} style={{background:"#b07a5e",border:"none",borderRadius:9,padding:"6px 14px",color:"#fff",fontSize:".76rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,whiteSpace:"nowrap"}}>Save Routine</button>}
                     </div>
                   </div>
 
@@ -2075,20 +2161,69 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
       {confirmFinalize&&(
         <div className="overlay" onClick={()=>setConfirmFinalize(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div className="modal-title" style={{marginBottom:12}}>Finalize Your Routine?</div>
+            <div className="modal-title" style={{marginBottom:12}}>Save Your Routine?</div>
             <div style={{fontSize:".84rem",color:"#6a5048",lineHeight:1.7,marginBottom:20}}>
               {draftSnap
-                ? "Once finalized, your routine becomes a permanent snapshot. Any future changes will automatically create a new snapshot so your history stays accurate."
-                : `This will save your changes${(draftChanges?.added?.length||0)+(draftChanges?.removed?.length||0)>0?" and create a new snapshot":""}.${(draftChanges?.added?.length||0)+(draftChanges?.removed?.length||0)>0?" Your current routine will be preserved in Snapshot History.":""}`
+                ? "This locks in your routine as a snapshot. Future changes will automatically create a new version so your history stays intact."
+                : `This will save your changes${(draftChanges?.added?.length||0)+(draftChanges?.removed?.length||0)>0?" and create a new snapshot":""}.${(draftChanges?.added?.length||0)+(draftChanges?.removed?.length||0)>0?" Your current routine will be preserved in History.":""}`
               }
             </div>
             <div style={{display:"flex",gap:10}}>
               <button onClick={()=>setConfirmFinalize(false)} className="ghost-btn" style={{flex:1}}>Cancel</button>
               <button onClick={doFinalize}
                 style={{flex:1,background:"#b07a5e",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
-                Yes, Finalize
+                Save Routine
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {newProductAlert&&(
+        <div className="overlay" onClick={()=>setNewProductAlert(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-title" style={{marginBottom:12}}>Different product?</div>
+            <div style={{fontSize:".84rem",color:"#6a5048",lineHeight:1.7,marginBottom:20}}>
+              {newProductAlert.data.category !== (newProductAlert.data._origCategory||newProductAlert.data.category)
+                ? "Changing the category means this is a different product in your routine."
+                : `"${newProductAlert.data._origName}" → "${newProductAlert.data.name}" looks like a different product, not just a typo.`
+              } To keep your history accurate, the old product will be removed and this will be added as new.
+            </div>
+            <div style={{display:"flex",gap:10,flexDirection:"column"}}>
+              <button onClick={async()=>{
+                const orig = newProductAlert.originalId;
+                const newData = {...newProductAlert.data, id:crypto.randomUUID(), _origName:undefined, _origBrand:undefined, _origCategory:undefined};
+                await onSaveProduct(newData);
+                const meta = {name_snapshot:newData.name, brand_snapshot:newData.brand||"", frequency:newData.frequency||null};
+                if (activeSnap) {
+                  const oldSp = activeSnap.products.find(sp=>sp.product_id===orig);
+                  if (oldSp) await onRemoveFromSnapshot(activeSnap.id, oldSp.id);
+                  await onAddToSnapshot(activeSnap.id, newData.id, meta);
+                  if (draftChanges) setDraftChanges(prev=>({...prev, added:[...prev.added,newData.name], removed:[...prev.removed,newProductAlert.data._origName||orig]}));
+                }
+                setNewProductAlert(null);
+                setShowForm(false); setEditProd(null); setIsEditingProd(false);
+              }} style={{background:"#b07a5e",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
+                Yes, it's a new product
+              </button>
+              <button onClick={()=>setNewProductAlert(null)} className="ghost-btn">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {routineSuccess&&(
+        <div className="overlay" onClick={()=>setRoutineSuccess(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div style={{textAlign:"center",marginBottom:16}}>
+              <div style={{fontSize:"1.6rem",marginBottom:8}}>✓</div>
+              <div className="modal-title" style={{marginBottom:8}}>{routineSuccess.title}</div>
+              <div style={{fontSize:".84rem",color:"#6a5048",lineHeight:1.7}}>{routineSuccess.body}</div>
+            </div>
+            <button onClick={()=>setRoutineSuccess(null)}
+              style={{width:"100%",background:"#b07a5e",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
+              Done
+            </button>
           </div>
         </div>
       )}
@@ -3003,7 +3138,15 @@ export default function App({ user }) {
     setProducts(prev=>prev.filter(p=>p.id!==id));
     showT("Product removed");
   };
-  const confirmDeleteProduct = (id) => setConfirmDelete({message:"Remove this product from your library?", onConfirm:()=>deleteProduct(id)});
+  const confirmDeleteProduct = (id) => {
+    const inHistory = snapshots.some(s => s.products?.some(sp => sp.product_id === id));
+    setConfirmDelete({
+      message: inHistory
+        ? "This product is part of your routine history. Deleting it from your library will remove its details from past snapshots — your log entries will still be preserved, but product info won't be visible. Are you sure?"
+        : "Remove this product from your library?",
+      onConfirm: () => deleteProduct(id)
+    });
+  };
 
   // ── Wishlist CRUD ──
   const saveWishlistItem = async (item) => {
@@ -3055,12 +3198,26 @@ export default function App({ user }) {
     setSnapshots(prev=>prev.filter(s=>s.id!==snapId));
     showT("Snapshot deleted");
   };
-  const addProductToSnapshot = async (snapId, productId) => {
+  const addProductToSnapshot = async (snapId, productId, meta={}) => {
     if (!user) return;
     const id = crypto.randomUUID();
-    const { error } = await supabase.from("snapshot_products").insert({id, snapshot_id:snapId, product_id:productId});
+    const row = {id, snapshot_id:snapId, product_id:productId,
+      name_snapshot:meta.name_snapshot||null,
+      brand_snapshot:meta.brand_snapshot||null,
+      frequency:meta.frequency||null};
+    const { error } = await supabase.from("snapshot_products").insert(row);
     if (error) { console.error("Failed to add product to snapshot:", error); return; }
-    setSnapshots(prev=>prev.map(s=>s.id===snapId?{...s,products:[...s.products,{id,snapshot_id:snapId,product_id:productId}]}:s));
+    setSnapshots(prev=>prev.map(s=>s.id===snapId?{...s,products:[...s.products,row]}:s));
+  };
+  // Update a single snapshot_products row (frequency, name/brand snapshot)
+  const updateSnapProduct = async (snapProdId, updates) => {
+    await supabase.from("snapshot_products").update(updates).eq("id",snapProdId);
+    setSnapshots(prev=>prev.map(s=>({...s,products:s.products.map(sp=>sp.id===snapProdId?{...sp,...updates}:sp)})));
+  };
+  // Typo fix — propagate corrected name/brand across ALL snapshots for this product
+  const updateSnapProductName = async (productId, name, brand) => {
+    await supabase.from("snapshot_products").update({name_snapshot:name,brand_snapshot:brand}).eq("product_id",productId);
+    setSnapshots(prev=>prev.map(s=>({...s,products:s.products.map(sp=>sp.product_id===productId?{...sp,name_snapshot:name,brand_snapshot:brand}:sp)})));
   };
   const removeProductFromSnapshot = async (snapId, snapProdId) => {
     await supabase.from("snapshot_products").delete().eq("id",snapProdId);
@@ -3241,6 +3398,8 @@ export default function App({ user }) {
       onDeleteProduct={confirmDeleteProduct}
       onOpenSnapshot={openNewSnapshot}
       onAddToSnapshot={addProductToSnapshot}
+      onUpdateSnapProduct={updateSnapProduct}
+      onUpdateSnapProductName={updateSnapProductName}
       onRemoveFromSnapshot={removeProductFromSnapshot}
       onFinalizeBase={finalizeBase}
       onDeleteSnapshot={deleteSnapshot}
