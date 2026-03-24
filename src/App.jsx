@@ -48,6 +48,8 @@ const fmt      = d => d.toLocaleDateString("en-CA");
 const parse    = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
 const dispLong = s => parse(s).toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
 const uid      = () => crypto.randomUUID();
+// Platform-agnostic URL opener — swap body for Capacitor Browser plugin when going native
+const openUrl  = (url, target = "_blank") => window.open(url, target);
 function daysInMonth(y,m){ return new Date(y,m+1,0).getDate(); }
 function dateRange(start, end) {
   const dates=[], s=parse(start), e=parse(end);
@@ -61,8 +63,8 @@ const STYLES = `
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:#fdf6f0;min-height:100vh;color:#3a2e27}
-.app{max-width:680px;margin:0 auto;padding:0 16px 100px}
-.header{text-align:center;padding:36px 0 28px;border-bottom:1px solid #e8d8cc;margin-bottom:24px}
+.app{max-width:680px;margin:0 auto;padding:0 16px max(100px,calc(68px + env(safe-area-inset-bottom)))}
+.header{text-align:center;padding:calc(36px + env(safe-area-inset-top)) 0 28px;border-bottom:1px solid #e8d8cc;margin-bottom:24px}
 .header-title{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:300;letter-spacing:.04em;color:#3a2e27;line-height:1.1}
 .header-title span{font-style:italic;color:#b07a5e}
 .header-sub{font-size:.78rem;letter-spacing:.15em;text-transform:uppercase;color:#a08070;margin-top:7px}
@@ -258,7 +260,7 @@ body{font-family:'DM Sans',sans-serif;background:#fdf6f0;min-height:100vh;color:
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#3a2e27;color:#fff;padding:11px 22px;border-radius:30px;font-size:.8rem;letter-spacing:.08em;animation:fiu .3s ease,fout .3s ease 1.7s forwards;z-index:300;white-space:nowrap}
 .hamburger-btn{position:absolute;top:36px;right:16px;background:none;border:none;cursor:pointer;padding:6px;display:flex;flex-direction:column;gap:5px;z-index:10}
 .hamburger-btn span{display:block;width:22px;height:2px;background:#b07a5e;border-radius:2px;transition:all .2s}
-.side-menu{position:fixed;top:0;right:0;bottom:0;width:260px;background:#fdf6f0;border-left:1.5px solid #e8d8cc;z-index:400;padding:48px 24px 32px;display:flex;flex-direction:column;gap:0;box-shadow:-4px 0 20px rgba(58,46,39,.1);transform:translateX(100%);transition:transform .28s ease}
+.side-menu{position:fixed;top:0;right:0;bottom:0;width:260px;background:#fdf6f0;border-left:1.5px solid #e8d8cc;z-index:400;padding:calc(48px + env(safe-area-inset-top)) 24px max(32px,calc(16px + env(safe-area-inset-bottom)));display:flex;flex-direction:column;gap:0;box-shadow:-4px 0 20px rgba(58,46,39,.1);transform:translateX(100%);transition:transform .28s ease}
 .side-menu.open{transform:translateX(0)}
 .side-menu-overlay{position:fixed;inset:0;z-index:399;background:rgba(58,46,39,.25)}
 .side-menu-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:300;font-style:italic;color:#3a2e27;margin-bottom:28px}
@@ -709,7 +711,7 @@ function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, o
       <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}}>
         <div className="purch-price">${((parseFloat(p.price)||0)*(parseInt(p.quantity)||1)).toFixed(2)}</div>
         <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
-          {p.link&&<button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px",color:"#b07a5e"}} onClick={()=>window.open(p.link,"_blank")}>Buy Now</button>}
+          {p.link&&<button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px",color:"#b07a5e"}} onClick={()=>openUrl(p.link)}>Buy Now</button>}
           <button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px"}} onClick={()=>startEdit(p)}>Edit</button>
           <button className="del-btn" style={{fontSize:".68rem"}} onClick={()=>onDelete(p.id)}>✕</button>
         </div>
@@ -1013,7 +1015,7 @@ function WishlistPage({ wishlist, products, onSave, onDelete, onMoveToCart, onBa
             {item.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>{item.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 8px",color:"#8a6858"}}>{t}</span>)}</div>}
             {item.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:4,fontStyle:"italic"}}>{item.notes}</div>}
             <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
-              {item.link&&<button onClick={()=>window.open(item.link,"_blank")} style={{background:"#b07a5e",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
+              {item.link&&<button onClick={()=>openUrl(item.link)} style={{background:"#b07a5e",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
               <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>onMoveToCart(item)}>✓ Mark Purchased</button>
               <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setEditItem({...item});setShowForm(true);}}>Edit</button>
               <button className="del-btn" style={{fontSize:".74rem"}} onClick={()=>onDelete(item.id)}>✕</button>
@@ -1917,7 +1919,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                   {curr.frequency&&<div style={{fontSize:".62rem",background:"#f0e8f4",borderRadius:5,padding:"2px 7px",color:"#7a6a8a",display:"inline-block",marginBottom:8}}>{curr.frequency}</div>}
                   {curr.notes&&<div style={{fontSize:".72rem",color:"#8a6858",fontStyle:"italic",lineHeight:1.5,marginBottom:10}}>{curr.notes}</div>}
                   <div style={{display:"flex",gap:7}}>
-                    {curr.link&&<button onClick={()=>window.open(curr.link,"_blank")} style={{flex:1,background:"#b07a5e",color:"#fff",border:"none",borderRadius:9,padding:"9px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500}}>Buy Now</button>}
+                    {curr.link&&<button onClick={()=>openUrl(curr.link)} style={{flex:1,background:"#b07a5e",color:"#fff",border:"none",borderRadius:9,padding:"9px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500}}>Buy Now</button>}
                     {isDraft&&<button onClick={async()=>{await removeProduct(curr.snapProdId,curr.name);setFeaturedView(null);}}
                       style={{background:"none",color:"#c07060",border:"1.5px solid #f0c8c0",borderRadius:9,padding:"9px 11px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer"}}>Remove</button>}
                   </div>
@@ -3454,7 +3456,7 @@ export default function App({ user }) {
                           {recurDays&&dateCount>0&&<span> · </span>}
                           {dateCount>0&&<span>{dateCount} date{dateCount!==1?"s":""}</span>}
                           {s.startDate&&(s.days||[]).length===0&&dateCount===0&&<span style={{color:"#b8a090"}}>from {parse(s.startDate).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
-                          {s.location&&<span> · <span style={{cursor:"pointer",color:"#b07a5e",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();window.open(`https://www.google.com/maps/search/${encodeURIComponent(s.location)}`,'_blank');}}>📍 {s.location}</span></span>}
+                          {s.location&&<span> · <span style={{cursor:"pointer",color:"#b07a5e",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(s.location)}`);}}>📍 {s.location}</span></span>}
                         </div>
                       </div>
                       {isToday&&<span style={{fontSize:".68rem",background:"#b07a5e",color:"#fff",borderRadius:20,padding:"2px 8px",whiteSpace:"nowrap"}}>Today</span>}
@@ -3474,7 +3476,7 @@ export default function App({ user }) {
                       <div style={{flex:1}}>
                         <div className="sched-label">{tx.name}</div>
                         <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
-                          {tx.dates.length} date{tx.dates.length!==1?"s":""} · {tx.completedDates?.length||0} done{tx.location?<span> · <span style={{cursor:"pointer",color:"#b07a5e",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();window.open(`https://www.google.com/maps/search/${encodeURIComponent(tx.location)}`,"_blank");}}>📍 {tx.location}</span></span>:null}
+                          {tx.dates.length} date{tx.dates.length!==1?"s":""} · {tx.completedDates?.length||0} done{tx.location?<span> · <span style={{cursor:"pointer",color:"#b07a5e",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(tx.location)}`);}}>📍 {tx.location}</span></span>:null}
                           {next&&<span> · Next: {parse(next).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
                         </div>
                       </div>
