@@ -1556,36 +1556,61 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
           </button>
         ))}
       </div>
-      <div style={{marginBottom:12}}>
-        <div style={{fontSize:".66rem",color:"#a08070",marginBottom:7,letterSpacing:".08em",textTransform:"uppercase"}}>Frequency</div>
-        <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-          <button className={`dow-chip ${p.frequency==="Daily"?"on":""}`}
-            style={{fontSize:".74rem",padding:"5px 12px"}}
-            onClick={()=>setP(prev=>({...prev,frequency:prev.frequency==="Daily"?"":"Daily"}))}>
-            Daily
-          </button>
-          {[2,3,4,5,6,7].map(n=>{
-            const unit = p._freqUnit||"week";
-            const val = n+"x "+unit;
-            const active = p.frequency===val;
-            return <button key={n} className={"dow-chip "+(active?"on":"")}
-              style={{fontSize:".74rem",padding:"5px 10px",minWidth:36}}
-              onClick={()=>setP(prev=>({...prev,frequency:active?"":val,_freqUnit:unit}))}>
-              {n}x
-            </button>;
-          })}
-          {["week","month"].map(u=>{
-            const n = p.frequency?.match(/^(\d+)x /)?.[1];
-            const active = p._freqUnit===u||(p.frequency&&p.frequency.endsWith(u)&&!p._freqUnit);
-            return <button key={u} className={"dow-chip "+((active&&p.frequency!=="Daily")?"on":"")}
-              style={{fontSize:".74rem",padding:"5px 11px"}}
-              onClick={()=>{ const num=n||2; setP(prev=>({...prev,_freqUnit:u,frequency:num+"x "+u})); }}>
-              {u}
-            </button>;
-          })}
-        </div>
-        {p.frequency&&<div style={{marginTop:6,fontSize:".72rem",color:"#b07a5e",fontStyle:"italic"}}>→ {p.frequency}</div>}
-      </div>
+      {(()=>{
+        const raw = p.frequency||"";
+        const isDaily = raw==="Daily";
+        const match = raw.match(/^(\d+)x (week|month)$/);
+        const count = match?parseInt(match[1]):(isDaily?1:1);
+        const period = match?match[2]:(isDaily?"day":"week");
+        const enabled = !!raw;
+        const setFreq = (c,per) => {
+          if (per==="day") setP(prev=>({...prev,frequency:"Daily"}));
+          else setP(prev=>({...prev,frequency:c+"x "+per}));
+        };
+        const bump = (delta) => {
+          const next = Math.min(7,Math.max(1,count+delta));
+          setFreq(next, period==="day"?"week":period);
+        };
+        return (
+          <div style={{marginBottom:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{fontSize:".66rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase"}}>Frequency</div>
+              {enabled&&<button onClick={()=>setP(prev=>({...prev,frequency:""}))} style={{background:"none",border:"none",fontSize:".66rem",color:"#c0a898",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",padding:0}}>Clear</button>}
+            </div>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              {/* Period selector */}
+              {["day","week","month"].map(per=>(
+                <button key={per} onClick={()=>{ setP(prev=>({...prev,frequency:""})); setFreq(per==="day"?1:count,per); }}
+                  style={{flex:1,padding:"8px 4px",borderRadius:10,border:"1.5px solid",cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif",fontSize:".74rem",fontWeight:500,
+                    background:enabled&&period===per?"#b07a5e":"#fff8f3",
+                    color:enabled&&period===per?"#fff":"#a08070",
+                    borderColor:enabled&&period===per?"#b07a5e":"#e8d8cc",
+                    transition:"all .15s"}}>
+                  {per==="day"?"Daily":per==="week"?"Weekly":"Monthly"}
+                </button>
+              ))}
+            </div>
+            {/* Count stepper — only for week/month */}
+            {enabled&&period!=="day"&&(
+              <div style={{display:"flex",alignItems:"center",gap:10,marginTop:10,justifyContent:"center"}}>
+                <button onClick={()=>bump(-1)} disabled={count<=1}
+                  style={{width:32,height:32,borderRadius:"50%",border:"1.5px solid #e8d8cc",background:"#fff8f3",
+                    color:count<=1?"#d0c0b8":"#7a5c48",cursor:count<=1?"default":"pointer",fontSize:"1.1rem",
+                    display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif"}}>−</button>
+                <div style={{minWidth:64,textAlign:"center"}}>
+                  <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.6rem",color:"#3a2e27",lineHeight:1}}>{count}</span>
+                  <span style={{fontSize:".68rem",color:"#a08070",marginLeft:5}}>× per {period}</span>
+                </div>
+                <button onClick={()=>bump(1)} disabled={count>=7}
+                  style={{width:32,height:32,borderRadius:"50%",border:"1.5px solid #e8d8cc",background:"#fff8f3",
+                    color:count>=7?"#d0c0b8":"#7a5c48",cursor:count>=7?"default":"pointer",fontSize:"1.1rem",
+                    display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif"}}>+</button>
+              </div>
+            )}
+          </div>
+        );
+      })()}
       <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={p.notes||""} onChange={e=>setP(prev=>({...prev,notes:e.target.value}))}/>
       <button className="save-btn" onClick={()=>onSave(p)} disabled={!p.name.trim()} style={{opacity:p.name.trim()?1:.4}}>
         {isEditingProd?"Save Changes":"Add to My Routine"}
@@ -1614,7 +1639,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   // Scroll carousel to correct position when featured view opens or category changes
   useLayoutEffect(() => {
     if (featuredView && carouselScrollRef.current) {
-      carouselScrollRef.current.scrollLeft = featuredView.index * 200;
+      carouselScrollRef.current.scrollLeft = featuredView.index * 272;
     }
   }, [featuredView?.category]);
 
@@ -1854,29 +1879,32 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                   <div style={{fontSize:".66rem",color:"#c0b0a8",flexShrink:0}}>{catProds.length} products</div>
                 </div>
 
-                {/* Carousel — native CSS scroll snap */}
+                {/* Carousel — unified lookbook cards (image + details in one card) */}
                 <div
                   ref={carouselScrollRef}
-                  style={{display:"flex",gap:10,overflowX:"scroll",scrollSnapType:"x mandatory",
+                  style={{display:"flex",gap:12,overflowX:"scroll",scrollSnapType:"x mandatory",
                     scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch",
-                    paddingLeft:"calc(50% - 95px)",paddingRight:"calc(50% - 95px)"}}
+                    paddingLeft:"calc(50% - 130px)",paddingRight:"calc(50% - 130px)",paddingBottom:4}}
                   onScroll={e=>{
-                    const i = Math.round(e.currentTarget.scrollLeft / 200);
+                    const i = Math.round(e.currentTarget.scrollLeft / 272);
                     const clamped = Math.max(0, Math.min(i, catProds.length-1));
                     if (clamped !== idx) setFeaturedView(f=>({...f,index:clamped}));
                   }}>
                   {catProds.map((p,i)=>(
-                    <div key={p.id} style={{flexShrink:0,width:190,scrollSnapAlign:"center",
-                      background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:18,overflow:"hidden",
-                      opacity:i===idx?1:.5,transform:i===idx?"scale(1)":"scale(0.92)",
-                      transition:"opacity .2s,transform .2s",
-                      boxShadow:i===idx?"0 4px 20px rgba(90,50,30,.12)":"none"}}>
-                      <div style={{position:"relative",height:148,background:"#f0e0d4",
-                        display:"flex",alignItems:"center",justifyContent:"center",fontSize:"3rem",overflow:"hidden"}}>
-                        {p.image?<img src={p.image} alt="" style={{width:"100%",height:148,objectFit:"cover",display:"block"}}/>:<div>{catEmoji(featuredView.category)}</div>}
+                    <div key={p.id} style={{flexShrink:0,width:260,scrollSnapAlign:"center",
+                      background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:20,overflow:"hidden",
+                      opacity:i===idx?1:.45,transform:i===idx?"scale(1)":"scale(0.93)",
+                      transition:"opacity .25s,transform .25s",
+                      boxShadow:i===idx?"0 6px 28px rgba(90,50,30,.14)":"none"}}>
+                      {/* Image */}
+                      <div style={{position:"relative",height:220,background:"#f0e0d4",
+                        display:"flex",alignItems:"center",justifyContent:"center",fontSize:"4rem",overflow:"hidden"}}>
+                        {p.image
+                          ?<img src={p.image} alt="" style={{width:"100%",height:220,objectFit:"cover",display:"block"}}/>
+                          :<div>{catEmoji(featuredView.category)}</div>}
                         {isDraft&&i===idx&&<button onClick={e=>{e.stopPropagation();openEditForm(p);}}
-                          style={{position:"absolute",top:8,right:8,width:28,height:28,borderRadius:"50%",
-                            background:"rgba(253,246,240,.9)",border:"1px solid rgba(232,216,204,.8)",
+                          style={{position:"absolute",top:10,right:10,width:30,height:30,borderRadius:"50%",
+                            background:"rgba(253,246,240,.92)",border:"1px solid rgba(232,216,204,.8)",
                             display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",
                             boxShadow:"0 1px 4px rgba(0,0,0,.1)"}}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7a5c48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1885,45 +1913,39 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                           </svg>
                         </button>}
                       </div>
-                      <div style={{padding:"9px 11px 11px"}}>
-                        <div style={{fontSize:".74rem",fontWeight:500,color:"#3a2e27",lineHeight:1.2,
-                          overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{p.name}</div>
-                        {p.brand&&<div style={{fontSize:".62rem",color:"#a08070",marginTop:1,
-                          overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{p.brand}</div>}
+                      {/* Details — inside the card */}
+                      <div style={{padding:"14px 16px 16px"}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+                          {p.brand&&<div style={{fontSize:".6rem",color:"#a08070",letterSpacing:".1em",textTransform:"uppercase"}}>{p.brand}</div>}
+                          {p.price&&<div style={{fontSize:".7rem",fontWeight:500,color:"#3a2e27"}}>${parseFloat(p.price).toFixed(2)}</div>}
+                        </div>
+                        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.15rem",color:"#3a2e27",lineHeight:1.3,marginBottom:6}}>{p.name}</div>
+                        {p.frequency&&<div style={{fontSize:".6rem",background:"#f0e8f4",borderRadius:5,padding:"2px 7px",color:"#7a6a8a",display:"inline-block",marginBottom:6}}>{p.frequency}</div>}
+                        {p.notes&&<div style={{fontSize:".7rem",color:"#8a6858",fontStyle:"italic",lineHeight:1.5,marginBottom:10}}>{p.notes}</div>}
+                        {i===idx&&(p.link||isDraft)&&<div style={{display:"flex",gap:7,marginTop:p.notes?0:8}}>
+                          {p.link&&<button onClick={e=>{e.stopPropagation();openUrl(p.link);}}
+                            style={{flex:1,background:"#b07a5e",color:"#fff",border:"none",borderRadius:9,padding:"9px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500}}>Buy Now</button>}
+                          {isDraft&&<button onClick={async e=>{e.stopPropagation();await removeProduct(p.snapProdId,p.name);setFeaturedView(null);}}
+                            style={{background:"none",color:"#c07060",border:"1.5px solid #f0c8c0",borderRadius:9,padding:"9px 11px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer"}}>Remove</button>}
+                        </div>}
                       </div>
                     </div>
                   ))}
                 </div>
 
                 {/* Dots */}
-                <div style={{display:"flex",gap:5,justifyContent:"center",marginTop:12}}>
+                <div style={{display:"flex",gap:5,justifyContent:"center",marginTop:14}}>
                   {catProds.map((_,i)=>(
                     <div key={i}
                       onClick={()=>{
                         setFeaturedView(f=>({...f,index:i}));
-                        carouselScrollRef.current?.scrollTo({left:i*200,behavior:"smooth"});
+                        carouselScrollRef.current?.scrollTo({left:i*272,behavior:"smooth"});
                       }}
                       style={{height:6,borderRadius:3,cursor:"pointer",transition:"all .2s",
                         background:i===idx?"#b07a5e":"#e8d8cc",width:i===idx?18:6}}/>
                   ))}
                 </div>
                 <div style={{textAlign:"center",marginTop:5,fontSize:".62rem",color:"#c0b0a8",letterSpacing:".06em"}}>{idx+1} of {catProds.length}</div>
-
-                {/* Detail panel for active card */}
-                <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"14px 16px",marginTop:14}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:3}}>
-                    {curr.brand&&<div style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase"}}>{curr.brand}</div>}
-                    {curr.price&&<div style={{fontSize:".72rem",fontWeight:500,color:"#3a2e27"}}>$ {parseFloat(curr.price).toFixed(2)}</div>}
-                  </div>
-                  <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",color:"#3a2e27",lineHeight:1.3,marginBottom:curr.frequency||curr.notes?8:12}}>{curr.name}</div>
-                  {curr.frequency&&<div style={{fontSize:".62rem",background:"#f0e8f4",borderRadius:5,padding:"2px 7px",color:"#7a6a8a",display:"inline-block",marginBottom:8}}>{curr.frequency}</div>}
-                  {curr.notes&&<div style={{fontSize:".72rem",color:"#8a6858",fontStyle:"italic",lineHeight:1.5,marginBottom:10}}>{curr.notes}</div>}
-                  <div style={{display:"flex",gap:7}}>
-                    {curr.link&&<button onClick={()=>openUrl(curr.link)} style={{flex:1,background:"#b07a5e",color:"#fff",border:"none",borderRadius:9,padding:"9px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500}}>Buy Now</button>}
-                    {isDraft&&<button onClick={async()=>{await removeProduct(curr.snapProdId,curr.name);setFeaturedView(null);}}
-                      style={{background:"none",color:"#c07060",border:"1.5px solid #f0c8c0",borderRadius:9,padding:"9px 11px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer"}}>Remove</button>}
-                  </div>
-                </div>
 
                 {/* Edit form — shows below carousel when pencil tapped */}
                 {showForm&&editProd&&(
