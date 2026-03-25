@@ -1498,54 +1498,43 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
         const raw = p.frequency||"";
         const isDaily = raw==="Daily";
         const match = raw.match(/^(\d+)x (week|month)$/);
-        const count = match?parseInt(match[1]):(isDaily?1:1);
+        const count = match?parseInt(match[1]):1;
         const period = match?match[2]:(isDaily?"day":"week");
         const enabled = !!raw;
         const setFreq = (c,per) => {
           if (per==="day") setP(prev=>({...prev,frequency:"Daily"}));
           else setP(prev=>({...prev,frequency:c+"x "+per}));
         };
-        const bump = (delta) => {
-          const next = Math.min(7,Math.max(1,count+delta));
-          setFreq(next, period==="day"?"week":period);
-        };
+        const bump = delta => setFreq(Math.min(7,Math.max(1,count+delta)), period==="day"?"week":period);
         return (
-          <div style={{marginBottom:12}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-              <div style={{fontSize:".66rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase"}}>Frequency</div>
-              {enabled&&<button onClick={()=>setP(prev=>({...prev,frequency:""}))} style={{background:"none",border:"none",fontSize:".66rem",color:"#c0a898",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",padding:0}}>Clear</button>}
-            </div>
-            <div style={{display:"flex",gap:6,alignItems:"center"}}>
-              {/* Period selector */}
-              {["day","week","month"].map(per=>(
-                <button key={per} onClick={()=>{ setP(prev=>({...prev,frequency:""})); setFreq(per==="day"?1:count,per); }}
-                  style={{flex:1,padding:"8px 4px",borderRadius:10,border:"1.5px solid",cursor:"pointer",
-                    fontFamily:"'DM Sans',sans-serif",fontSize:".74rem",fontWeight:500,
-                    background:enabled&&period===per?"#b07a5e":"#fff8f3",
-                    color:enabled&&period===per?"#fff":"#a08070",
-                    borderColor:enabled&&period===per?"#b07a5e":"#e8d8cc",
-                    transition:"all .15s"}}>
-                  {per==="day"?"Daily":per==="week"?"Weekly":"Monthly"}
-                </button>
-              ))}
-            </div>
-            {/* Count stepper — only for week/month */}
-            {enabled&&period!=="day"&&(
-              <div style={{display:"flex",alignItems:"center",gap:10,marginTop:10,justifyContent:"center"}}>
-                <button onClick={()=>bump(-1)} disabled={count<=1}
-                  style={{width:32,height:32,borderRadius:"50%",border:"1.5px solid #e8d8cc",background:"#fff8f3",
-                    color:count<=1?"#d0c0b8":"#7a5c48",cursor:count<=1?"default":"pointer",fontSize:"1.1rem",
-                    display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif"}}>−</button>
-                <div style={{minWidth:64,textAlign:"center"}}>
-                  <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.6rem",color:"#3a2e27",lineHeight:1}}>{count}</span>
-                  <span style={{fontSize:".68rem",color:"#a08070",marginLeft:5}}>× per {period}</span>
-                </div>
-                <button onClick={()=>bump(1)} disabled={count>=7}
-                  style={{width:32,height:32,borderRadius:"50%",border:"1.5px solid #e8d8cc",background:"#fff8f3",
-                    color:count>=7?"#d0c0b8":"#7a5c48",cursor:count>=7?"default":"pointer",fontSize:"1.1rem",
-                    display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif"}}>+</button>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
+            <span style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase",flexShrink:0}}>Freq</span>
+            <div style={{flex:1,display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end"}}>
+              {enabled&&period!=="day"&&(
+                <>
+                  <button onClick={()=>bump(-1)} disabled={count<=1}
+                    style={{width:24,height:24,borderRadius:"50%",border:"1px solid #e0cfc4",background:"#fff",color:count<=1?"#d0c0b8":"#7a5c48",cursor:count<=1?"default":"pointer",fontSize:".9rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>−</button>
+                  <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",color:"#3a2e27",minWidth:14,textAlign:"center"}}>{count}</span>
+                  <span style={{fontSize:".62rem",color:"#a08070"}}>×</span>
+                  <button onClick={()=>bump(1)} disabled={count>=7}
+                    style={{width:24,height:24,borderRadius:"50%",border:"1px solid #e0cfc4",background:"#fff",color:count>=7?"#d0c0b8":"#7a5c48",cursor:count>=7?"default":"pointer",fontSize:".9rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
+                </>
+              )}
+              <div style={{display:"flex",gap:4}}>
+                {["day","week","month"].map(per=>(
+                  <button key={per} onClick={()=>setFreq(per==="day"?1:count,per)}
+                    style={{padding:"4px 10px",borderRadius:7,border:"1px solid",cursor:"pointer",
+                      fontFamily:"'DM Sans',sans-serif",fontSize:".68rem",fontWeight:500,
+                      background:enabled&&period===per?"#b07a5e":"transparent",
+                      color:enabled&&period===per?"#fff":"#a08070",
+                      borderColor:enabled&&period===per?"#b07a5e":"#ddd0c4",transition:"all .12s"}}>
+                    {per==="day"?"Daily":per==="week"?"Wkly":"Mnth"}
+                  </button>
+                ))}
+                {enabled&&<button onClick={()=>setP(prev=>({...prev,frequency:""}))}
+                  style={{padding:"4px 6px",borderRadius:7,border:"1px solid #ddd0c4",cursor:"pointer",background:"transparent",color:"#c0a898",fontSize:".68rem"}}>✕</button>}
               </div>
-            )}
+            </div>
           </div>
         );
       })()}
@@ -1562,85 +1551,77 @@ function SlimEditForm({ initialData, onSave, onClose }) {
   const raw = p.frequency||"";
   const isDaily = raw==="Daily";
   const match = raw.match(/^(\d+)x (week|month)$/);
-  const count = match?parseInt(match[1]):(isDaily?1:1);
+  const count = match?parseInt(match[1]):1;
   const period = match?match[2]:(isDaily?"day":"week");
   const enabled = !!raw;
   const setFreq = (c,per) => {
     if (per==="day") setP(prev=>({...prev,frequency:"Daily"}));
     else setP(prev=>({...prev,frequency:c+"x "+per}));
   };
-  const bump = delta => {
-    const next = Math.min(7,Math.max(1,count+delta));
-    setFreq(next, period==="day"?"week":period);
-  };
+  const bump = delta => setFreq(Math.min(7,Math.max(1,count+delta)), period==="day"?"week":period);
   const catLabel = p.category==="skin"?"Skin":p.category==="treatment"?"Treatment":"Hair";
   return (
-    <div>
-      {/* Product identity row */}
-      <div style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:20}}>
-        {p.image&&<img src={p.image} alt="" style={{width:64,height:64,borderRadius:10,objectFit:"cover",flexShrink:0,border:"1px solid #f0e0d4"}}/>}
-        <div style={{flex:1}}>
-          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.5rem",color:"#3a2e27",lineHeight:1.1,marginBottom:2}}>{p.name}</div>
-          <div style={{fontSize:".78rem",color:"#a08070",marginBottom:6}}>{p.brand}</div>
-          <div style={{display:"inline-block",background:"#f7f0ea",borderRadius:6,padding:"3px 10px",fontSize:".64rem",color:"#b07a5e",letterSpacing:".06em",textTransform:"uppercase",fontWeight:600}}>{catLabel}</div>
-        </div>
-        <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#c0a898",lineHeight:1,padding:0,flexShrink:0}}>×</button>
-      </div>
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal" style={{padding:"24px 22px 28px"}} onClick={e=>e.stopPropagation()}>
 
-      {/* Fields */}
-      <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
-        <input className="ifield" style={{width:"100%"}} placeholder="Product name" value={p.name} onChange={e=>setP(prev=>({...prev,name:e.target.value}))} autoFocus/>
-        <input className="ifield" style={{width:"100%"}} placeholder="Brand" value={p.brand||""} onChange={e=>setP(prev=>({...prev,brand:e.target.value}))}/>
-        <div style={{fontSize:".62rem",color:"#c0a898",fontStyle:"italic",marginTop:-4}}>Name & brand changes apply across your routine history.</div>
-        <div style={{display:"flex",gap:8}}>
-          <input className="ifield" style={{flex:1}} placeholder="Product URL" value={p.link||""} onChange={e=>setP(prev=>({...prev,link:e.target.value}))}/>
-          <input className="ifield" style={{width:80}} placeholder="Price" type="number" min="0" step="0.01" value={p.price||""} onChange={e=>setP(prev=>({...prev,price:e.target.value}))}/>
-        </div>
-      </div>
-
-      {/* Frequency */}
-      <div style={{marginBottom:14}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-          <div style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase"}}>Frequency</div>
-          {enabled&&<button onClick={()=>setP(prev=>({...prev,frequency:""}))} style={{background:"none",border:"none",fontSize:".62rem",color:"#c0a898",cursor:"pointer",padding:0}}>Clear</button>}
-        </div>
-        <div style={{display:"flex",gap:6}}>
-          {["day","week","month"].map(per=>(
-            <button key={per} onClick={()=>setFreq(per==="day"?1:count,per)}
-              style={{flex:1,padding:"8px 4px",borderRadius:10,border:"1.5px solid",cursor:"pointer",
-                fontFamily:"'DM Sans',sans-serif",fontSize:".74rem",fontWeight:500,
-                background:enabled&&period===per?"#b07a5e":"#fff8f3",
-                color:enabled&&period===per?"#fff":"#a08070",
-                borderColor:enabled&&period===per?"#b07a5e":"#e8d8cc",transition:"all .15s"}}>
-              {per==="day"?"Daily":per==="week"?"Weekly":"Monthly"}
-            </button>
-          ))}
-        </div>
-        {enabled&&period!=="day"&&(
-          <div style={{display:"flex",alignItems:"center",gap:10,marginTop:10,justifyContent:"center"}}>
-            <button onClick={()=>bump(-1)} disabled={count<=1}
-              style={{width:32,height:32,borderRadius:"50%",border:"1.5px solid #e8d8cc",background:"#fff8f3",
-                color:count<=1?"#d0c0b8":"#7a5c48",cursor:count<=1?"default":"pointer",fontSize:"1.1rem",
-                display:"flex",alignItems:"center",justifyContent:"center"}}>−</button>
-            <div style={{minWidth:60,textAlign:"center"}}>
-              <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.5rem",color:"#3a2e27"}}>{count}</span>
-              <span style={{fontSize:".66rem",color:"#a08070",marginLeft:4}}>× per {period}</span>
-            </div>
-            <button onClick={()=>bump(1)} disabled={count>=7}
-              style={{width:32,height:32,borderRadius:"50%",border:"1.5px solid #e8d8cc",background:"#fff8f3",
-                color:count>=7?"#d0c0b8":"#7a5c48",cursor:count>=7?"default":"pointer",fontSize:"1.1rem",
-                display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
+        {/* Header */}
+        <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:20}}>
+          {p.image&&<img src={p.image} alt="" style={{width:52,height:52,borderRadius:9,objectFit:"cover",flexShrink:0,border:"1px solid #f0e0d4"}}/>}
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",color:"#3a2e27",lineHeight:1.1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
+            {p.brand&&<div style={{fontSize:".74rem",color:"#a08070",marginTop:1}}>{p.brand}</div>}
           </div>
-        )}
-      </div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}}>
+            <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#c0a898",lineHeight:1,padding:0}}>×</button>
+            <div style={{background:"#f7f0ea",borderRadius:5,padding:"2px 8px",fontSize:".6rem",color:"#b07a5e",letterSpacing:".06em",textTransform:"uppercase",fontWeight:600}}>{catLabel}</div>
+          </div>
+        </div>
 
-      <input className="ifield" style={{width:"100%",marginBottom:18}} placeholder="Notes" value={p.notes||""} onChange={e=>setP(prev=>({...prev,notes:e.target.value}))}/>
-      <button onClick={()=>onSave(p)} disabled={!p.name.trim()}
-        style={{width:"100%",padding:"13px",background:p.name.trim()?"#b07a5e":"#e8d8cc",border:"none",borderRadius:12,
-          color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:".84rem",fontWeight:600,cursor:p.name.trim()?"pointer":"default",
-          letterSpacing:".04em",transition:"background .15s"}}>
-        Save Changes
-      </button>
+        {/* Fields */}
+        <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:16}}>
+          <input className="ifield" style={{width:"100%"}} placeholder="Product name" value={p.name} onChange={e=>setP(prev=>({...prev,name:e.target.value}))} autoFocus/>
+          <input className="ifield" style={{width:"100%"}} placeholder="Brand" value={p.brand||""} onChange={e=>setP(prev=>({...prev,brand:e.target.value}))}/>
+          <input className="ifield" style={{width:"100%"}} placeholder="Product URL" value={p.link||""} onChange={e=>setP(prev=>({...prev,link:e.target.value}))}/>
+        </div>
+
+        {/* Frequency — single compact row */}
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
+          <span style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase",flexShrink:0}}>Frequency</span>
+          <div style={{flex:1,display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end"}}>
+            {enabled&&period!=="day"&&(
+              <>
+                <button onClick={()=>bump(-1)} disabled={count<=1}
+                  style={{width:24,height:24,borderRadius:"50%",border:"1px solid #e0cfc4",background:"#fff",color:count<=1?"#d0c0b8":"#7a5c48",cursor:count<=1?"default":"pointer",fontSize:".9rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>−</button>
+                <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",color:"#3a2e27",minWidth:14,textAlign:"center"}}>{count}</span>
+                <span style={{fontSize:".62rem",color:"#a08070"}}>×</span>
+                <button onClick={()=>bump(1)} disabled={count>=7}
+                  style={{width:24,height:24,borderRadius:"50%",border:"1px solid #e0cfc4",background:"#fff",color:count>=7?"#d0c0b8":"#7a5c48",cursor:count>=7?"default":"pointer",fontSize:".9rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
+              </>
+            )}
+            <div style={{display:"flex",gap:4}}>
+              {["day","week","month"].map(per=>(
+                <button key={per} onClick={()=>setFreq(per==="day"?1:count,per)}
+                  style={{padding:"4px 10px",borderRadius:7,border:"1px solid",cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif",fontSize:".68rem",fontWeight:500,
+                    background:enabled&&period===per?"#b07a5e":"transparent",
+                    color:enabled&&period===per?"#fff":"#a08070",
+                    borderColor:enabled&&period===per?"#b07a5e":"#ddd0c4",transition:"all .12s"}}>
+                  {per==="day"?"Daily":per==="week"?"Wkly":"Mnth"}
+                </button>
+              ))}
+              {enabled&&<button onClick={()=>setP(prev=>({...prev,frequency:""}))}
+                style={{padding:"4px 6px",borderRadius:7,border:"1px solid #ddd0c4",cursor:"pointer",background:"transparent",color:"#c0a898",fontSize:".68rem"}}>✕</button>}
+            </div>
+          </div>
+        </div>
+
+        <button onClick={()=>onSave(p)} disabled={!p.name.trim()}
+          style={{width:"100%",padding:"12px",background:p.name.trim()?"#b07a5e":"#e8d8cc",border:"none",borderRadius:12,
+            color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:".84rem",fontWeight:600,cursor:p.name.trim()?"pointer":"default",
+            letterSpacing:".04em",transition:"background .15s"}}>
+          Save Changes
+        </button>
+      </div>
     </div>
   );
 }
@@ -2214,15 +2195,9 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
         </>
       )}
 
-      {/* Bottom sheet — slim edit form from carousel pencil */}
+      {/* Edit modal */}
       {showForm&&editProd&&isEditingProd&&(
-        <>
-          <div className="bottom-sheet-overlay" onClick={handleCloseForm}/>
-          <div className="bottom-sheet">
-            <div style={{width:36,height:4,borderRadius:2,background:"#e8d8cc",margin:"0 auto 20px"}}/>
-            <SlimEditForm key={editProd.id} initialData={editProd} onSave={save} onClose={handleCloseForm}/>
-          </div>
-        </>
+        <SlimEditForm key={editProd.id} initialData={editProd} onSave={save} onClose={handleCloseForm}/>
       )}
 
       {/* Finalize confirmation */}
