@@ -293,7 +293,7 @@ body{font-family:'DM Sans',sans-serif;background:#fdf6f0;min-height:100vh;color:
 .spend-val{color:#b07a5e;font-weight:600}
 @keyframes fiu{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .bottom-sheet-overlay{position:fixed;inset:0;background:rgba(58,46,39,.38);z-index:250;backdrop-filter:blur(2px)}
-.bottom-sheet{position:fixed;left:0;right:0;bottom:0;z-index:251;background:#fdf6f0;border-radius:22px 22px 0 0;padding:22px 20px max(28px,calc(16px + env(safe-area-inset-bottom)));box-shadow:0 -6px 32px rgba(58,46,39,.14);max-height:88vh;overflow-y:auto;animation:sheetUp .26s cubic-bezier(.4,0,.2,1)}
+.bottom-sheet{position:fixed;left:max(0px,calc(50% - 340px));right:max(0px,calc(50% - 340px));bottom:0;z-index:251;background:#fdf6f0;border-radius:22px 22px 0 0;padding:22px 20px max(28px,calc(16px + env(safe-area-inset-bottom)));box-shadow:0 -6px 32px rgba(58,46,39,.14);max-height:88vh;overflow-y:auto;animation:sheetUp .26s cubic-bezier(.4,0,.2,1)}
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes fout{to{opacity:0}}
 `;
@@ -2911,33 +2911,26 @@ export default function App({ user }) {
   const [prefillPurchase, setPrefillPurchase] = useState(null); // when moving wishlist item to purchases
   const [treatments,    setTreatments]    = useState([]); // [{id, name, type(skin/hair), dates:[], completedDates:[]}]
 
-  // Load all data from Supabase on mount — all queries run in parallel
+  // Load all data from Supabase on mount — two phases so the log/plans UI appears fast
   useEffect(()=>{
+    if(!user) return;
     (async()=>{
-      if(!user) return;
       try {
+        // ── Phase 1: Critical data (log, plans, schedules) ──────────────────
         const [
           { data: entryRows },
           { data: routineRows },
           { data: schedRows, error: schedErr },
           { data: freqRows },
           { data: hlRows },
-          { data: purchRows },
           { data: txRows },
-          { data: prodRows },
-          { data: wishRows },
-          { data: snapRows },
         ] = await Promise.all([
           supabase.from("entries").select("*").eq("user_id", user.id),
           supabase.from("routines").select("*").eq("user_id", user.id),
           supabase.from("schedules").select("*").eq("user_id", user.id),
           supabase.from("freq_settings").select("*").eq("user_id", user.id).single(),
           supabase.from("hair_lengths").select("*").eq("user_id", user.id),
-          supabase.from("purchases").select("*").eq("user_id", user.id).order("date", {ascending:false}),
           supabase.from("treatments").select("*").eq("user_id", user.id),
-          supabase.from("products").select("*").eq("user_id", user.id).order("created_at", {ascending:false}),
-          supabase.from("wishlist").select("*").eq("user_id", user.id).order("created_at", {ascending:false}),
-          supabase.from("snapshots").select("*, snapshot_products(*)").eq("user_id", user.id).order("started_at", {ascending:false}),
         ]);
 
         if (entryRows) {
@@ -2964,16 +2957,26 @@ export default function App({ user }) {
           hlRows.forEach(r => { map[r.month] = r.length_cm; });
           setHairLengths(map);
         }
-        if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[], image:r.image||'', link:r.link||'', frequency:r.frequency||'' })));
         if (txRows) setTreatments(txRows.map(r=>({ id:r.id, name:r.name, type:r.type, dates:r.dates||[], completedDates:r.completed_dates||[], location:r.location||'' })));
-        if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", price:r.price||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[] })));
-        if (wishRows) setWishlist(wishRows.map(r=>({ id:r.id, product_id:r.product_id||null, name:r.name||"", brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], priority:r.priority||0 })));
-        if (snapRows) setSnapshots(snapRows.map(r=>({ id:r.id, label:r.label||"", started_at:r.started_at, ended_at:r.ended_at||null, is_base:r.is_base||false, products:r.snapshot_products||[] })));
 
-        // Show name prompt only if name isn't already set from auth metadata
+        // Show name prompt after phase 1
         const name = user?.user_metadata?.display_name || "";
         if (name) setUserName(name);
         else setShowNamePrompt(true);
+
+        // ── Phase 2: Secondary data (products, purchases, wishlist, snapshots) ─
+        Promise.all([
+          supabase.from("purchases").select("*").eq("user_id", user.id).order("date", {ascending:false}),
+          supabase.from("products").select("*").eq("user_id", user.id).order("created_at", {ascending:false}),
+          supabase.from("wishlist").select("*").eq("user_id", user.id).order("created_at", {ascending:false}),
+          supabase.from("snapshots").select("*, snapshot_products(*)").eq("user_id", user.id).order("started_at", {ascending:false}),
+        ]).then(([{ data: purchRows },{ data: prodRows },{ data: wishRows },{ data: snapRows }]) => {
+          if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[], image:r.image||'', link:r.link||'', frequency:r.frequency||'' })));
+          if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", price:r.price||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[] })));
+          if (wishRows) setWishlist(wishRows.map(r=>({ id:r.id, product_id:r.product_id||null, name:r.name||"", brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], priority:r.priority||0 })));
+          if (snapRows) setSnapshots(snapRows.map(r=>({ id:r.id, label:r.label||"", started_at:r.started_at, ended_at:r.ended_at||null, is_base:r.is_base||false, products:r.snapshot_products||[] })));
+        }).catch(e=>console.error("Phase 2 load error", e));
+
       } catch(e) { console.error("Load error", e); }
     })();
   },[user]);
