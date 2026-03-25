@@ -2928,20 +2928,22 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
   );
 }
 
-function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsProp, schedules, treatments, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose, onAddItem, initialPlan, initialTreatment }) {
-  const [screen, setScreen]=useState(initialPlan?"editPlan":initialTreatment?"editTreatment":"chooseType"); // chooseType | editPlan | editTreatment
-  const [editing, setEditing]=useState(initialPlan?{...initialPlan,itemIds:initialPlan.itemIds||[initialPlan.itemId].filter(Boolean),dates:initialPlan.dates||[],startDate:initialPlan.startDate||fmt(new Date()),endDate:initialPlan.endDate||""}:{id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),endDate:"",reminder:false,time:"08:00",location:""});
+function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsProp, schedules, treatments, entries, products, wishlist, today, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose, onAddItem, initialPlan, initialTreatment }) {
+  const _today = today || fmt(new Date());
+  const [screen, setScreen]=useState(initialPlan?(initialPlan._editMode?"editPlan":"viewPlan"):initialTreatment?"editTreatment":"chooseType"); // chooseType | viewPlan | editPlan | editTreatment
+  const [editing, setEditing]=useState(initialPlan?{...initialPlan,itemIds:initialPlan.itemIds||[initialPlan.itemId].filter(Boolean),dates:initialPlan.dates||[],startDate:initialPlan.startDate||"",endDate:initialPlan.endDate||"",linkedProductId:initialPlan.linkedProductId||""}:{id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),endDate:"",linkedProductId:"",reminder:false,time:"08:00",location:""});
   const [editTx, setEditTx]=useState(initialTreatment?{...initialTreatment}:{id:uid(),name:"",type:"skin",dates:[],completedDates:[],location:"",price:"",notes:""});
   const [txMode, setTxMode]=useState(initialTreatment?"upcoming":null); // null | "past" | "upcoming"
   const [pastDate, setPastDate]=useState(fmt(new Date()));
   const [showItemPick, setShowItemPick]=useState(false);
+  const [showProductPick, setShowProductPick]=useState(false);
   const [calRangeStart, setCalRangeStart]=useState(null);
   const [newStepLabel, setNewStepLabel]=useState("");
   const [newStepEmoji, setNewStepEmoji]=useState("🌿");
   const [showNewStepEmoji, setShowNewStepEmoji]=useState(false);
 
-  const startNewPlan=()=>{ setEditing({id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),endDate:"",reminder:false,time:"08:00",location:""}); setScreen("editPlan"); };
-  const startEditPlan=s=>{ setEditing({...s,itemIds:s.itemIds||[s.itemId].filter(Boolean),dates:s.dates||[],startDate:s.startDate||fmt(new Date()),endDate:s.endDate||""}); setScreen("editPlan"); };
+  const startNewPlan=()=>{ setEditing({id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),endDate:"",linkedProductId:"",reminder:false,time:"08:00",location:""}); setScreen("editPlan"); };
+  const startEditPlan=s=>{ setEditing({...s,itemIds:s.itemIds||[s.itemId].filter(Boolean),dates:s.dates||[],startDate:s.startDate||"",endDate:s.endDate||"",linkedProductId:s.linkedProductId||""}); setScreen("editPlan"); };
   const startNewTx=()=>{ setEditTx({id:uid(),name:"",type:"skin",dates:[]}); setScreen("editTreatment"); };
   const startEditTx=t=>{ setEditTx({...t}); setScreen("editTreatment"); };
 
@@ -2987,6 +2989,109 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                 </div>
               </button>
             ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if(screen==="viewPlan"&&editing){
+    const it=allItems.find(x=>x.id===(editing.itemIds?.[0]||editing.itemId));
+    const recurDays=(editing.days||[]).sort().map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
+    const dateCount=(editing.dates||[]).length;
+    const linkedProd=[...(products||[]),(wishlist||[]).map(w=>({...w,_fromWishlist:true}))].flat().find(p=>p.id===editing.linkedProductId);
+    // Completion rate
+    const itemType=skinItemsProp?.find(r=>r.id===(editing.itemIds?.[0]||editing.itemId))?"skin":"hair";
+    let completion=null;
+    if(editing.dates?.length>0){
+      const done=editing.dates.filter(d=>(entries?.[d]?.[itemType]||[]).includes(editing.itemIds?.[0]||editing.itemId)).length;
+      completion={done,total:editing.dates.length};
+    } else if(editing.days?.length>0&&editing.startDate){
+      const start=new Date(editing.startDate+"T12:00:00"),end=new Date(_today+"T12:00:00");
+      let total=0,done=0,cur=new Date(start);
+      while(cur<=end){
+        if(editing.days.includes(cur.getDay())){
+          total++;
+          const d=fmt(cur);
+          if((entries?.[d]?.[itemType]||[]).includes(editing.itemIds?.[0]||editing.itemId)) done++;
+        }
+        cur.setDate(cur.getDate()+1);
+      }
+      if(total>0) completion={done,total};
+    }
+    const pct=completion?Math.round((completion.done/completion.total)*100):null;
+    return (
+      <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+        <div className="modal">
+          <div className="modal-top">
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.15rem",fontStyle:"italic",color:"#3a2e27"}}>Plan Details</div>
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>startEditPlan(editing)}>Edit</button>
+              <button className="modal-x" onClick={onClose}>×</button>
+            </div>
+          </div>
+          {/* Item */}
+          {it&&<div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 0 18px",borderBottom:"1px solid #f0e4dc"}}>
+            <div style={{width:48,height:48,borderRadius:14,background:"#f7ece4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.6rem",flexShrink:0}}>{it.emoji}</div>
+            <div>
+              <div style={{fontSize:"1rem",fontWeight:500,color:"#3a2e27"}}>{it.label}</div>
+              {editing.ended_at&&<div style={{fontSize:".7rem",background:"#e8d8cc",color:"#a08070",borderRadius:10,padding:"2px 8px",display:"inline-block",marginTop:4}}>Ended</div>}
+            </div>
+          </div>}
+          {/* Details grid */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px 16px",padding:"16px 0",borderBottom:"1px solid #f0e4dc"}}>
+            <div>
+              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080",marginBottom:3}}>Started</div>
+              <div style={{fontSize:".84rem",color:"#3a2e27"}}>{editing.startDate?parse(editing.startDate).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"—"}</div>
+            </div>
+            {editing.endDate&&<div>
+              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080",marginBottom:3}}>Until</div>
+              <div style={{fontSize:".84rem",color:"#3a2e27"}}>{parse(editing.endDate).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
+            </div>}
+            {editing.ended_at&&<div>
+              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080",marginBottom:3}}>Ended</div>
+              <div style={{fontSize:".84rem",color:"#3a2e27"}}>{parse(editing.ended_at).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
+            </div>}
+            <div>
+              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080",marginBottom:3}}>Frequency</div>
+              <div style={{fontSize:".84rem",color:"#3a2e27"}}>
+                {(editing.days||[]).length===7?"Every day":recurDays?`Every ${recurDays}`:dateCount>0?`${dateCount} specific date${dateCount!==1?"s":""}`:editing.startDate?"One-off":"—"}
+              </div>
+            </div>
+            {editing.location&&<div>
+              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080",marginBottom:3}}>Location</div>
+              <div style={{fontSize:".84rem",color:"#b07a5e",cursor:"pointer",textDecoration:"underline"}} onClick={()=>openUrl&&openUrl(`https://www.google.com/maps/search/${encodeURIComponent(editing.location)}`)}>📍 {editing.location}</div>
+            </div>}
+          </div>
+          {/* Completion rate */}
+          {completion&&<div style={{padding:"14px 0",borderBottom:"1px solid #f0e4dc"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080"}}>Completion</div>
+              <div style={{fontSize:".84rem",color:"#3a2e27",fontWeight:500}}>{completion.done}/{completion.total} <span style={{color:"#b09080",fontWeight:400}}>({pct}%)</span></div>
+            </div>
+            <div style={{height:6,borderRadius:4,background:"#f0e4dc",overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${pct}%`,borderRadius:4,background:"linear-gradient(90deg,#d4a090,#b07a5e)",transition:"width .4s"}}/>
+            </div>
+          </div>}
+          {/* Linked product */}
+          {linkedProd&&<div style={{padding:"14px 0",borderBottom:"1px solid #f0e4dc",display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:38,height:38,borderRadius:10,overflow:"hidden",background:"#f0e0d4",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".9rem"}}>
+              {(linkedProd.image||linkedProd.media_url)?<img src={linkedProd.image||linkedProd.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>🧴</span>}
+            </div>
+            <div>
+              <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080",marginBottom:2}}>Linked Product</div>
+              <div style={{fontSize:".84rem",color:"#3a2e27"}}>{linkedProd.name}</div>
+              {linkedProd._fromWishlist&&<div style={{fontSize:".62rem",color:"#b09080"}}>Wishlist</div>}
+            </div>
+          </div>}
+          {/* Actions */}
+          <div style={{display:"flex",flexDirection:"column",gap:8,paddingTop:16}}>
+            {!editing.ended_at&&schedules.find(s=>s.id===editing.id)&&(
+              <button className="ghost-btn" style={{color:"#b07a5e",fontSize:".84rem"}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>
+            )}
+            {schedules.find(s=>s.id===editing.id)&&(
+              <button className="del-btn" style={{alignSelf:"center"}} onClick={()=>{onDelete(editing.id);onClose();}}>Delete Plan</button>
+            )}
           </div>
         </div>
       </div>
@@ -3090,6 +3195,43 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                 onChange={e=>setEditing(ed=>({...ed,endDate:e.target.value}))}/>
             </div>
           </div>
+          {/* Linked product picker */}
+          {(products?.length>0||(wishlist||[]).length>0)&&(()=>{
+            const allPickable=[...(products||[]),...(wishlist||[]).map(w=>({...w,_fromWishlist:true}))];
+            const linked=allPickable.find(p=>p.id===editing.linkedProductId);
+            return (
+              <div style={{marginBottom:14}}>
+                <div className="modal-sub" style={{marginBottom:6}}>Linked product <span style={{fontWeight:400,color:"#c0a898"}}>(optional)</span></div>
+                {linked?(
+                  <div style={{display:"flex",alignItems:"center",gap:10,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"8px 10px"}}>
+                    <div style={{width:32,height:32,borderRadius:8,overflow:"hidden",background:"#f0e0d4",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem"}}>
+                      {(linked.image||linked.media_url)?<img src={linked.image||linked.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>🧴</span>}
+                    </div>
+                    <span style={{flex:1,fontSize:".82rem",color:"#3a2e27"}}>{linked.name}</span>
+                    <button onClick={()=>setEditing(ed=>({...ed,linkedProductId:""}))} style={{background:"none",border:"none",color:"#b09080",cursor:"pointer",fontSize:".9rem",padding:"0 4px"}}>×</button>
+                  </div>
+                ):(
+                  <button className="ghost-btn" style={{width:"100%",fontSize:".78rem"}} onClick={()=>setShowProductPick(p=>!p)}>+ Link a product</button>
+                )}
+                {showProductPick&&!linked&&(
+                  <div style={{maxHeight:160,overflowY:"auto",border:"1px solid #f0e4dc",borderRadius:12,marginTop:6,background:"#fff"}}>
+                    {allPickable.map(p=>(
+                      <div key={p.id} onClick={()=>{setEditing(ed=>({...ed,linkedProductId:p.id}));setShowProductPick(false);}}
+                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",cursor:"pointer",borderBottom:"1px solid #f8f0ec"}}>
+                        <div style={{width:28,height:28,borderRadius:7,overflow:"hidden",background:"#f0e0d4",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".75rem"}}>
+                          {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>🧴</span>}
+                        </div>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:".8rem",color:"#3a2e27"}}>{p.name}</div>
+                          {p._fromWishlist&&<div style={{fontSize:".62rem",color:"#b09080"}}>Wishlist</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           <div className="modal-sub" style={{marginBottom:8}}>Every — leave blank for one-off</div>
           <div className="toggle-row" style={{marginBottom:8}}>
             <div><div className="toggle-lbl">Every day</div></div>
@@ -3566,7 +3708,7 @@ export default function App({ user }) {
           if (ha) setHairR(ha.items);
         }
         if (schedErr) console.error("Schedule load error:", schedErr);
-        if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days||[], dates:r.dates||[], startDate:r.start_date||null, endDate:r.end_date||"", reminder:r.reminder, time:r.time, location:r.location||'', ended_at:r.ended_at||null })));
+        if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days||[], dates:r.dates||[], startDate:r.start_date||null, endDate:r.end_date||"", linkedProductId:r.linked_product_id||"", reminder:r.reminder, time:r.time, location:r.location||'', ended_at:r.ended_at||null })));
         if (freqRows) { setFreqTracked(freqRows.tracked||[]); setFreqPeriod(freqRows.period||"year"); }
         if (hlRows) {
           const map = {};
@@ -3693,6 +3835,7 @@ export default function App({ user }) {
         const rows = newSchedules.map(s => ({
           id: s.id, user_id: user.id, item_id: s.itemId,
           days: s.days||[], dates: s.dates||[], start_date: s.startDate||null, end_date: s.endDate||null,
+          linked_product_id: s.linkedProductId||null,
           reminder: s.reminder, time: s.time||"08:00", location: s.location||'',
           ended_at: s.ended_at||null
         }));
@@ -4440,17 +4583,21 @@ export default function App({ user }) {
                 const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
                 const recurDays=(s.days||[]).sort().map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
                 return (
-                  <div onClick={()=>setSelectedPlan({type:"plan",data:s})}
-                    style={{flexShrink:0,width:148,background:"#fff8f3",border:`1.5px solid ${s.ended_at?"#e8d8cc":"#d4c4b4"}`,borderRadius:16,padding:"14px 12px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:s.ended_at?.55:1}}>
-                    <div style={{fontSize:"1.6rem",textAlign:"center"}}>{it.emoji}</div>
-                    <div style={{fontSize:".82rem",fontWeight:500,color:"#3a2e27",textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{it.label}</div>
-                    {s.ended_at
-                      ?<div style={{fontSize:".6rem",color:"#a08070",textAlign:"center",background:"#f0e4d8",borderRadius:10,padding:"2px 6px"}}>Ended</div>
-                      :<div style={{fontSize:".64rem",color:"#9a7050",textAlign:"center"}}>
-                        {(s.days||[]).length===7?"Every day":recurDays||`${(s.dates||[]).length} date${(s.dates||[]).length!==1?"s":""}`}
-                      </div>
-                    }
-                    {s.endDate&&!s.ended_at&&<div style={{fontSize:".58rem",color:"#b8a090",textAlign:"center"}}>until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>}
+                  <div style={{flexShrink:0,width:148,position:"relative"}}>
+                    <div onClick={()=>setSelectedPlan({type:"plan",data:s})}
+                      style={{background:"#fff8f3",border:`1.5px solid ${s.ended_at?"#e8d8cc":"#d4c4b4"}`,borderRadius:16,padding:"14px 12px 10px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:s.ended_at?.55:1,height:"100%"}}>
+                      <div style={{fontSize:"1.6rem",textAlign:"center"}}>{it.emoji}</div>
+                      <div style={{fontSize:".82rem",fontWeight:500,color:"#3a2e27",textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{it.label}</div>
+                      {s.ended_at
+                        ?<div style={{fontSize:".6rem",color:"#a08070",textAlign:"center",background:"#f0e4d8",borderRadius:10,padding:"2px 6px"}}>Ended</div>
+                        :<div style={{fontSize:".64rem",color:"#9a7050",textAlign:"center"}}>
+                          {(s.days||[]).length===7?"Every day":recurDays||`${(s.dates||[]).length} date${(s.dates||[]).length!==1?"s":""}`}
+                        </div>
+                      }
+                      {s.endDate&&!s.ended_at&&<div style={{fontSize:".58rem",color:"#b8a090",textAlign:"center"}}>until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>}
+                    </div>
+                    <button onClick={e=>{e.stopPropagation();setSelectedPlan({type:"plan",data:{...s,_editMode:true}});}}
+                      style={{position:"absolute",top:8,right:8,background:"rgba(255,248,243,.9)",border:"1px solid #e8d8cc",borderRadius:8,color:"#a08070",fontSize:".58rem",padding:"2px 6px",cursor:"pointer",lineHeight:1.4}}>Edit</button>
                   </div>
                 );
               };
@@ -4512,8 +4659,11 @@ export default function App({ user }) {
                 </div>
               );
 
+              const ScrollHint=()=>(<div style={{display:"flex",justifyContent:"center",marginTop:8}}><div style={{width:28,height:3,borderRadius:2,background:"linear-gradient(90deg,transparent,#d8c4b8,transparent)"}}/></div>);
+
               const SectionCarousel=({label,planItems=[],txItems=[],allTxForSection=[]})=>{
                 if(!planItems.length&&!txItems.length) return null;
+                const total=planItems.length+txItems.length;
                 return (
                   <div style={{marginBottom:16,background:"#fffaf7",border:"1.5px solid #f0e4dc",borderRadius:18,padding:"14px 14px 10px"}}>
                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:allTxForSection.length?6:10}}>
@@ -4524,6 +4674,7 @@ export default function App({ user }) {
                       {planItems.map(s=><PlanCardCarousel key={s.id} s={s}/>)}
                       {txItems.map(tx=><TxCardCarousel key={tx.id} tx={tx}/>)}
                     </div>
+                    {total>2&&<ScrollHint/>}
                   </div>
                 );
               };
@@ -4621,6 +4772,7 @@ export default function App({ user }) {
 
       {modal==="manageItems"&&<ManageItemsModal type={activeTab} items={activeTab==="skin"?skinR:hairR} onAdd={item=>addItem(activeTab,item)} onRemove={id=>removeItem(activeTab,id)} onEdit={(id,changes)=>editItem(activeTab,id,changes)} onClose={()=>setModal(null)}/>}
       {selectedPlan&&<PlanModal allItems={allItems} skinItems={skinR} hairItems={hairR} schedules={schedules} treatments={treatments}
+        entries={entries} products={products} wishlist={wishlist} today={today}
         onSave={async s=>{ await saveSched(s); setSelectedPlan(null); }}
         onSaveMany={async plans=>{ await saveSchedMany(plans); setSelectedPlan(null); }}
         onDelete={id=>{ confirmDeleteSched(id); setSelectedPlan(null); }}
