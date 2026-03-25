@@ -2597,23 +2597,24 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                       {showAmPm&&(
                         <div>
                           {/* Two drop zones */}
-                          <div style={{display:"flex",gap:10,marginBottom:16}}>
+                          <div style={{display:"flex",gap:10,marginBottom:16,alignItems:"flex-start"}}>
                             {/* Morning */}
                             <div
-                              onDragOver={e=>{e.preventDefault();e.currentTarget.dataset.over="1";e.currentTarget.style.background="#FFFAEC";e.currentTarget.style.borderColor="#E8C840";}}
+                              onDragOver={e=>{e.preventDefault();e.currentTarget.style.background="#FFFAEC";e.currentTarget.style.borderColor="#E8C840";}}
                               onDragLeave={e=>{e.currentTarget.style.background="#FFFDF5";e.currentTarget.style.borderColor="#EEE0A8";}}
                               onDrop={e=>{e.preventDefault();e.currentTarget.style.background="#FFFDF5";e.currentTarget.style.borderColor="#EEE0A8";const id=e.dataTransfer.getData("ampm_id");if(id)onUpdateSnapProductTimeOfDay(id,"am");}}
-                              style={{flex:1,minHeight:110,borderRadius:16,background:"#FFFDF5",border:"1.5px solid #EEE0A8",padding:"12px 10px",transition:"background .15s,border-color .15s"}}>
+                              style={{flex:"0 0 calc(50% - 5px)",minWidth:0,borderRadius:16,background:"#FFFDF5",border:"1.5px solid #EEE0A8",padding:"12px 10px",transition:"background .15s,border-color .15s",overflow:"hidden"}}>
                               <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#B08820",marginBottom:10,fontWeight:600}}>☀️ Morning</div>
                               {snapProducts.filter(p=>p.time_of_day==="am").length===0
-                                ?<div style={{fontSize:".7rem",color:"#D4C888",fontStyle:"italic",textAlign:"center",paddingTop:16}}>Drop products here</div>
+                                ?<div style={{fontSize:".7rem",color:"#D4C888",fontStyle:"italic",textAlign:"center",padding:"16px 0 8px"}}>Drop products here</div>
                                 :snapProducts.filter(p=>p.time_of_day==="am").map(p=>(
-                                  <div key={p.snapProdId} style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,padding:"5px 8px",background:"rgba(255,255,255,.75)",borderRadius:10,border:"1px solid #F0E8C0"}}>
+                                  <div key={p.snapProdId} onClick={()=>{const prod=products.find(x=>x.id===p.id)||{id:p.id,name:p.name,brand:p.brand||"",category:p.category,image:p.image||"",media_url:p.media_url||""};setEditProd({...prod,_origName:prod.name,_origBrand:prod.brand||"",_origCategory:prod.category});setShowForm(true);setIsEditingProd(true);}}
+                                    style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,padding:"5px 8px",background:"rgba(255,255,255,.75)",borderRadius:10,border:"1px solid #F0E8C0",cursor:"pointer",minWidth:0}}>
                                     <div style={{width:22,height:22,borderRadius:5,overflow:"hidden",flexShrink:0,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".7rem"}}>
                                       {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{catEmoji(p.category)}</span>}
                                     </div>
-                                    <span style={{flex:1,fontSize:".7rem",color:"#3a2e27",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
-                                    <button onClick={()=>onUpdateSnapProductTimeOfDay(p.snapProdId,"all")} style={{background:"none",border:"none",color:"#C8B060",cursor:"pointer",fontSize:".72rem",padding:"2px 4px",lineHeight:1,flexShrink:0}}>×</button>
+                                    <span style={{flex:1,fontSize:".7rem",color:"#3a2e27",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{p.name}</span>
+                                    <button onClick={e=>{e.stopPropagation();onUpdateSnapProductTimeOfDay(p.snapProdId,"all");}} style={{background:"none",border:"none",color:"#C8B060",cursor:"pointer",fontSize:".72rem",padding:"2px 4px",lineHeight:1,flexShrink:0}}>×</button>
                                   </div>
                                 ))
                               }
@@ -2623,17 +2624,18 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                               onDragOver={e=>{e.preventDefault();e.currentTarget.style.background="#F2F0FA";e.currentTarget.style.borderColor="#A898D8";}}
                               onDragLeave={e=>{e.currentTarget.style.background="#F8F6FC";e.currentTarget.style.borderColor="#D4CEEC";}}
                               onDrop={e=>{e.preventDefault();e.currentTarget.style.background="#F8F6FC";e.currentTarget.style.borderColor="#D4CEEC";const id=e.dataTransfer.getData("ampm_id");if(id)onUpdateSnapProductTimeOfDay(id,"pm");}}
-                              style={{flex:1,minHeight:110,borderRadius:16,background:"#F8F6FC",border:"1.5px solid #D4CEEC",padding:"12px 10px",transition:"background .15s,border-color .15s"}}>
+                              style={{flex:"0 0 calc(50% - 5px)",minWidth:0,borderRadius:16,background:"#F8F6FC",border:"1.5px solid #D4CEEC",padding:"12px 10px",transition:"background .15s,border-color .15s",overflow:"hidden"}}>
                               <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#6858A0",marginBottom:10,fontWeight:600}}>🌙 Night</div>
                               {snapProducts.filter(p=>p.time_of_day==="pm").length===0
-                                ?<div style={{fontSize:".7rem",color:"#B8B0D8",fontStyle:"italic",textAlign:"center",paddingTop:16}}>Drop products here</div>
+                                ?<div style={{fontSize:".7rem",color:"#B8B0D8",fontStyle:"italic",textAlign:"center",padding:"16px 0 8px"}}>Drop products here</div>
                                 :snapProducts.filter(p=>p.time_of_day==="pm").map(p=>(
-                                  <div key={p.snapProdId} style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,padding:"5px 8px",background:"rgba(255,255,255,.75)",borderRadius:10,border:"1px solid #D8D0F0"}}>
+                                  <div key={p.snapProdId} onClick={()=>{const prod=products.find(x=>x.id===p.id)||{id:p.id,name:p.name,brand:p.brand||"",category:p.category,image:p.image||"",media_url:p.media_url||""};setEditProd({...prod,_origName:prod.name,_origBrand:prod.brand||"",_origCategory:prod.category});setShowForm(true);setIsEditingProd(true);}}
+                                    style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,padding:"5px 8px",background:"rgba(255,255,255,.75)",borderRadius:10,border:"1px solid #D8D0F0",cursor:"pointer",minWidth:0}}>
                                     <div style={{width:22,height:22,borderRadius:5,overflow:"hidden",flexShrink:0,background:"#e8e4f8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".7rem"}}>
                                       {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{catEmoji(p.category)}</span>}
                                     </div>
-                                    <span style={{flex:1,fontSize:".7rem",color:"#3a2e27",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
-                                    <button onClick={()=>onUpdateSnapProductTimeOfDay(p.snapProdId,"all")} style={{background:"none",border:"none",color:"#9888C8",cursor:"pointer",fontSize:".72rem",padding:"2px 4px",lineHeight:1,flexShrink:0}}>×</button>
+                                    <span style={{flex:1,fontSize:".7rem",color:"#3a2e27",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{p.name}</span>
+                                    <button onClick={e=>{e.stopPropagation();onUpdateSnapProductTimeOfDay(p.snapProdId,"all");}} style={{background:"none",border:"none",color:"#9888C8",cursor:"pointer",fontSize:".72rem",padding:"2px 4px",lineHeight:1,flexShrink:0}}>×</button>
                                   </div>
                                 ))
                               }
