@@ -292,6 +292,9 @@ body{font-family:'DM Sans',sans-serif;background:#fdf6f0;min-height:100vh;color:
 .spend-label{color:#7a5c48}
 .spend-val{color:#b07a5e;font-weight:600}
 @keyframes fiu{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.bottom-sheet-overlay{position:fixed;inset:0;background:rgba(58,46,39,.38);z-index:250;backdrop-filter:blur(2px)}
+.bottom-sheet{position:fixed;left:max(0px,calc(50% - 340px));right:max(0px,calc(50% - 340px));bottom:0;z-index:251;background:#fdf6f0;border-radius:22px 22px 0 0;padding:22px 20px max(28px,calc(16px + env(safe-area-inset-bottom)));box-shadow:0 -6px 32px rgba(58,46,39,.14);max-height:88vh;overflow-y:auto;animation:sheetUp .26s cubic-bezier(.4,0,.2,1)}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes fout{to{opacity:0}}
 `;
 
@@ -501,7 +504,27 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
   );
 }
 
+function SwipeableProductImage({ images, height, emoji }) {
+  const [idx, setIdx] = useState(0);
+  const srcs = [...new Set(images.filter(Boolean))];
+  if (srcs.length === 0) return <div style={{height,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"3.5rem"}}>{emoji}</div>;
+  if (srcs.length === 1) return <img src={srcs[0]} alt="" style={{width:"100%",height,objectFit:"cover",display:"block"}}/>;
+  return (
+    <div style={{position:"relative",height,overflow:"hidden"}}>
+      <img src={srcs[idx]} alt="" style={{width:"100%",height,objectFit:"cover",display:"block"}}/>
+      <button onClick={e=>{e.stopPropagation();setIdx(p=>(p-1+srcs.length)%srcs.length);}}
+        style={{position:"absolute",left:6,top:"50%",transform:"translateY(-50%)",background:"rgba(253,246,240,.88)",border:"none",borderRadius:"50%",width:26,height:26,cursor:"pointer",fontSize:"1rem",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2}}>‹</button>
+      <button onClick={e=>{e.stopPropagation();setIdx(p=>(p+1)%srcs.length);}}
+        style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",background:"rgba(253,246,240,.88)",border:"none",borderRadius:"50%",width:26,height:26,cursor:"pointer",fontSize:"1rem",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2}}>›</button>
+      <div style={{position:"absolute",bottom:6,left:"50%",transform:"translateX(-50%)",display:"flex",gap:5,zIndex:2}}>
+        {srcs.map((_,i)=><div key={i} style={{width:5,height:5,borderRadius:"50%",background:i===idx?"#fff":"rgba(255,255,255,.5)",transition:"background .2s"}}/>)}
+      </div>
+    </div>
+  );
+}
+
 function SpendingSummary({ purchases, period, onGoToPurchases }) {
+  const [collapsed, setCollapsed] = useState(false);
   const now = new Date();
   const fmt2 = d => d.toLocaleDateString("en-CA");
 
@@ -524,10 +547,17 @@ function SpendingSummary({ purchases, period, onGoToPurchases }) {
 
   return (
     <div>
-      <div className="sec-head" style={{marginBottom:12}}>
+      <div className="sec-head" style={{marginBottom: collapsed ? 0 : 12}}>
         <div className="sec-title">Spending Summary</div>
-        <button className="ghost-btn" onClick={onGoToPurchases}>View All</button>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <button className="ghost-btn" onClick={onGoToPurchases}>View All</button>
+          <button onClick={()=>setCollapsed(p=>!p)}
+            style={{background:"none",border:"none",cursor:"pointer",color:"#b09080",fontSize:".82rem",padding:"4px 6px",lineHeight:1}}>
+            {collapsed?"▼":"▲"}
+          </button>
+        </div>
       </div>
+      {collapsed ? null : <>
       <div style={{fontSize:".72rem",color:"#a08070",marginBottom:12}}>This {period==="week"?"Week":period==="month"?"Month":"Year"}</div>
       {count===0?(
         <div style={{textAlign:"center",padding:"20px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem"}}>No purchases recorded yet</div>
@@ -571,167 +601,58 @@ function SpendingSummary({ purchases, period, onGoToPurchases }) {
           </div>}
         </div>
       )}
+      </>}
     </div>
   );
 }
 
-function ProductSearch({ category, onSelect }) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
+// ProductSearch removed — Open Beauty Facts data was low quality.
+// Global product autofill will be re-introduced when the in-house catalog has sufficient data.
 
-  const search = async () => {
-    if (!query.trim()) return;
-    setLoading(true); setSearched(true);
-    const q = query.trim();
-
-    // Search OpenBeautyFacts and global DB in parallel
-    const [openResults, globalResults] = await Promise.all([
-      fetch("https://world.openbeautyfacts.org/cgi/search.pl?search_terms=" + encodeURIComponent(q) + "&search_simple=1&action=process&json=1&page_size=8")
-        .then(r => r.json())
-        .then(data => (data.products || []).filter(p => p.product_name).map(p => ({...p, _source:"open"})))
-        .catch(() => []),
-      (async () => {
-        try {
-          const supaUrl = import.meta.env.VITE_SUPABASE_URL;
-          const supaKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-          const res = await fetch(
-            supaUrl + "/rest/v1/global_products?or=(name.ilike.*" + encodeURIComponent(q) + "*,brand.ilike.*" + encodeURIComponent(q) + "*)&limit=5&order=search_count.desc",
-            { headers: { apikey: supaKey, Authorization: "Bearer " + supaKey } }
-          );
-          const data = res.ok ? await res.json() : [];
-          return (data || []).map(p => ({
-            product_name: p.name, brands: p.brand, image_small_url: "",
-            global_product_id: p.id, ingredients: p.ingredients || [], _source: "global"
-          }));
-        } catch(e) { return []; }
-      })()
-    ]);
-
-    // Merge — global first, then open results not already covered by name match
-    const globalNames = new Set(globalResults.map(p => p.product_name.toLowerCase()));
-    const deduped = openResults.filter(p => !globalNames.has((p.product_name||"").toLowerCase()));
-    setResults([...globalResults, ...deduped]);
-    setLoading(false);
-  };
-
-  return (
-    <div style={{marginBottom:12}}>
-      <div style={{fontSize:".7rem",color:"#a08070",marginBottom:6,letterSpacing:".08em",textTransform:"uppercase"}}>Search Product Database</div>
-      <div style={{display:"flex",gap:8,marginBottom:8}}>
-        <input className="ifield" style={{flex:1}} placeholder="Search by product name…" value={query}
-          onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&search()}/>
-        <button onClick={search}
-          style={{background:"#b07a5e",border:"none",borderRadius:10,padding:"8px 14px",color:"#fff",cursor:"pointer",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>
-          {loading?"…":"Search"}
-        </button>
-      </div>
-      {searched&&results.length===0&&!loading&&<div style={{fontSize:".78rem",color:"#a08070",fontStyle:"italic",marginBottom:8}}>No results — fill in manually below</div>}
-      {results.length>0&&(
-        <div style={{maxHeight:220,overflowY:"auto",border:"1px solid #e8d8cc",borderRadius:12,marginBottom:8}}>
-          {results.map((p,i)=>(
-            <div key={i}
-              onClick={()=>onSelect({
-                name:p.product_name||"",
-                brand:p.brands||"",
-                image:p.image_small_url||"",
-                link:"",
-                global_product_id:p.global_product_id||null,
-                ingredients:p.ingredients||[]
-              })}
-              style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderBottom:"1px solid #f0e0d4",cursor:"pointer",background:"#fff8f3"}}
-              onMouseEnter={e=>e.currentTarget.style.background="#fdf0e8"}
-              onMouseLeave={e=>e.currentTarget.style.background="#fff8f3"}>
-              {p.image_small_url
-                ?<img src={p.image_small_url} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:8,flexShrink:0}}/>
-                :<div style={{width:36,height:36,borderRadius:8,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",flexShrink:0}}>{category==="skin"?"🌿":category==="treatment"?"💉":"✨"}</div>
-              }
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:".82rem",color:"#3a2e27",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.product_name}</div>
-                <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  {p.brands&&<span style={{fontSize:".72rem",color:"#a08070"}}>{p.brands}</span>}
-                  {p._source==="global"&&<span style={{fontSize:".62rem",background:p.ingredients?.length?"#e8f4e8":"#f0e8e0",color:p.ingredients?.length?"#5a8a5a":"#a08070",borderRadius:6,padding:"1px 6px"}}>{p.ingredients?.length?"✓ ingredients known":"in our DB"}</span>}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      <div style={{fontSize:".7rem",color:"#c0b0a8",textAlign:"center",marginBottom:4}}>or fill in manually ↓</div>
-    </div>
-  );
-}
-
-function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, onBack, onHome, onMenuOpen }) {
+function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill, onSave, onDelete, onBack, onHome, onMenuOpen }) {
   const today = fmt(new Date());
   const thisYear = new Date().getFullYear().toString();
-  const [showForm, setShowForm] = useState(false);
+  const [addMode, setAddMode] = useState(null); // null | "source" | "picker" | "form"
+  const [pickerType, setPickerType] = useState(null); // "products" | "wishlist"
+  const [pickerSearch, setPickerSearch] = useState("");
   const [editP, setEditP] = useState(null);
   const [filterCat, setFilterCat] = useState("all");
-  const [chooseCat, setChooseCat] = useState(false);
   const [openMonths, setOpenMonths] = useState({[today.slice(0,7)]:true});
   const [openYears, setOpenYears] = useState({});
+  const [historyItem, setHistoryItem] = useState(null);
 
-  const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, price:"", quantity:"1", date:today, notes:"", tags:[], image:"" });
-  const startAdd = () => { setChooseCat(true); };
+  const blank = (cat, extra={}) => ({ id:uid(), name:"", brand:"", category:cat, price:"", quantity:"1", date:today, notes:"", tags:[], image:"", link:"", treatment_type:"", product_id:null, ...extra });
 
-  // Handle prefill from wishlist
   useEffect(()=>{
-    if (prefill) { setEditP(prefill); setShowForm(true); setChooseCat(false); onClearPrefill&&onClearPrefill(); }
+    if (prefill) { setEditP({...prefill, price:String(prefill.price||""), quantity:String(prefill.quantity||1), treatment_type:prefill.treatment_type||"", product_id:prefill.product_id||null}); setAddMode("form"); onClearPrefill&&onClearPrefill(); }
   }, [prefill]);
-  const startEdit = p => { setEditP({...p, price:String(p.price), quantity:String(p.quantity)}); setShowForm(true); setChooseCat(false); };
-  const save = () => { if(!editP.name.trim()||!editP.date) return; onSave(editP); setShowForm(false); setEditP(null); };
+
+  const startEdit = p => { setEditP({...p, price:String(p.price), quantity:String(p.quantity||1), treatment_type:p.treatment_type||""}); setAddMode("form"); };
+  const save = () => { if(!editP.name.trim()||!editP.date) return; onSave(editP); setAddMode(null); setEditP(null); };
+  const cancelForm = () => { setAddMode(null); setEditP(null); setPickerType(null); setPickerSearch(""); };
   const toggleMonth = m => setOpenMonths(s=>({...s,[m]:!s[m]}));
   const toggleYear = y => setOpenYears(s=>({...s,[y]:!s[y]}));
 
   const filtered = purchases.filter(p=>filterCat==="all"||p.category===filterCat);
   const grandTotal = filtered.reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
 
-  // Separate current year (live months) from past years (tiles)
   const currentYearPurchases = filtered.filter(p=>p.date.startsWith(thisYear));
   const pastPurchases = filtered.filter(p=>!p.date.startsWith(thisYear));
-
-  // Group current year by month
   const monthGroups = {};
-  currentYearPurchases.forEach(p=>{
-    const m=p.date.slice(0,7);
-    if(!monthGroups[m]) monthGroups[m]=[];
-    monthGroups[m].push(p);
-  });
+  currentYearPurchases.forEach(p=>{ const m=p.date.slice(0,7); if(!monthGroups[m]) monthGroups[m]=[]; monthGroups[m].push(p); });
   const currentMonths = Object.keys(monthGroups).sort((a,b)=>b.localeCompare(a));
-
-  // Group past by year
   const yearGroups = {};
-  pastPurchases.forEach(p=>{
-    const y=p.date.slice(0,4);
-    if(!yearGroups[y]) yearGroups[y]=[];
-    yearGroups[y].push(p);
-  });
+  pastPurchases.forEach(p=>{ const y=p.date.slice(0,4); if(!yearGroups[y]) yearGroups[y]=[]; yearGroups[y].push(p); });
   const pastYears = Object.keys(yearGroups).sort((a,b)=>b.localeCompare(a));
 
-  const PurchaseCard = ({p}) => (
-    <div className="purch-card">
-      {p.image
-        ?<img src={p.image} alt="" style={{width:40,height:40,objectFit:"cover",borderRadius:8,flexShrink:0}}/>
-        :<div style={{fontSize:"1.1rem",flexShrink:0}}>{p.category==="skin"?"🌿":p.category==="treatment"?"💉":"✨"}</div>
-      }
-      <div className="purch-info">
-        <div className="purch-name">{p.name}</div>
-        <div className="purch-meta">{p.brand&&`${p.brand} · `}{p.category} · {parse(p.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})}{p.quantity>1&&` · qty ${p.quantity}`}</div>
-        {p.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>{p.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 8px",color:"#8a6858"}}>{t}</span>)}</div>}
-        {p.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
-      </div>
-      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}}>
-        <div className="purch-price">${((parseFloat(p.price)||0)*(parseInt(p.quantity)||1)).toFixed(2)}</div>
-        <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
-          {p.link&&<button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px",color:"#b07a5e"}} onClick={()=>openUrl(p.link)}>Buy Now</button>}
-          <button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px"}} onClick={()=>startEdit(p)}>Edit</button>
-          <button className="del-btn" style={{fontSize:".68rem"}} onClick={()=>onDelete(p.id)}>✕</button>
-        </div>
-      </div>
-    </div>
-  );
+  const getProductHistory = (p) => {
+    const key = p.name.toLowerCase().trim()+"|"+(p.brand||"").toLowerCase().trim();
+    return purchases.filter(x=>x.name.toLowerCase().trim()+"|"+(x.brand||"").toLowerCase().trim()===key).sort((a,b)=>a.date.localeCompare(b.date));
+  };
+
+  const pickerItems = pickerType==="products"
+    ? (products||[]).filter(p=>!pickerSearch||p.name.toLowerCase().includes(pickerSearch.toLowerCase())||(p.brand||"").toLowerCase().includes(pickerSearch.toLowerCase()))
+    : (wishlist||[]).filter(p=>!pickerSearch||p.name.toLowerCase().includes(pickerSearch.toLowerCase())||(p.brand||"").toLowerCase().includes(pickerSearch.toLowerCase()));
 
   const YearSplit = ({ps}) => {
     const skin=ps.filter(p=>p.category==="skin").reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
@@ -754,20 +675,89 @@ function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, o
     );
   };
 
+  const PURCH_STYLES = `
+    .purch-form{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:16px;padding:18px;margin-bottom:16px}
+    .purch-month-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:12px;cursor:pointer;margin-bottom:6px;transition:background .15s}
+    .purch-month-header:hover{background:#fdf0e8}
+    .year-tile{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:16px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:all .15s}
+    .year-tile:hover{background:#fdf0e8}
+  `;
+
+  // ── Purchase history deep-dive ───────────────────────────────────────────
+  if (historyItem) {
+    const history = getProductHistory(historyItem);
+    const totalSpent = history.reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
+    const dates = history.map(p=>p.date).sort();
+    let avgDays = null;
+    if (dates.length>1) {
+      const gaps=dates.slice(1).map((d,i)=>(parse(d)-parse(dates[i]))/(86400000));
+      avgDays=Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length);
+    }
+    return (
+      <div className="app">
+        <style>{PURCH_STYLES}</style>
+        <div className="header" style={{position:"relative"}}>
+          <button onClick={()=>setHistoryItem(null)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",fontFamily:"'DM Sans',sans-serif",fontSize:".82rem"}}>← Back</button>
+          <div className="header-title"><span>{historyItem.name}</span></div>
+          {onMenuOpen&&<HamburgerBtn onClick={onMenuOpen}/>}
+        </div>
+        {historyItem.brand&&<div style={{fontSize:".78rem",color:"#a08070",marginBottom:16,marginTop:-4}}>{historyItem.brand}</div>}
+        <div style={{display:"flex",gap:10,marginBottom:20}}>
+          {[
+            [history.length, history.length===1?"purchase":"purchases"],
+            ["$"+totalSpent.toFixed(0),"total spent"],
+            avgDays?["~"+avgDays+"d","avg. frequency"]:null
+          ].filter(Boolean).map(([val,lbl],i)=>(
+            <div key={i} style={{flex:1,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"14px 10px",textAlign:"center"}}>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.7rem",color:"#3a2e27",lineHeight:1}}>{val}</div>
+              <div style={{fontSize:".64rem",color:"#a08070",marginTop:4,letterSpacing:".08em",textTransform:"uppercase"}}>{lbl}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",color:"#5a3a27",marginBottom:10,fontStyle:"italic"}}>Purchase history</div>
+        {history.slice().reverse().map(p=>(
+          <div key={p.id} style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <div style={{fontSize:".86rem",color:"#3a2e27"}}>{parse(p.date).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
+              {p.quantity>1&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:1}}>qty {p.quantity}</div>}
+              {p.notes&&<div style={{fontSize:".72rem",color:"#a08070",fontStyle:"italic",marginTop:1}}>{p.notes}</div>}
+            </div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",color:"#b07a5e"}}>${((parseFloat(p.price)||0)*(parseInt(p.quantity)||1)).toFixed(2)}</div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const PurchaseCard = ({p}) => (
+    <div className="purch-card" style={{cursor:"pointer"}} onClick={()=>setHistoryItem(p)}>
+      {p.image
+        ?<img src={p.image} alt="" style={{width:40,height:40,objectFit:"cover",borderRadius:8,flexShrink:0}}/>
+        :<div style={{fontSize:"1.1rem",flexShrink:0}}>{p.category==="skin"?"🌿":p.category==="treatment"?"💉":"✨"}</div>
+      }
+      <div className="purch-info">
+        <div className="purch-name">{p.name}</div>
+        <div className="purch-meta">{p.brand&&`${p.brand} · `}{p.category==="treatment"&&p.treatment_type?`${p.treatment_type} · `:""}{p.category} · {parse(p.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})}{p.quantity>1&&` · qty ${p.quantity}`}</div>
+        {p.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>{p.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 8px",color:"#8a6858"}}>{t}</span>)}</div>}
+        {p.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
+      </div>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}} onClick={e=>e.stopPropagation()}>
+        <div className="purch-price">${((parseFloat(p.price)||0)*(parseInt(p.quantity)||1)).toFixed(2)}</div>
+        <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
+          {p.link&&<button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px",color:"#b07a5e"}} onClick={()=>openUrl(p.link)}>Buy Now</button>}
+          <button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px"}} onClick={()=>startEdit(p)}>Edit</button>
+          <button className="del-btn" style={{fontSize:".68rem"}} onClick={()=>onDelete(p.id)}>✕</button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="app">
-      <style>{`
-        .purch-form{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:16px;padding:18px;margin-bottom:16px}
-        .purch-month-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:12px;cursor:pointer;margin-bottom:6px;transition:background .15s}
-        .purch-month-header:hover{background:#fdf0e8}
-        .year-tile{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:16px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:all .15s}
-        .year-tile:hover{background:#fdf0e8}
-        .grand-total{background:linear-gradient(135deg,#f9ede4,#fdf6f0);border:1.5px solid #e8c8b4;border-radius:14px;padding:14px 18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
-      `}</style>
+      <style>{PURCH_STYLES}</style>
       <div className="header" style={{position:"relative"}}>
         <button onClick={onHome||onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
         <div className="header-title">My <span>Purchases</span></div>
-        <div className="header-sub">Skin · Hair Spending</div>
         {onMenuOpen&&<HamburgerBtn onClick={onMenuOpen}/>}
       </div>
 
@@ -776,85 +766,181 @@ function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, o
           <div style={{fontSize:".68rem",letterSpacing:".12em",textTransform:"uppercase",color:"#a08070",marginBottom:4}}>All Time Spending</div>
           <div style={{display:"flex",alignItems:"baseline",gap:10}}>
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"2.4rem",color:"#3a2e27",lineHeight:1}}>${grandTotal.toFixed(2)}</div>
-            <div style={{fontSize:".76rem",color:"#b07a5e"}}>{filtered.length} product{filtered.length!==1?"s":""}</div>
+            <div style={{fontSize:".76rem",color:"#b07a5e"}}>{filtered.length} purchase{filtered.length!==1?"s":""}</div>
           </div>
         </div>
       )}
 
-      <div style={{display:"flex",gap:8,marginBottom:16}}>
-        {[["all","All"],["skin","🌿"],["hair","✨"],["treatment","💉"]].map(([v,l])=>(
-          <button key={v} className={`period-chip ${filterCat===v?"on":""}`} style={{flex:1,fontSize:".82rem"}} onClick={()=>setFilterCat(v)}>{l}{v!=="all"?" "+v.charAt(0).toUpperCase()+v.slice(1):""}</button>
+      <div style={{display:"flex",gap:6,marginBottom:16}}>
+        {[["all","All"],["skin","🌿 Skin"],["hair","✨ Hair"],["treatment","💉 Treatment"]].map(([v,l])=>(
+          <button key={v} className={`period-chip ${filterCat===v?"on":""}`} style={{flex:1,fontSize:".74rem",padding:"6px 4px"}} onClick={()=>setFilterCat(v)}>{l}</button>
         ))}
       </div>
 
-      {chooseCat&&(
-        <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
-          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:14}}>What did you purchase?</div>
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
-              <button key={cat} onClick={()=>{setEditP(blank(cat));setShowForm(true);setChooseCat(false);}}
-                style={{display:"flex",alignItems:"center",gap:12,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
-                <span style={{fontSize:"1.3rem"}}>{emoji}</span>
-                <span style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>{label} Product</span>
-              </button>
-            ))}
-            <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".78rem",color:"#a08070",cursor:"pointer",marginTop:4,fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
-          </div>
-        </div>
-      )}
+      {/* ── Source picker ── */}
+      {addMode==="source"&&(()=>{
+        const catEmoji = cat => cat==="skin"?"🌿":cat==="treatment"?"💉":"✨";
+        const allProds = [...(products||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)), ...(wishlist||[]).slice().sort((a,b)=>(b.priority||0)-(a.priority||0))];
+        const featured = allProds.slice(0,6);
+        const pickItem = item => {
+          setEditP(blank(item.category||"skin",{name:item.name,brand:item.brand||"",image:item.image||"",link:item.link||"",price:String(item.price||""),product_id:(products||[]).find(p=>p.id===item.id)?item.id:null}));
+          setAddMode("form");
+        };
+        return (
+          <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>What did you purchase?</div>
+              <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070",lineHeight:1}}>×</button>
+            </div>
 
-      {showForm&&editP&&(
+            {/* Products carousel */}
+            <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10}}>Products</div>
+            <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:10,scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch",marginBottom:14}}>
+              {featured.map(item=>(
+                <div key={item.id} onClick={()=>pickItem(item)}
+                  style={{flexShrink:0,width:84,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
+                  <div style={{width:72,height:72,borderRadius:14,overflow:"hidden",background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.6rem",border:"1.5px solid #e8d8cc",flexShrink:0}}>
+                    {(item.image||item.media_url)
+                      ?<img src={item.image||item.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                      :<span>{catEmoji(item.category)}</span>}
+                  </div>
+                  <div style={{fontSize:".64rem",color:"#3a2e27",textAlign:"center",lineHeight:1.25,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",width:"100%"}}>{item.name}</div>
+                </div>
+              ))}
+              {/* See All card */}
+              <div onClick={()=>{setPickerSearch("");setAddMode("allProducts");}}
+                style={{flexShrink:0,width:72,height:72,borderRadius:14,border:"1.5px dashed #c8b0a0",background:"transparent",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,cursor:"pointer",marginTop:0}}>
+                <span style={{fontSize:".7rem",color:"#b07a5e",fontWeight:500}}>See All</span>
+                <span style={{fontSize:".8rem",color:"#b07a5e"}}>›</span>
+              </div>
+            </div>
+
+            {/* Treatment */}
+            <button onClick={()=>{setEditP(blank("treatment"));setAddMode("form");}}
+              style={{display:"flex",alignItems:"center",gap:12,width:"100%",background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
+              <span style={{fontSize:"1.3rem"}}>💉</span>
+              <div>
+                <div style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>Treatment</div>
+                <div style={{fontSize:".72rem",color:"#a08070",marginTop:1}}>Facial, microneedling, and more</div>
+              </div>
+            </button>
+          </div>
+        );
+      })()}
+
+      {/* ── All Products grid ── */}
+      {addMode==="allProducts"&&(()=>{
+        const catEmoji = cat => cat==="skin"?"🌿":cat==="treatment"?"💉":"✨";
+        const allProds = [
+          ...(products||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)),
+          ...(wishlist||[]).slice().sort((a,b)=>(b.priority||0)-(a.priority||0))
+        ];
+        const q = pickerSearch.toLowerCase();
+        const visible = q ? allProds.filter(p=>p.name.toLowerCase().includes(q)||(p.brand||"").toLowerCase().includes(q)) : allProds;
+        const pickItem = item => {
+          setEditP(blank(item.category||"skin",{name:item.name,brand:item.brand||"",image:item.image||"",link:item.link||"",price:String(item.price||""),product_id:(products||[]).find(p=>p.id===item.id)?item.id:null}));
+          setPickerSearch(""); setAddMode("form");
+        };
+        return (
+          <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <button className="ghost-btn" style={{fontSize:".75rem",padding:"4px 10px"}} onClick={()=>setAddMode("source")}>← Back</button>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#7a5c48"}}>All Products</div>
+              <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#a08070"}}>×</button>
+            </div>
+            <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="Search…" value={pickerSearch} onChange={e=>setPickerSearch(e.target.value)} autoFocus/>
+            <div style={{display:"flex",flexWrap:"wrap",gap:10,maxHeight:340,overflowY:"auto"}}>
+              {visible.map(item=>(
+                <div key={item.id} onClick={()=>pickItem(item)}
+                  style={{width:"calc(33.33% - 7px)",display:"flex",flexDirection:"column",alignItems:"center",gap:5,cursor:"pointer"}}>
+                  <div style={{width:"100%",aspectRatio:"1",borderRadius:12,overflow:"hidden",background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem",border:"1.5px solid #e8d8cc"}}>
+                    {(item.image||item.media_url)
+                      ?<img src={item.image||item.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                      :<span>{catEmoji(item.category)}</span>}
+                  </div>
+                  <div style={{fontSize:".64rem",color:"#3a2e27",textAlign:"center",lineHeight:1.2,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",width:"100%"}}>{item.name}</div>
+                </div>
+              ))}
+              {/* Add New square */}
+              <div onClick={()=>{setPickerSearch("");setEditP(blank("skin"));setAddMode("form");}}
+                style={{width:"calc(33.33% - 7px)",display:"flex",flexDirection:"column",alignItems:"center",gap:5,cursor:"pointer"}}>
+                <div style={{width:"100%",aspectRatio:"1",borderRadius:12,border:"1.5px dashed #c8b0a0",background:"transparent",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>
+                  <span style={{fontSize:"1.2rem",color:"#b07a5e"}}>+</span>
+                  <span style={{fontSize:".6rem",color:"#b07a5e",fontWeight:500}}>Add New</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Purchase form ── */}
+      {addMode==="form"&&editP&&(
         <div className="purch-form">
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{purchases.find(p=>p.id===editP.id)?"Edit":"Add"} Purchase</div>
-            <button onClick={()=>{setShowForm(false);setEditP(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+            <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
           </div>
-          <ProductSearch category={editP.category} onSelect={({name,brand,image})=>setEditP(p=>({...p,name,brand,image:image||""}))}/>
-          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editP.name} onChange={e=>setEditP(p=>({...p,name:e.target.value}))}/>
-          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand (optional)" value={editP.brand} onChange={e=>setEditP(p=>({...p,brand:e.target.value}))}/>
-          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL (optional — enables Buy Now)" value={editP.link||""} onChange={e=>setEditP(p=>({...p,link:e.target.value}))}/>
-          <div style={{display:"flex",gap:8,marginBottom:10}}>
-            {["skin","hair","treatment"].map(cat=>(
-              <button key={cat} className={`dow-chip ${editP.category===cat?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".74rem"}}
-                onClick={()=>setEditP(p=>({...p,category:cat}))}>
-                {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
-              </button>
-            ))}
-          </div>
-          <div style={{fontSize:".7rem",color:"#a08070",marginBottom:6,letterSpacing:".08em",textTransform:"uppercase"}}>Product Type</div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-            {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
-              <button key={tag} className={`dow-chip ${(editP.tags||[]).includes(tag)?"on":""}`}
-                style={{fontSize:".74rem",padding:"4px 10px"}}
-                onClick={()=>setEditP(p=>({...p,tags:(p.tags||[]).includes(tag)?(p.tags||[]).filter(t=>t!==tag):[...(p.tags||[]),tag]}))}>
-                {tag}
-              </button>
-            ))}
-          </div>
+
+          {editP.category==="treatment"?(
+            <>
+              <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Treatment name *" value={editP.name} onChange={e=>setEditP(p=>({...p,name:e.target.value}))} autoFocus/>
+              <div style={{display:"flex",gap:8,marginBottom:10}}>
+                {["skin","hair"].map(tp=>(
+                  <button key={tp} className={`dow-chip ${editP.treatment_type===tp?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".78rem"}}
+                    onClick={()=>setEditP(p=>({...p,treatment_type:tp}))}>
+                    {tp==="skin"?"🌿 Skin":"✨ Hair"}
+                  </button>
+                ))}
+              </div>
+            </>
+          ):(
+            <>
+              <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editP.name} onChange={e=>setEditP(p=>({...p,name:e.target.value}))} autoFocus/>
+              <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={editP.brand||""} onChange={e=>setEditP(p=>({...p,brand:e.target.value}))}/>
+              <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={editP.link||""} onChange={e=>setEditP(p=>({...p,link:e.target.value}))}/>
+              <div style={{display:"flex",gap:8,marginBottom:10}}>
+                {["skin","hair","treatment"].map(cat=>(
+                  <button key={cat} className={`dow-chip ${editP.category===cat?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".74rem"}}
+                    onClick={()=>setEditP(p=>({...p,category:cat}))}>
+                    {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
+                  </button>
+                ))}
+              </div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+                {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
+                  <button key={tag} className={`dow-chip ${(editP.tags||[]).includes(tag)?"on":""}`} style={{fontSize:".74rem",padding:"4px 10px"}}
+                    onClick={()=>setEditP(p=>({...p,tags:(p.tags||[]).includes(tag)?(p.tags||[]).filter(t=>t!==tag):[...(p.tags||[]),tag]}))}>
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             <div style={{flex:1}}>
               <div style={{fontSize:".7rem",color:"#a08070",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Price ($)</div>
               <input className="ifield" style={{width:"100%"}} type="number" placeholder="0.00" value={editP.price} onChange={e=>setEditP(p=>({...p,price:e.target.value}))}/>
             </div>
-            <div style={{width:70}}>
+            {editP.category!=="treatment"&&<div style={{width:70}}>
               <div style={{fontSize:".7rem",color:"#a08070",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Qty</div>
               <input className="ifield" style={{width:"100%"}} type="number" min="1" value={editP.quantity} onChange={e=>setEditP(p=>({...p,quantity:e.target.value}))}/>
-            </div>
+            </div>}
             <div style={{flex:1}}>
               <div style={{fontSize:".7rem",color:"#a08070",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Date</div>
               <input className="ifield" style={{width:"100%"}} type="date" value={editP.date} onChange={e=>setEditP(p=>({...p,date:e.target.value}))}/>
             </div>
           </div>
-          <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes (optional)" value={editP.notes} onChange={e=>setEditP(p=>({...p,notes:e.target.value}))}/>
+          <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={editP.notes||""} onChange={e=>setEditP(p=>({...p,notes:e.target.value}))}/>
           <button className="save-btn" onClick={save} disabled={!editP.name.trim()} style={{opacity:editP.name.trim()?1:.4}}>Save Purchase</button>
         </div>
       )}
 
-      {!showForm&&!chooseCat&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={startAdd}>+ Add Purchase</button>}
+      {!addMode&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>setAddMode("source")}>+ Add Purchase</button>}
 
       {filtered.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No purchases yet</div>}
 
-      {/* Current year - live month dropdowns */}
       {currentMonths.map(m=>{
         const ps=monthGroups[m];
         const mTotal=ps.reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
@@ -874,17 +960,13 @@ function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, o
         );
       })}
 
-      {/* Past years - tiles */}
       {pastYears.map(y=>{
         const ps=yearGroups[y];
         const yTotal=ps.reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
         const isOpen=!!openYears[y];
-
-        // Group by month inside year
         const yMonths={};
         ps.forEach(p=>{ const m=p.date.slice(0,7); if(!yMonths[m]) yMonths[m]=[]; yMonths[m].push(p); });
         const sortedYMonths=Object.keys(yMonths).sort((a,b)=>b.localeCompare(a));
-
         return (
           <div key={y} className="year-tile" onClick={()=>toggleYear(y)}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -927,116 +1009,216 @@ function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, o
 
 
 // ── WISHLIST PAGE ──────────────────────────────────────────────
-function WishlistPage({ wishlist, products, onSave, onDelete, onMoveToCart, onBack, onHome, onMenuOpen }) {
+function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, onSavePlanned, onDeletePlanned, onMovePlannedToPurchase, onMoveToCart, onBack, onHome, onMenuOpen }) {
+  const today = fmt(new Date());
+  const [tab, setTab] = useState("wishlist"); // "wishlist" | "staples" | "planned"
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [chooseCat, setChooseCat] = useState(false);
-  const today = fmt(new Date());
+  const [purchasingItem, setPurchasingItem] = useState(null);
+  const [purchaseDate, setPurchaseDate] = useState(today);
+  const [showPlannedForm, setShowPlannedForm] = useState(false);
+  const [newPlanned, setNewPlanned] = useState(null);
 
-  const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, image:"", link:"", notes:"", tags:[], priority:0 });
-  const save = () => { if(!editItem.name.trim()) return; onSave(editItem); setShowForm(false); setEditItem(null); };
+  const blankWish = (cat) => ({ id:uid(), name:"", brand:"", category:cat, image:"", link:"", notes:"", tags:[], priority:0 });
+  const blankPlanned = () => ({ id:uid(), name:"", brand:"", category:"skin", image:"", link:"", price:"", notes:"", product_id:null, wishlist_id:null });
+  const saveWish = () => { if(!editItem.name.trim()) return; onSave(editItem); setShowForm(false); setEditItem(null); };
+  const savePlanned = () => { if(!newPlanned.name.trim()) return; onSavePlanned(newPlanned); setShowPlannedForm(false); setNewPlanned(null); };
 
-  const sorted = [...wishlist].sort((a,b)=>(b.priority||0)-(a.priority||0));
+  const staples = (products||[]).filter(p=>p.is_staple);
+  const sortedWish = [...wishlist].sort((a,b)=>(b.priority||0)-(a.priority||0));
+
+  const WISH_STYLES = `
+    .wish-card{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
+    .wish-card:hover{background:#fdf0e8}
+    .wish-name{font-size:.9rem;font-weight:500;color:#3a2e27;margin-bottom:2px}
+    .wish-meta{font-size:.72rem;color:#a08070}
+    .plan-carousel{display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none}
+    .plan-carousel::-webkit-scrollbar{display:none}
+    .plan-card{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:16px;padding:14px 12px;min-width:152px;max-width:152px;display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;position:relative}
+    .staple-card{background:#fff8f3;border:1.5px solid #e8c8a0;border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:center}
+    .tab-bar{display:flex;gap:0;background:#f0e4d8;border-radius:12px;padding:3px;margin-bottom:18px}
+    .tab-btn{flex:1;padding:7px 4px;border:none;background:transparent;border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.76rem;color:#a08070;transition:all .15s;font-weight:400}
+    .tab-btn.on{background:#fff;color:#3a2e27;font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  `;
 
   return (
     <div className="app">
-      <style>{`
-        .wish-card{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
-        .wish-card:hover{background:#fdf0e8}
-        .wish-name{font-size:.9rem;font-weight:500;color:#3a2e27;margin-bottom:2px}
-        .wish-meta{font-size:.72rem;color:#a08070}
-      `}</style>
+      <style>{WISH_STYLES}</style>
       <div className="header" style={{position:"relative"}}>
         <button onClick={onHome||onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
         <div className="header-title">My <span>Wishlist</span></div>
-        <div className="header-sub">{wishlist.length} item{wishlist.length!==1?"s":""} saved</div>
         {onMenuOpen&&<HamburgerBtn onClick={onMenuOpen}/>}
       </div>
 
-      {chooseCat&&(
-        <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
-          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:14}}>What are you wishing for?</div>
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
-              <button key={cat} onClick={()=>{setEditItem(blank(cat));setShowForm(true);setChooseCat(false);}}
-                style={{display:"flex",alignItems:"center",gap:12,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
-                <span style={{fontSize:"1.3rem"}}>{emoji}</span>
-                <span style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>{label} Product</span>
-              </button>
-            ))}
-            <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".78rem",color:"#a08070",cursor:"pointer",marginTop:4,fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
-          </div>
-        </div>
-      )}
+      <div className="tab-bar">
+        {[["wishlist","Wishlist"],["staples","⭐ Staples"],["planned","📋 Planned"]].map(([v,l])=>(
+          <button key={v} className={`tab-btn${tab===v?" on":""}`} onClick={()=>setTab(v)}>{l}</button>
+        ))}
+      </div>
 
-      {showForm&&editItem&&(
-        <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{wishlist.find(w=>w.id===editItem.id)?"Edit":"Add to"} Wishlist</div>
-            <button onClick={()=>{setShowForm(false);setEditItem(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+      {/* ── WISHLIST TAB ── */}
+      {tab==="wishlist"&&<>
+        {chooseCat&&(
+          <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:14}}>What are you wishing for?</div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
+                <button key={cat} onClick={()=>{setEditItem(blankWish(cat));setShowForm(true);setChooseCat(false);}}
+                  style={{display:"flex",alignItems:"center",gap:12,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+                  <span style={{fontSize:"1.3rem"}}>{emoji}</span>
+                  <span style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>{label} Product</span>
+                </button>
+              ))}
+              <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".78rem",color:"#a08070",cursor:"pointer",marginTop:4}}>Cancel</button>
+            </div>
           </div>
-          <ProductSearch category={editItem.category} onSelect={({name,brand,image,link})=>setEditItem(p=>({...p,name,brand,image:image||"",link:link||""}))}/>
-          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editItem.name} onChange={e=>setEditItem(p=>({...p,name:e.target.value}))}/>
-          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand (optional)" value={editItem.brand} onChange={e=>setEditItem(p=>({...p,brand:e.target.value}))}/>
-          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={editItem.link||""} onChange={e=>setEditItem(p=>({...p,link:e.target.value}))}/>
-          <div style={{display:"flex",gap:8,marginBottom:12}}>
-            {["skin","hair","treatment"].map(cat=>(
-              <button key={cat} className={`dow-chip ${editItem.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
-                onClick={()=>setEditItem(p=>({...p,category:cat}))}>
-                {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
-              </button>
-            ))}
-          </div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-            {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
-              <button key={tag} className={`dow-chip ${(editItem.tags||[]).includes(tag)?"on":""}`}
-                style={{fontSize:".74rem",padding:"4px 10px"}}
-                onClick={()=>setEditItem(p=>({...p,tags:(p.tags||[]).includes(tag)?(p.tags||[]).filter(t=>t!==tag):[...(p.tags||[]),tag]}))}>
-                {tag}
-              </button>
-            ))}
-          </div>
-          <div style={{marginBottom:12}}>
-            <div style={{fontSize:".7rem",color:"#a08070",marginBottom:6,letterSpacing:".08em",textTransform:"uppercase"}}>Priority</div>
-            <div style={{display:"flex",gap:8}}>
-              {[["0","Low"],["1","Medium"],["2","High 🔥"]].map(([v,l])=>(
-                <button key={v} className={`dow-chip ${String(editItem.priority||0)===v?"on":""}`}
-                  style={{flex:1,fontSize:".74rem",textAlign:"center"}}
+        )}
+
+        {showForm&&editItem&&(
+          <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{wishlist.find(w=>w.id===editItem.id)?"Edit":"Add to"} Wishlist</div>
+              <button onClick={()=>{setShowForm(false);setEditItem(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+            </div>
+            <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editItem.name} onChange={e=>setEditItem(p=>({...p,name:e.target.value}))}/>
+            <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={editItem.brand||""} onChange={e=>setEditItem(p=>({...p,brand:e.target.value}))}/>
+            <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL" value={editItem.link||""} onChange={e=>setEditItem(p=>({...p,link:e.target.value}))}/>
+            <div style={{display:"flex",gap:8,marginBottom:10}}>
+              {["skin","hair","treatment"].map(cat=>(
+                <button key={cat} className={`dow-chip ${editItem.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
+                  onClick={()=>setEditItem(p=>({...p,category:cat}))}>
+                  {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
+                </button>
+              ))}
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+              {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
+                <button key={tag} className={`dow-chip ${(editItem.tags||[]).includes(tag)?"on":""}`} style={{fontSize:".74rem",padding:"4px 10px"}}
+                  onClick={()=>setEditItem(p=>({...p,tags:(p.tags||[]).includes(tag)?(p.tags||[]).filter(t=>t!==tag):[...(p.tags||[]),tag]}))}>
+                  {tag}
+                </button>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:8,marginBottom:12}}>
+              {[["0","Low"],["1","Medium"],["2","🔥 High"]].map(([v,l])=>(
+                <button key={v} className={`dow-chip ${String(editItem.priority||0)===v?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
                   onClick={()=>setEditItem(p=>({...p,priority:parseInt(v)}))}>
                   {l}
                 </button>
               ))}
             </div>
+            <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={editItem.notes||""} onChange={e=>setEditItem(p=>({...p,notes:e.target.value}))}/>
+            <button className="save-btn" onClick={saveWish} disabled={!editItem.name.trim()} style={{opacity:editItem.name.trim()?1:.4}}>Save to Wishlist</button>
           </div>
-          <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes (optional)" value={editItem.notes||""} onChange={e=>setEditItem(p=>({...p,notes:e.target.value}))}/>
-          <button className="save-btn" onClick={save} disabled={!editItem.name.trim()} style={{opacity:editItem.name.trim()?1:.4}}>Save to Wishlist</button>
-        </div>
-      )}
+        )}
 
-      {!showForm&&!chooseCat&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>setChooseCat(true)}>+ Add to Wishlist</button>}
+        {!showForm&&!chooseCat&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>setChooseCat(true)}>+ Add to Wishlist</button>}
+        {sortedWish.length===0&&!showForm&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Your wishlist is empty ✨</div>}
 
-      {sorted.length===0&&!showForm&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Your wishlist is empty ✨</div>}
-
-      {sorted.map(item=>(
-        <div key={item.id} className="wish-card">
-          {item.image
-            ?<img src={item.image} alt="" style={{width:52,height:52,objectFit:"cover",borderRadius:10,flexShrink:0}}/>
-            :<div style={{width:52,height:52,borderRadius:10,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{item.category==="skin"?"🌿":item.category==="treatment"?"💉":"✨"}</div>
-          }
-          <div style={{flex:1,minWidth:0}}>
-            <div className="wish-name">{item.name}</div>
-            <div className="wish-meta">{item.brand&&`${item.brand} · `}{item.category}{item.priority>0&&<span style={{color:item.priority===2?"#c06050":"#b07a5e",marginLeft:4}}>{item.priority===2?"🔥 High":"Medium"}</span>}</div>
-            {item.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>{item.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 8px",color:"#8a6858"}}>{t}</span>)}</div>}
-            {item.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:4,fontStyle:"italic"}}>{item.notes}</div>}
-            <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
-              {item.link&&<button onClick={()=>openUrl(item.link)} style={{background:"#b07a5e",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
-              <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>onMoveToCart(item)}>✓ Mark Purchased</button>
-              <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setEditItem({...item});setShowForm(true);}}>Edit</button>
-              <button className="del-btn" style={{fontSize:".74rem"}} onClick={()=>onDelete(item.id)}>✕</button>
+        {sortedWish.map(item=>(
+          <div key={item.id} className="wish-card">
+            {item.image
+              ?<img src={item.image} alt="" style={{width:52,height:52,objectFit:"cover",borderRadius:10,flexShrink:0}}/>
+              :<div style={{width:52,height:52,borderRadius:10,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{item.category==="skin"?"🌿":item.category==="treatment"?"💉":"✨"}</div>
+            }
+            <div style={{flex:1,minWidth:0}}>
+              <div className="wish-name">{item.name}</div>
+              <div className="wish-meta">{item.brand&&`${item.brand} · `}{item.category}{item.priority>0&&<span style={{color:item.priority===2?"#c06050":"#b07a5e",marginLeft:4}}>{item.priority===2?"🔥 High":"Medium"}</span>}</div>
+              {item.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>{item.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 8px",color:"#8a6858"}}>{t}</span>)}</div>}
+              {item.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:4,fontStyle:"italic"}}>{item.notes}</div>}
+              <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+                {item.link&&<button onClick={()=>openUrl(item.link)} style={{background:"#b07a5e",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
+                <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>onMoveToCart(item)}>✓ Purchased</button>
+                <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setNewPlanned({...blankPlanned(),name:item.name,brand:item.brand||"",category:item.category||"skin",image:item.image||"",link:item.link||"",notes:item.notes||"",wishlist_id:item.id});setShowPlannedForm(true);setTab("planned");}}>📋 Plan</button>
+                <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setEditItem({...item});setShowForm(true);}}>Edit</button>
+                <button className="del-btn" style={{fontSize:".74rem"}} onClick={()=>onDelete(item.id)}>✕</button>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </>}
+
+      {/* ── STAPLES TAB ── */}
+      {tab==="staples"&&<>
+        {staples.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No staples yet — mark a product as ⭐ Staple in My Products</div>}
+        {staples.map(p=>(
+          <div key={p.id} className="staple-card">
+            {p.image
+              ?<img src={p.image} alt="" style={{width:52,height:52,objectFit:"cover",borderRadius:10,flexShrink:0}}/>
+              :<div style={{width:52,height:52,borderRadius:10,background:"#f7ece4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{p.category==="skin"?"🌿":"✨"}</div>
+            }
+            <div style={{flex:1,minWidth:0}}>
+              <div className="wish-name">⭐ {p.name}</div>
+              <div className="wish-meta">{p.brand&&`${p.brand} · `}{p.category}{p.price&&` · $${p.price}`}</div>
+              {p.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
+              <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+                {p.link&&<button onClick={()=>openUrl(p.link)} style={{background:"#b07a5e",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
+                <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setNewPlanned({...blankPlanned(),name:p.name,brand:p.brand||"",category:p.category||"skin",image:p.image||"",link:p.link||"",price:String(p.price||""),product_id:p.id});setShowPlannedForm(true);setTab("planned");}}>📋 Plan to Buy</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </>}
+
+      {/* ── PLANNED PURCHASES TAB ── */}
+      {tab==="planned"&&<>
+        {purchasingItem&&(
+          <div style={{background:"#fff8f3",border:"1.5px solid #b07a5e",borderRadius:16,padding:"18px",marginBottom:16}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#3a2e27",marginBottom:4}}>Mark as purchased?</div>
+            <div style={{fontSize:".8rem",color:"#5a3a27",fontWeight:500,marginBottom:12}}>{purchasingItem.name}</div>
+            <input type="date" className="time-input" style={{width:"100%",marginBottom:14}} value={purchaseDate} onChange={e=>setPurchaseDate(e.target.value)}/>
+            <div style={{display:"flex",gap:8}}>
+              <button className="save-btn" style={{flex:1}} onClick={()=>{onMovePlannedToPurchase(purchasingItem,purchaseDate);setPurchasingItem(null);setPurchaseDate(today);}}>✓ Confirm</button>
+              <button className="ghost-btn" style={{flex:1,padding:"10px 0",fontSize:".82rem"}} onClick={()=>{setPurchasingItem(null);setPurchaseDate(today);}}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {showPlannedForm&&newPlanned&&(
+          <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>Plan to Buy</div>
+              <button onClick={()=>{setShowPlannedForm(false);setNewPlanned(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+            </div>
+            <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={newPlanned.name} onChange={e=>setNewPlanned(p=>({...p,name:e.target.value}))} autoFocus/>
+            <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={newPlanned.brand||""} onChange={e=>setNewPlanned(p=>({...p,brand:e.target.value}))}/>
+            <div style={{display:"flex",gap:8,marginBottom:10}}>
+              {["skin","hair","treatment"].map(cat=>(
+                <button key={cat} className={`dow-chip ${newPlanned.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
+                  onClick={()=>setNewPlanned(p=>({...p,category:cat}))}>
+                  {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
+                </button>
+              ))}
+            </div>
+            <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="💰 Estimated price" value={newPlanned.price||""} onChange={e=>setNewPlanned(p=>({...p,price:e.target.value}))}/>
+            <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={newPlanned.notes||""} onChange={e=>setNewPlanned(p=>({...p,notes:e.target.value}))}/>
+            <button className="save-btn" onClick={savePlanned} disabled={!newPlanned.name.trim()} style={{opacity:newPlanned.name.trim()?1:.4}}>Save Plan</button>
+          </div>
+        )}
+
+        {!showPlannedForm&&!purchasingItem&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>{setNewPlanned(blankPlanned());setShowPlannedForm(true);}}>+ Plan to Buy</button>}
+
+        {(plannedPurchases||[]).length===0&&!showPlannedForm&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Nothing planned yet</div>}
+
+        {(plannedPurchases||[]).length>0&&<div className="plan-carousel">
+          {(plannedPurchases||[]).map(item=>(
+            <div key={item.id} className="plan-card">
+              <button onClick={()=>onDeletePlanned(item.id)} style={{position:"absolute",top:6,right:6,background:"none",border:"none",cursor:"pointer",color:"#c09080",fontSize:".76rem",padding:"2px 5px",lineHeight:1,zIndex:1}}>✕</button>
+              {item.image
+                ?<img src={item.image} alt="" style={{width:72,height:72,borderRadius:12,objectFit:"cover"}}/>
+                :<div style={{width:72,height:72,borderRadius:12,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2rem"}}>{item.category==="skin"?"🌿":item.category==="treatment"?"💉":"✨"}</div>
+              }
+              <div style={{textAlign:"center",width:"100%"}}>
+                <div style={{fontSize:".82rem",fontWeight:500,color:"#3a2e27",lineHeight:1.3,marginBottom:2,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{item.name}</div>
+                {item.brand&&<div style={{fontSize:".68rem",color:"#a08070",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{item.brand}</div>}
+                {item.price&&<div style={{fontSize:".78rem",color:"#b07a5e",marginTop:2,fontWeight:500}}>${item.price}</div>}
+              </div>
+              <button className="save-btn" style={{width:"100%",padding:"7px 0",fontSize:".76rem",marginTop:2}} onClick={()=>{if(!purchasingItem){setPurchasingItem(item);setPurchaseDate(today);}}}>✓ Purchased</button>
+            </div>
+          ))}
+        </div>}
+      </>}
     </div>
   );
 }
@@ -1540,13 +1722,30 @@ function CompareRoutines({ snapshots, products, entries, onClose }) {
 function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
   // Own internal state — never re-mounts on parent re-render, so focus is never lost
   const [p, setP] = useState(initialData);
+  const mediaRef = useRef(null);
+  const handleMediaFile = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const max = 900; let w=img.width, h=img.height;
+        if(w>max||h>max){if(w>h){h=Math.round(h*max/w);w=max;}else{w=Math.round(w*max/h);h=max;}}
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        setP(prev=>({...prev, media_url: canvas.toDataURL('image/jpeg',0.78)}));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
   return (
     <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
         <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{isEditingProd?"Edit Product":"Add Product"}</div>
         <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
       </div>
-      {!isEditingProd&&<ProductSearch category={p.category} onSelect={({name,brand,image,link,global_product_id,ingredients})=>setP(prev=>({...prev,name,brand,image:image||"",link:link||"",global_product_id:global_product_id||null,ingredients:ingredients||[]}))}/>}
       <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name" value={p.name} onChange={e=>setP(prev=>({...prev,name:e.target.value}))} autoFocus/>
       <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={p.brand||""} onChange={e=>setP(prev=>({...prev,brand:e.target.value}))}/>
       {isEditingProd&&<div style={{fontSize:".64rem",color:"#c0a898",fontStyle:"italic",marginTop:-6,marginBottom:10}}>Name and brand changes apply across your routine history.</div>}
@@ -1583,58 +1782,69 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
         const raw = p.frequency||"";
         const isDaily = raw==="Daily";
         const match = raw.match(/^(\d+)x (week|month)$/);
-        const count = match?parseInt(match[1]):(isDaily?1:1);
+        const count = match?parseInt(match[1]):1;
         const period = match?match[2]:(isDaily?"day":"week");
         const enabled = !!raw;
         const setFreq = (c,per) => {
           if (per==="day") setP(prev=>({...prev,frequency:"Daily"}));
           else setP(prev=>({...prev,frequency:c+"x "+per}));
         };
-        const bump = (delta) => {
-          const next = Math.min(7,Math.max(1,count+delta));
-          setFreq(next, period==="day"?"week":period);
-        };
+        const bump = delta => setFreq(Math.min(7,Math.max(1,count+delta)), period==="day"?"week":period);
         return (
-          <div style={{marginBottom:12}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-              <div style={{fontSize:".66rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase"}}>Frequency</div>
-              {enabled&&<button onClick={()=>setP(prev=>({...prev,frequency:""}))} style={{background:"none",border:"none",fontSize:".66rem",color:"#c0a898",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",padding:0}}>Clear</button>}
-            </div>
-            <div style={{display:"flex",gap:6,alignItems:"center"}}>
-              {/* Period selector */}
-              {["day","week","month"].map(per=>(
-                <button key={per} onClick={()=>{ setP(prev=>({...prev,frequency:""})); setFreq(per==="day"?1:count,per); }}
-                  style={{flex:1,padding:"8px 4px",borderRadius:10,border:"1.5px solid",cursor:"pointer",
-                    fontFamily:"'DM Sans',sans-serif",fontSize:".74rem",fontWeight:500,
-                    background:enabled&&period===per?"#b07a5e":"#fff8f3",
-                    color:enabled&&period===per?"#fff":"#a08070",
-                    borderColor:enabled&&period===per?"#b07a5e":"#e8d8cc",
-                    transition:"all .15s"}}>
-                  {per==="day"?"Daily":per==="week"?"Weekly":"Monthly"}
-                </button>
-              ))}
-            </div>
-            {/* Count stepper — only for week/month */}
-            {enabled&&period!=="day"&&(
-              <div style={{display:"flex",alignItems:"center",gap:10,marginTop:10,justifyContent:"center"}}>
-                <button onClick={()=>bump(-1)} disabled={count<=1}
-                  style={{width:32,height:32,borderRadius:"50%",border:"1.5px solid #e8d8cc",background:"#fff8f3",
-                    color:count<=1?"#d0c0b8":"#7a5c48",cursor:count<=1?"default":"pointer",fontSize:"1.1rem",
-                    display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif"}}>−</button>
-                <div style={{minWidth:64,textAlign:"center"}}>
-                  <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.6rem",color:"#3a2e27",lineHeight:1}}>{count}</span>
-                  <span style={{fontSize:".68rem",color:"#a08070",marginLeft:5}}>× per {period}</span>
-                </div>
-                <button onClick={()=>bump(1)} disabled={count>=7}
-                  style={{width:32,height:32,borderRadius:"50%",border:"1.5px solid #e8d8cc",background:"#fff8f3",
-                    color:count>=7?"#d0c0b8":"#7a5c48",cursor:count>=7?"default":"pointer",fontSize:"1.1rem",
-                    display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif"}}>+</button>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
+            <span style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase",flexShrink:0}}>Freq</span>
+            <div style={{flex:1,display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end"}}>
+              {enabled&&period!=="day"&&(
+                <>
+                  <button onClick={()=>bump(-1)} disabled={count<=1}
+                    style={{width:24,height:24,borderRadius:"50%",border:"1px solid #e0cfc4",background:"#fff",color:count<=1?"#d0c0b8":"#7a5c48",cursor:count<=1?"default":"pointer",fontSize:".9rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>−</button>
+                  <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",color:"#3a2e27",minWidth:14,textAlign:"center"}}>{count}</span>
+                  <span style={{fontSize:".62rem",color:"#a08070"}}>×</span>
+                  <button onClick={()=>bump(1)} disabled={count>=7}
+                    style={{width:24,height:24,borderRadius:"50%",border:"1px solid #e0cfc4",background:"#fff",color:count>=7?"#d0c0b8":"#7a5c48",cursor:count>=7?"default":"pointer",fontSize:".9rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
+                </>
+              )}
+              <div style={{display:"flex",gap:4}}>
+                {["day","week","month"].map(per=>(
+                  <button key={per} onClick={()=>setFreq(per==="day"?1:count,per)}
+                    style={{padding:"4px 10px",borderRadius:7,border:"1px solid",cursor:"pointer",
+                      fontFamily:"'DM Sans',sans-serif",fontSize:".68rem",fontWeight:500,
+                      background:enabled&&period===per?"#b07a5e":"transparent",
+                      color:enabled&&period===per?"#fff":"#a08070",
+                      borderColor:enabled&&period===per?"#b07a5e":"#ddd0c4",transition:"all .12s"}}>
+                    {per==="day"?"Daily":per==="week"?"Wkly":"Mnth"}
+                  </button>
+                ))}
+                {enabled&&<button onClick={()=>setP(prev=>({...prev,frequency:""}))}
+                  style={{padding:"4px 6px",borderRadius:7,border:"1px solid #ddd0c4",cursor:"pointer",background:"transparent",color:"#c0a898",fontSize:".68rem"}}>✕</button>}
               </div>
-            )}
+            </div>
           </div>
         );
       })()}
-      <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={p.notes||""} onChange={e=>setP(prev=>({...prev,notes:e.target.value}))}/>
+      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Notes" value={p.notes||""} onChange={e=>setP(prev=>({...prev,notes:e.target.value}))}/>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
+        {p.media_url
+          ?<img src={p.media_url} alt="" style={{width:36,height:36,borderRadius:6,objectFit:"cover",border:"1px solid #e8d8cc",flexShrink:0}}/>
+          :<div style={{width:36,height:36,borderRadius:6,background:"#ede4dc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",flexShrink:0}}>📷</div>
+        }
+        <div style={{flex:1}}>
+          <div style={{fontSize:".66rem",color:"#a08070",letterSpacing:".06em",textTransform:"uppercase",marginBottom:1}}>My Photo</div>
+          <div style={{fontSize:".6rem",color:"#c0a898"}}>Swipes with link image in header</div>
+        </div>
+        <button onClick={()=>mediaRef.current.click()}
+          style={{background:"none",border:"1px solid #e0cfc4",borderRadius:7,padding:"5px 10px",fontSize:".68rem",color:"#7a5c48",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",flexShrink:0}}>
+          {p.media_url?"Change":"Add"}
+        </button>
+        {p.media_url&&<button onClick={()=>setP(prev=>({...prev,media_url:""}))}
+          style={{background:"none",border:"none",color:"#c0a898",fontSize:".8rem",cursor:"pointer",padding:"4px",flexShrink:0}}>✕</button>}
+        <input ref={mediaRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleMediaFile(e.target.files[0])}/>
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
+        <span style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase",flex:1}}>⭐ Staple</span>
+        <span style={{fontSize:".7rem",color:"#a08070",marginRight:6}}>{p.is_staple?"Yes — go-to repurchase":"No"}</span>
+        <Toggle on={!!p.is_staple} onChange={v=>setP(prev=>({...prev,is_staple:v}))}/>
+      </div>
       <button className="save-btn" onClick={()=>onSave(p)} disabled={!p.name.trim()} style={{opacity:p.name.trim()?1:.4}}>
         {isEditingProd?"Save Changes":"Add to My Routine"}
       </button>
@@ -1642,7 +1852,174 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
   );
 }
 
-function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onUpdateSnapProduct, onUpdateSnapProductName, onRemoveFromSnapshot, onFinalizeBase, onDeleteSnapshot, onFetchIngredients, onBack, onHome, onMenuOpen }) {
+function SlimEditForm({ initialData, onSave, onClose }) {
+  const [p, setP] = useState(initialData);
+  const fileRef = useRef(null);
+  const mediaRef = useRef(null);
+  const handleMediaUpload = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const max = 900; let w=img.width,h=img.height;
+        if(w>max||h>max){if(w>h){h=Math.round(h*max/w);w=max;}else{w=Math.round(w*max/h);h=max;}}
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        setP(prev=>({...prev, media_url: canvas.toDataURL('image/jpeg',0.78)}));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+  const raw = p.frequency||"";
+  const isDaily = raw==="Daily";
+  const match = raw.match(/^(\d+)x (week|month)$/);
+  const count = match?parseInt(match[1]):1;
+  const period = match?match[2]:(isDaily?"day":"week");
+  const enabled = !!raw;
+  const setFreq = (c,per) => {
+    if (per==="day") setP(prev=>({...prev,frequency:"Daily"}));
+    else setP(prev=>({...prev,frequency:c+"x "+per}));
+  };
+  const bump = delta => setFreq(Math.min(7,Math.max(1,count+delta)), period==="day"?"week":period);
+  const catLabel = p.category==="skin"?"Skin":p.category==="treatment"?"Treatment":"Hair";
+  const handleImageFile = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const max = 900;
+        let w = img.width, h = img.height;
+        if (w > max || h > max) { if (w>h){h=Math.round(h*max/w);w=max;}else{w=Math.round(w*max/h);h=max;} }
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        setP(prev=>({...prev, userImage: canvas.toDataURL('image/jpeg',0.78)}));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+  const displayImage = p.userImage || p.image;
+  return (
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal" style={{padding:"24px 22px 28px"}} onClick={e=>e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:20}}>
+          {displayImage&&<img src={displayImage} alt="" style={{width:52,height:52,borderRadius:9,objectFit:"cover",flexShrink:0,border:"1px solid #f0e0d4"}}/>}
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",color:"#3a2e27",lineHeight:1.1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
+            {p.brand&&<div style={{fontSize:".74rem",color:"#a08070",marginTop:1}}>{p.brand}</div>}
+          </div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}}>
+            <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#c0a898",lineHeight:1,padding:0}}>×</button>
+            <div style={{background:"#f7f0ea",borderRadius:5,padding:"2px 8px",fontSize:".6rem",color:"#b07a5e",letterSpacing:".06em",textTransform:"uppercase",fontWeight:600}}>{catLabel}</div>
+          </div>
+        </div>
+
+        {/* Fields */}
+        <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:16}}>
+          <input className="ifield" style={{width:"100%"}} placeholder="Product name" value={p.name} onChange={e=>setP(prev=>({...prev,name:e.target.value}))} autoFocus/>
+          <input className="ifield" style={{width:"100%"}} placeholder="Brand" value={p.brand||""} onChange={e=>setP(prev=>({...prev,brand:e.target.value}))}/>
+          <div style={{display:"flex",gap:8}}>
+            <input className="ifield" style={{flex:1}} placeholder="Product URL" value={p.link||""} onChange={e=>setP(prev=>({...prev,link:e.target.value}))}/>
+            <input className="ifield" style={{width:80}} placeholder="Price" type="number" min="0" step="0.01" value={p.price||""} onChange={e=>setP(prev=>({...prev,price:e.target.value}))}/>
+          </div>
+        </div>
+
+        {/* Frequency — single compact row */}
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
+          <span style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase",flexShrink:0}}>Frequency</span>
+          <div style={{flex:1,display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end"}}>
+            {enabled&&period!=="day"&&(
+              <>
+                <button onClick={()=>bump(-1)} disabled={count<=1}
+                  style={{width:24,height:24,borderRadius:"50%",border:"1px solid #e0cfc4",background:"#fff",color:count<=1?"#d0c0b8":"#7a5c48",cursor:count<=1?"default":"pointer",fontSize:".9rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>−</button>
+                <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",color:"#3a2e27",minWidth:14,textAlign:"center"}}>{count}</span>
+                <span style={{fontSize:".62rem",color:"#a08070"}}>×</span>
+                <button onClick={()=>bump(1)} disabled={count>=7}
+                  style={{width:24,height:24,borderRadius:"50%",border:"1px solid #e0cfc4",background:"#fff",color:count>=7?"#d0c0b8":"#7a5c48",cursor:count>=7?"default":"pointer",fontSize:".9rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
+              </>
+            )}
+            <div style={{display:"flex",gap:4}}>
+              {["day","week","month"].map(per=>(
+                <button key={per} onClick={()=>setFreq(per==="day"?1:count,per)}
+                  style={{padding:"4px 10px",borderRadius:7,border:"1px solid",cursor:"pointer",
+                    fontFamily:"'DM Sans',sans-serif",fontSize:".68rem",fontWeight:500,
+                    background:enabled&&period===per?"#b07a5e":"transparent",
+                    color:enabled&&period===per?"#fff":"#a08070",
+                    borderColor:enabled&&period===per?"#b07a5e":"#ddd0c4",transition:"all .12s"}}>
+                  {per==="day"?"Daily":per==="week"?"Wkly":"Mnth"}
+                </button>
+              ))}
+              {enabled&&<button onClick={()=>setP(prev=>({...prev,frequency:""}))}
+                style={{padding:"4px 6px",borderRadius:7,border:"1px solid #ddd0c4",cursor:"pointer",background:"transparent",color:"#c0a898",fontSize:".68rem"}}>✕</button>}
+            </div>
+          </div>
+        </div>
+
+        {/* Photo attachment */}
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
+          {displayImage
+            ?<img src={displayImage} alt="" style={{width:36,height:36,borderRadius:6,objectFit:"cover",border:"1px solid #e8d8cc",flexShrink:0}}/>
+            :<div style={{width:36,height:36,borderRadius:6,background:"#ede4dc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",flexShrink:0}}>📷</div>
+          }
+          <div style={{flex:1}}>
+            <div style={{fontSize:".66rem",color:"#a08070",letterSpacing:".06em",textTransform:"uppercase",marginBottom:2}}>Product Photo</div>
+            <div style={{fontSize:".62rem",color:"#c0a898"}}>Used if no image from link</div>
+          </div>
+          <button onClick={()=>fileRef.current.click()}
+            style={{background:"none",border:"1px solid #e0cfc4",borderRadius:7,padding:"5px 10px",fontSize:".68rem",color:"#7a5c48",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",flexShrink:0}}>
+            {displayImage?"Change":"Add"}
+          </button>
+          {p.userImage&&<button onClick={()=>setP(prev=>({...prev,userImage:null}))}
+            style={{background:"none",border:"none",color:"#c0a898",fontSize:".8rem",cursor:"pointer",padding:"4px",flexShrink:0}}>✕</button>}
+          <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleImageFile(e.target.files[0])}/>
+        </div>
+
+        <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Notes" value={p.notes||""} onChange={e=>setP(prev=>({...prev,notes:e.target.value}))}/>
+
+        {/* My Photo — for header swipe alongside link image */}
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
+          {p.media_url
+            ?<img src={p.media_url} alt="" style={{width:36,height:36,borderRadius:6,objectFit:"cover",border:"1px solid #e8d8cc",flexShrink:0}}/>
+            :<div style={{width:36,height:36,borderRadius:6,background:"#ede4dc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",flexShrink:0}}>📷</div>
+          }
+          <div style={{flex:1}}>
+            <div style={{fontSize:".66rem",color:"#a08070",letterSpacing:".06em",textTransform:"uppercase",marginBottom:1}}>My Photo</div>
+            <div style={{fontSize:".6rem",color:"#c0a898"}}>Swipes with link image in header</div>
+          </div>
+          <button onClick={()=>mediaRef.current.click()}
+            style={{background:"none",border:"1px solid #e0cfc4",borderRadius:7,padding:"5px 10px",fontSize:".68rem",color:"#7a5c48",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",flexShrink:0}}>
+            {p.media_url?"Change":"Add"}
+          </button>
+          {p.media_url&&<button onClick={()=>setP(prev=>({...prev,media_url:""}))}
+            style={{background:"none",border:"none",color:"#c0a898",fontSize:".8rem",cursor:"pointer",padding:"4px",flexShrink:0}}>✕</button>}
+          <input ref={mediaRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleMediaUpload(e.target.files[0])}/>
+        </div>
+
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
+          <span style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase",flex:1}}>⭐ Staple</span>
+          <span style={{fontSize:".7rem",color:"#a08070",marginRight:6}}>{p.is_staple?"Yes — go-to repurchase":"No"}</span>
+          <Toggle on={!!p.is_staple} onChange={v=>setP(prev=>({...prev,is_staple:v}))}/>
+        </div>
+
+        <button onClick={()=>onSave(p)} disabled={!p.name.trim()}
+          style={{width:"100%",padding:"12px",background:p.name.trim()?"#b07a5e":"#e8d8cc",border:"none",borderRadius:12,
+            color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:".84rem",fontWeight:600,cursor:p.name.trim()?"pointer":"default",
+            letterSpacing:".04em",transition:"background .15s"}}>
+          Save Changes
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onUpdateSnapProduct, onUpdateSnapProductName, onRemoveFromSnapshot, onFinalizeBase, onDeleteSnapshot, onFetchIngredients, onSaveProductOrder, onUpdateSnapProductTimeOfDay, onBack, onHome, onMenuOpen }) {
   const [tab, setTab] = useState("current");
   const [editMode, setEditMode] = useState(false); // draft edit mode on finalized routine
   const [showForm, setShowForm] = useState(false);
@@ -1654,12 +2031,17 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   const [confirmFinalize, setConfirmFinalize] = useState(false);
   const [routineSuccess, setRoutineSuccess] = useState(null); // {title, body}
   const [newProductAlert, setNewProductAlert] = useState(null); // {data, originalId}
+  const [removeConfirm, setRemoveConfirm] = useState(null); // snapProdId pending removal
   const [showCompare, setShowCompare] = useState(false);
   const [draftChanges, setDraftChanges] = useState(null); // {added:[], removed:[], edited:[]} tracked during edit mode
   const [unsavedWarning, setUnsavedWarning] = useState(false);
   const [pendingNav, setPendingNav] = useState(null); // callback to run after discard/save
   const touchStartRef = useRef(null);
   const carouselScrollRef = useRef(null);
+  const draftChangesRef = useRef(null);
+  const dragItem = useRef(null);
+  const [dragTargetId, setDragTargetId] = useState(null);
+  const [showAmPm, setShowAmPm] = useState(false);
 
   // Scroll carousel to correct position when featured view opens or category changes
   useLayoutEffect(() => {
@@ -1685,14 +2067,15 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
           name:      sp.name_snapshot  || prod.name,
           brand:     sp.brand_snapshot || prod.brand,
           frequency: sp.frequency      || prod.frequency,
+          time_of_day: sp.time_of_day  || 'all',
         };
       }).filter(Boolean)
     : [];
-  const skinProds = snapProducts.filter(p=>p.category==="skin");
-  const hairProds = snapProducts.filter(p=>p.category==="hair");
-  const txProds   = snapProducts.filter(p=>p.category==="treatment");
+  const skinProds = snapProducts.filter(p=>p.category==="skin").sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const hairProds = snapProducts.filter(p=>p.category==="hair").sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const txProds   = snapProducts.filter(p=>p.category==="treatment").sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
 
-  const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, image:"", link:"", price:"", notes:"", tags:[], frequency:"" });
+  const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, image:"", link:"", price:"", notes:"", tags:[], frequency:"", is_staple:false });
 
   const handleCloseForm = useCallback(() => { setShowForm(false); setEditProd(null); setIsEditingProd(false); }, []);
   const handleSetEditProd = useCallback((fn) => setEditProd(fn), []);
@@ -1710,13 +2093,16 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   };
 
   const enterEditMode = () => {
+    const initial = {added:[], removed:[], edited:[]};
     setEditMode(true);
-    setDraftChanges({added:[], removed:[], edited:[]});
+    setDraftChanges(initial);
+    draftChangesRef.current = initial;
   };
 
   const discardChanges = () => {
     setEditMode(false);
     setDraftChanges(null);
+    draftChangesRef.current = null;
     setShowForm(false);
     setEditProd(null);
     setUnsavedWarning(false);
@@ -1784,7 +2170,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
         if (Object.keys(spUpdates).length) await onUpdateSnapProduct(sp.id, spUpdates);
       }
 
-      if (draftChanges) setDraftChanges(prev=>({...prev, edited:[...prev.edited, data.name]}));
+      const cur1 = draftChangesRef.current; if (cur1) { const u={...cur1,edited:[...cur1.edited,data.name]}; draftChangesRef.current=u; setDraftChanges(u); }
     } else {
       // ── Adding a new product ──
       await onSaveProduct(data);
@@ -1792,7 +2178,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
       if (activeSnap) {
         if (!activeSnap.products.find(p=>p.product_id===data.id)) {
           await onAddToSnapshot(activeSnap.id, data.id, meta);
-          if (draftChanges) setDraftChanges(prev=>({...prev, added:[...prev.added, data.name]}));
+          const cur2 = draftChangesRef.current; if (cur2) { const u={...cur2,added:[...cur2.added,data.name]}; draftChangesRef.current=u; setDraftChanges(u); }
         }
       } else {
         const newSnapId = await onOpenSnapshot(true);
@@ -1805,17 +2191,23 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   const removeProduct = async (snapProdId, prodName) => {
     if (!activeSnap) return;
     await onRemoveFromSnapshot(activeSnap.id, snapProdId);
-    if (draftChanges) setDraftChanges(prev=>({...prev, removed:[...prev.removed, prodName]}));
+    const cur = draftChangesRef.current;
+    if (cur) {
+      const updated = {...cur, removed:[...cur.removed, prodName]};
+      draftChangesRef.current = updated;
+      setDraftChanges(updated);
+    }
   };
 
   const doFinalize = async () => {
     setConfirmFinalize(false);
+    const changes = draftChangesRef.current;
     if (draftSnap) {
       // First time finalize
       await onFinalizeBase(draftSnap.id);
     } else if (editMode && currentSnap) {
       // Re-finalize after edit
-      const productChanges = (draftChanges?.added?.length||0) + (draftChanges?.removed?.length||0);
+      const productChanges = (changes?.added?.length||0) + (changes?.removed?.length||0);
       if (productChanges > 0) {
         // Products changed — close current snapshot, open new one with current products
         const newSnapId = await onOpenSnapshot(false);
@@ -1830,14 +2222,15 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
         }
         // Notify
         const parts = [];
-        if (draftChanges.added.length) parts.push(`Added: ${draftChanges.added.join(", ")}`);
-        if (draftChanges.removed.length) parts.push(`Removed: ${draftChanges.removed.join(", ")}`);
+        if (changes.added.length) parts.push(`Added: ${changes.added.join(", ")}`);
+        if (changes.removed.length) parts.push(`Removed: ${changes.removed.join(", ")}`);
         setRoutineSuccess({ title: "Routine updated", body: (parts.length ? parts.join(" · ") + ". " : "") + "Your previous routine has been preserved in Snapshot History." });
       }
       // Edits only (link/frequency/notes) — no new snapshot, already saved
     }
     setEditMode(false);
     setDraftChanges(null);
+    draftChangesRef.current = null;
   };
 
   const catEmoji = (cat) => cat==="skin"?"🌿":cat==="treatment"?"💉":"✨";
@@ -1856,22 +2249,42 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
     const txP=prods.filter(p=>p.category==="treatment");
     const startLabel = new Date(snap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
     const endLabel = snap.ended_at ? new Date(snap.ended_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}) : "Present";
-    const MiniCard = ({p,emoji}) => (
-      <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"10px 14px",marginBottom:6,display:"flex",gap:10,alignItems:"center"}}>
-        {p.image?<img src={p.image} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:8,flexShrink:0}}/>:<div style={{width:36,height:36,borderRadius:8,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",flexShrink:0}}>{emoji}</div>}
-        <div><div style={{fontSize:".84rem",fontWeight:500,color:"#3a2e27"}}>{p.name}</div>{p.brand&&<div style={{fontSize:".7rem",color:"#a08070"}}>{p.brand}</div>}</div>
-      </div>
-    );
+    const SnapCatRow = ({cat, label, catProds}) => {
+      if (!catProds.length) return null;
+      return (
+        <div style={{marginBottom:14}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
+            <div style={{fontSize:".64rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070"}}>{label}</div>
+            <div style={{fontSize:".6rem",color:"#c0b0a8"}}>{catProds.length} product{catProds.length!==1?"s":""}</div>
+          </div>
+          <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,scrollbarWidth:"none",WebkitOverflowScrolling:"touch",paddingRight:4}}>
+            {catProds.map(p=>(
+              <div key={p.id} style={{flexShrink:0,width:96,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:13,overflow:"hidden"}}>
+                {(p.image||p.media_url)
+                  ?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:76,objectFit:"cover",display:"block"}}/>
+                  :<div style={{width:"100%",height:76,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem"}}>{catEmoji(cat)}</div>
+                }
+                <div style={{padding:"7px 8px 8px"}}>
+                  <div style={{fontSize:".7rem",fontWeight:500,color:"#3a2e27",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
+                  {p.brand&&<div style={{fontSize:".6rem",color:"#a08070",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.brand}</div>}
+                  {p.frequency&&<div style={{fontSize:".56rem",background:"#f0e8f4",borderRadius:5,padding:"1px 5px",color:"#7a6a8a",display:"inline-block",marginTop:3}}>{p.frequency}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    };
     return (
       <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"16px 18px",marginBottom:12,cursor:"pointer"}} onClick={()=>setOpen(o=>!o)}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
           <div>
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>{startLabel} — {endLabel}</div>
-            <div style={{fontSize:".72rem",color:"#a08070",marginTop:3}}>{prods.length} product{prods.length!==1?"s":""} · {skinP.length} skin · {hairP.length} hair{txP.length>0?` · ${txP.length} treatment`:""}</div>
+            <div style={{fontSize:".72rem",color:"#a08070",marginTop:3}}>{prods.length} product{prods.length!==1?"s":""}{skinP.length>0?` · ${skinP.length} skin`:""}{ hairP.length>0?` · ${hairP.length} hair`:""}{ txP.length>0?` · ${txP.length} treatment`:""}</div>
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
             <button onClick={e=>{e.stopPropagation();setSnapAnalysis(v=>!v);}} style={{background:"none",border:"1px solid #e8d8cc",borderRadius:8,padding:"4px 10px",color:"#a08070",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
-              {snapAnalysis?"Close":"Analyze my routine"}
+              {snapAnalysis?"Close":"Analyze"}
             </button>
             {open&&<button onClick={e=>{e.stopPropagation();setConfirmDel(true);}} style={{background:"none",border:"1px solid #f0c8c0",borderRadius:8,padding:"4px 10px",color:"#c07060",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
               Delete
@@ -1899,10 +2312,10 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
             </button>
           </div>
         </div>}
-        {open&&<div style={{marginTop:14,borderTop:"1px solid #f0e0d4",paddingTop:12}} onClick={e=>e.stopPropagation()}>
-          {skinP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8}}>🌿 Skin</div>{skinP.map(p=><MiniCard key={p.id} p={p} emoji="🌿"/>)}</>}
-          {hairP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8,marginTop:12}}>✨ Hair</div>{hairP.map(p=><MiniCard key={p.id} p={p} emoji="✨"/>)}</>}
-          {txP.length>0&&<><div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8,marginTop:12}}>💉 Treatments</div>{txP.map(p=><MiniCard key={p.id} p={p} emoji="💉"/>)}</>}
+        {open&&<div style={{marginTop:14,borderTop:"1px solid #f0e0d4",paddingTop:14}} onClick={e=>e.stopPropagation()}>
+          <SnapCatRow cat="skin" label="🌿 Skin" catProds={skinP}/>
+          <SnapCatRow cat="hair" label="✨ Hair" catProds={hairP}/>
+          <SnapCatRow cat="treatment" label="💉 Treatments" catProds={txP}/>
         </div>}
       </div>
     );
@@ -1985,9 +2398,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                       {/* Image */}
                       <div style={{position:"relative",height:220,background:"#f0e0d4",
                         display:"flex",alignItems:"center",justifyContent:"center",fontSize:"4rem",overflow:"hidden"}}>
-                        {p.image
-                          ?<img src={p.image} alt="" style={{width:"100%",height:220,objectFit:"cover",display:"block"}}/>
-                          :<div>{catEmoji(featuredView.category)}</div>}
+                        <SwipeableProductImage images={[p.image, p.media_url]} height={220} emoji={catEmoji(featuredView.category)}/>
                         {i===idx&&<button onClick={e=>{e.stopPropagation();openEditForm(p);}}
                           style={{position:"absolute",top:10,right:10,width:30,height:30,borderRadius:"50%",
                             background:"rgba(253,246,240,.92)",border:"1px solid rgba(232,216,204,.8)",
@@ -2008,11 +2419,21 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                         <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.15rem",color:"#3a2e27",lineHeight:1.3,marginBottom:6}}>{p.name}</div>
                         {p.frequency&&<div style={{fontSize:".6rem",background:"#f0e8f4",borderRadius:5,padding:"2px 7px",color:"#7a6a8a",display:"inline-block",marginBottom:6}}>{p.frequency}</div>}
                         {p.notes&&<div style={{fontSize:".7rem",color:"#8a6858",fontStyle:"italic",lineHeight:1.5,marginBottom:10}}>{p.notes}</div>}
-                        {i===idx&&(p.link||isDraft)&&<div style={{display:"flex",gap:7,marginTop:p.notes?0:8}}>
+                        {i===idx&&(p.link||isDraft)&&<div style={{marginTop:p.notes?0:8}}>
                           {p.link&&<button onClick={e=>{e.stopPropagation();openUrl(p.link);}}
-                            style={{flex:1,background:"#b07a5e",color:"#fff",border:"none",borderRadius:9,padding:"9px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500}}>Buy Now</button>}
-                          {isDraft&&<button onClick={async e=>{e.stopPropagation();await removeProduct(p.snapProdId,p.name);setFeaturedView(null);}}
-                            style={{background:"none",color:"#c07060",border:"1.5px solid #f0c8c0",borderRadius:9,padding:"9px 11px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer"}}>Remove</button>}
+                            style={{width:"100%",background:"#b07a5e",color:"#fff",border:"none",borderRadius:9,padding:"9px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500,marginBottom:isDraft?6:0}}>Buy Now</button>}
+                          {isDraft&&(
+                            removeConfirm===p.snapProdId
+                              ? <div style={{display:"flex",gap:6,alignItems:"center",background:"#fff0ee",borderRadius:9,padding:"8px 10px"}}>
+                                  <span style={{flex:1,fontSize:".68rem",color:"#c07060"}}>Remove from routine?</span>
+                                  <button onClick={async e=>{e.stopPropagation();await removeProduct(p.snapProdId,p.name);setFeaturedView(null);setRemoveConfirm(null);}}
+                                    style={{background:"#c07060",border:"none",borderRadius:7,padding:"5px 10px",color:"#fff",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>Yes</button>
+                                  <button onClick={e=>{e.stopPropagation();setRemoveConfirm(null);}}
+                                    style={{background:"none",border:"1px solid #e8d8cc",borderRadius:7,padding:"5px 10px",color:"#a08070",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+                                </div>
+                              : <button onClick={e=>{e.stopPropagation();setRemoveConfirm(p.snapProdId);}}
+                                  style={{width:"100%",background:"none",color:"#c07060",border:"1.5px solid #f0c8c0",borderRadius:9,padding:"8px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",textAlign:"center"}}>Remove from routine</button>
+                          )}
                         </div>}
                       </div>
                     </div>
@@ -2033,12 +2454,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                 </div>
                 <div style={{textAlign:"center",marginTop:5,fontSize:".62rem",color:"#c0b0a8",letterSpacing:".06em"}}>{idx+1} of {catProds.length}</div>
 
-                {/* Edit form — shows below carousel when pencil tapped */}
-                {showForm&&editProd&&(
-                  <div style={{marginTop:16}}>
-                    <ProductForm key={editProd.id} initialData={editProd} isEditingProd={isEditingProd} onSave={save} onClose={handleCloseForm}/>
-                  </div>
-                )}
+                {/* Edit form rendered as bottom sheet — see below MyProductsPage return */}
               </div>
             );
           })()}
@@ -2047,16 +2463,24 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
           {!featuredView&&(
             <>
               {snapProducts.length===0&&!showForm&&!chooseCat&&!isDraft&&(
-                <div style={{textAlign:"center",padding:"48px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No products in your current routine yet</div>
+                <div style={{textAlign:"center",padding:"52px 16px 44px"}}>
+                  <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.9rem",fontWeight:300,fontStyle:"italic",color:"#b07a5e",marginBottom:10}}>Your ritual begins here</div>
+                  <div style={{fontSize:".78rem",color:"#a08070",lineHeight:1.8,marginBottom:28,maxWidth:260,margin:"0 auto 28px"}}>Add your first product to start building a routine you can track, analyze, and look back on.</div>
+                  <button onClick={()=>setChooseCat(true)}
+                    style={{background:"#b07a5e",border:"none",borderRadius:12,padding:"11px 32px",color:"#fff",fontSize:".82rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500,letterSpacing:".04em"}}>
+                    Begin my routine
+                  </button>
+                </div>
               )}
 
-              {(snapProducts.length>0||isDraft)&&(
+              {(snapProducts.length>0||isDraft||chooseCat)&&(
                 <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:20,padding:"18px",marginBottom:16}}>
 
                   {/* Card header: date + action buttons */}
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
                     <div>
-                      {activeSnap&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.05rem",fontStyle:"italic",color:"#5a3a27"}}>{new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})} — Present</div>}
+                      {activeSnap&&<div style={{fontSize:".58rem",letterSpacing:".14em",textTransform:"uppercase",color:"#c0a898",marginBottom:3}}>Current Routine</div>}
+                      {activeSnap&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>Since {new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>}
                       {activeSnap&&<div style={{fontSize:".7rem",color:"#a08070",marginTop:3}}>{snapProducts.length} product{snapProducts.length!==1?"s":""}{skinProds.length>0?` · ${skinProds.length} skin`:""}{ hairProds.length>0?` · ${hairProds.length} hair`:""}{ txProds.length>0?` · ${txProds.length} treatment`:""}</div>}
                       {isDraft&&draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:500,color:"#c07a28",letterSpacing:".04em"}}>Building your routine</div>}
                       {isDraft&&!draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:500,color:"#7a8a5a",letterSpacing:".04em"}}>Editing your routine</div>}
@@ -2075,6 +2499,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                       <RoutineAnalysis products={products} snapProducts={activeSnap.products} entries={entries} dateRange={{start:activeSnap.started_at,end:null}} isCurrent={true} onClose={()=>setShowAnalysis(false)} onFetchIngredients={onFetchIngredients}/>
                     </div>
                   )}
+
 
                   {/* Add product form */}
                   {showForm&&editProd&&<ProductForm key={editProd.id} initialData={editProd} isEditingProd={isEditingProd} onSave={save} onClose={handleCloseForm}/>}
@@ -2108,27 +2533,137 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                   {[["skin","🌿 Skin",skinProds],["hair","✨ Hair",hairProds],["treatment","💉 Treatments",txProds]].filter(([,,p])=>p.length>0).map(([cat,label,prods],ri,arr)=>(
                     <div key={cat} style={{marginBottom:ri<arr.length-1?18:0}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:9}}>
-                        <div style={{fontSize:".66rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070"}}>{label}</div>
+                        <div style={{fontSize:".66rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070"}}>
+                          {label}{isDraft&&<span style={{fontSize:".56rem",color:"#c0b0a8",marginLeft:6,fontStyle:"italic"}}>drag to reorder</span>}
+                        </div>
                         <div style={{fontSize:".62rem",color:"#c0b0a8"}}>{prods.length} product{prods.length!==1?"s":""}</div>
                       </div>
                       <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,scrollbarWidth:"none",WebkitOverflowScrolling:"touch",paddingRight:18,marginRight:-18}}>
-                        {prods.map((p,i)=>(
-                          <div key={p.id} onClick={()=>setFeaturedView({category:cat,index:i})}
-                            style={{flexShrink:0,width:96,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:13,overflow:"hidden",cursor:"pointer"}}>
-                            {p.image
-                              ?<img src={p.image} alt="" style={{width:"100%",height:76,objectFit:"cover",display:"block"}}/>
-                              :<div style={{width:"100%",height:76,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem"}}>{catEmoji(cat)}</div>
-                            }
-                            <div style={{padding:"7px 8px 8px"}}>
-                              <div style={{fontSize:".7rem",fontWeight:500,color:"#3a2e27",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
-                              {p.brand&&<div style={{fontSize:".6rem",color:"#a08070",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.brand}</div>}
-                              {p.frequency&&<div style={{fontSize:".56rem",background:"#f0e8f4",borderRadius:5,padding:"1px 5px",color:"#7a6a8a",display:"inline-block",marginTop:3}}>{p.frequency}</div>}
+                        {prods.map((p,i)=>{
+                          const isBeingDragged = dragItem.current?.id===p.id;
+                          const isDropTarget = dragTargetId===p.id && dragItem.current?.cat===cat && dragItem.current?.id!==p.id;
+                          return (
+                            <div key={p.id}
+                              draggable={isDraft}
+                              onDragStart={isDraft ? e=>{e.dataTransfer.effectAllowed="move"; dragItem.current={id:p.id,cat,i}; setTimeout(()=>setDragTargetId(null),0);} : undefined}
+                              onDragEnd={isDraft ? ()=>{dragItem.current=null; setDragTargetId(null);} : undefined}
+                              onDragOver={isDraft ? e=>{e.preventDefault(); e.dataTransfer.dropEffect="move"; if(dragTargetId!==p.id) setDragTargetId(p.id);} : undefined}
+                              onDragLeave={isDraft ? ()=>setDragTargetId(d=>d===p.id?null:d) : undefined}
+                              onDrop={isDraft ? e=>{
+                                e.preventDefault();
+                                const from = dragItem.current;
+                                if (!from||from.id===p.id||from.cat!==cat){setDragTargetId(null);return;}
+                                const fromIdx = prods.findIndex(x=>x.id===from.id);
+                                const reordered=[...prods];
+                                const [moved]=reordered.splice(fromIdx,1);
+                                reordered.splice(i,0,moved);
+                                onSaveProductOrder(reordered.map((x,idx)=>({id:x.id,sort_order:idx})));
+                                dragItem.current=null; setDragTargetId(null);
+                              } : undefined}
+                              onClick={()=>{ if(!dragItem.current) setFeaturedView({category:cat,index:i}); }}
+                              style={{flexShrink:0,width:96,position:"relative",
+                                background:isDropTarget?"#fdf0e8":"#fff8f3",
+                                border:isDropTarget?"1.5px solid #b07a5e":"1.5px solid #e8d8cc",
+                                borderRadius:13,overflow:"hidden",
+                                cursor:isDraft?"grab":"pointer",
+                                opacity:isBeingDragged?0.4:1,
+                                transition:"opacity .15s,border-color .15s,background .15s"}}>
+                              {isDraft&&<div style={{position:"absolute",top:4,left:4,fontSize:".65rem",color:"rgba(160,128,112,.6)",pointerEvents:"none",zIndex:1}}>⠿</div>}
+                              {(p.image||p.media_url)
+                                ?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:76,objectFit:"cover",display:"block"}}/>
+                                :<div style={{width:"100%",height:76,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem"}}>{catEmoji(cat)}</div>
+                              }
+                              <div style={{padding:"7px 8px 8px"}}>
+                                <div style={{fontSize:".7rem",fontWeight:500,color:"#3a2e27",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
+                                {p.brand&&<div style={{fontSize:".6rem",color:"#a08070",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.brand}</div>}
+                                {p.frequency&&<div style={{fontSize:".56rem",background:"#f0e8f4",borderRadius:5,padding:"1px 5px",color:"#7a6a8a",display:"inline-block",marginTop:3}}>{p.frequency}</div>}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
+
+                  {/* ── Morning & Night Routines ── */}
+                  {!isDraft&&snapProducts.length>0&&(
+                    <div style={{marginTop:20,borderTop:"1.5px solid #f0e4dc",paddingTop:16}}>
+                      <div onClick={()=>setShowAmPm(v=>!v)}
+                        style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",marginBottom:showAmPm?16:0}}>
+                        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>Your Morning & Night Routines</div>
+                        <span style={{color:"#b09080",fontSize:".78rem",lineHeight:1}}>{showAmPm?"▲":"▼"}</span>
+                      </div>
+
+                      {showAmPm&&(
+                        <div>
+                          {/* Two drop zones */}
+                          <div style={{display:"flex",gap:10,marginBottom:16}}>
+                            {/* Morning */}
+                            <div
+                              onDragOver={e=>{e.preventDefault();e.currentTarget.dataset.over="1";e.currentTarget.style.background="#FFFAEC";e.currentTarget.style.borderColor="#E8C840";}}
+                              onDragLeave={e=>{e.currentTarget.style.background="#FFFDF5";e.currentTarget.style.borderColor="#EEE0A8";}}
+                              onDrop={e=>{e.preventDefault();e.currentTarget.style.background="#FFFDF5";e.currentTarget.style.borderColor="#EEE0A8";const id=e.dataTransfer.getData("ampm_id");if(id)onUpdateSnapProductTimeOfDay(id,"am");}}
+                              style={{flex:1,minHeight:110,borderRadius:16,background:"#FFFDF5",border:"1.5px solid #EEE0A8",padding:"12px 10px",transition:"background .15s,border-color .15s"}}>
+                              <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#B08820",marginBottom:10,fontWeight:600}}>☀️ Morning</div>
+                              {snapProducts.filter(p=>p.time_of_day==="am").length===0
+                                ?<div style={{fontSize:".7rem",color:"#D4C888",fontStyle:"italic",textAlign:"center",paddingTop:16}}>Drop products here</div>
+                                :snapProducts.filter(p=>p.time_of_day==="am").map(p=>(
+                                  <div key={p.snapProdId} style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,padding:"5px 8px",background:"rgba(255,255,255,.75)",borderRadius:10,border:"1px solid #F0E8C0"}}>
+                                    <div style={{width:22,height:22,borderRadius:5,overflow:"hidden",flexShrink:0,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".7rem"}}>
+                                      {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{catEmoji(p.category)}</span>}
+                                    </div>
+                                    <span style={{flex:1,fontSize:".7rem",color:"#3a2e27",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+                                    <button onClick={()=>onUpdateSnapProductTimeOfDay(p.snapProdId,"all")} style={{background:"none",border:"none",color:"#C8B060",cursor:"pointer",fontSize:".72rem",padding:"2px 4px",lineHeight:1,flexShrink:0}}>×</button>
+                                  </div>
+                                ))
+                              }
+                            </div>
+                            {/* Night */}
+                            <div
+                              onDragOver={e=>{e.preventDefault();e.currentTarget.style.background="#F2F0FA";e.currentTarget.style.borderColor="#A898D8";}}
+                              onDragLeave={e=>{e.currentTarget.style.background="#F8F6FC";e.currentTarget.style.borderColor="#D4CEEC";}}
+                              onDrop={e=>{e.preventDefault();e.currentTarget.style.background="#F8F6FC";e.currentTarget.style.borderColor="#D4CEEC";const id=e.dataTransfer.getData("ampm_id");if(id)onUpdateSnapProductTimeOfDay(id,"pm");}}
+                              style={{flex:1,minHeight:110,borderRadius:16,background:"#F8F6FC",border:"1.5px solid #D4CEEC",padding:"12px 10px",transition:"background .15s,border-color .15s"}}>
+                              <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#6858A0",marginBottom:10,fontWeight:600}}>🌙 Night</div>
+                              {snapProducts.filter(p=>p.time_of_day==="pm").length===0
+                                ?<div style={{fontSize:".7rem",color:"#B8B0D8",fontStyle:"italic",textAlign:"center",paddingTop:16}}>Drop products here</div>
+                                :snapProducts.filter(p=>p.time_of_day==="pm").map(p=>(
+                                  <div key={p.snapProdId} style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,padding:"5px 8px",background:"rgba(255,255,255,.75)",borderRadius:10,border:"1px solid #D8D0F0"}}>
+                                    <div style={{width:22,height:22,borderRadius:5,overflow:"hidden",flexShrink:0,background:"#e8e4f8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".7rem"}}>
+                                      {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{catEmoji(p.category)}</span>}
+                                    </div>
+                                    <span style={{flex:1,fontSize:".7rem",color:"#3a2e27",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+                                    <button onClick={()=>onUpdateSnapProductTimeOfDay(p.snapProdId,"all")} style={{background:"none",border:"none",color:"#9888C8",cursor:"pointer",fontSize:".72rem",padding:"2px 4px",lineHeight:1,flexShrink:0}}>×</button>
+                                  </div>
+                                ))
+                              }
+                            </div>
+                          </div>
+
+                          {/* Draggable product pool */}
+                          <div style={{fontSize:".58rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080",marginBottom:10}}>Your products — drag to assign</div>
+                          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                            {snapProducts.map(p=>{
+                              const tod=p.time_of_day||"all";
+                              const badge=tod==="am"?{icon:"☀️",bg:"#FFFBEE",border:"#E8D060",col:"#A07810"}:tod==="pm"?{icon:"🌙",bg:"#F4F0FC",border:"#C0B8E8",col:"#6858A0"}:null;
+                              return (
+                                <div key={p.snapProdId}
+                                  draggable
+                                  onDragStart={e=>{e.dataTransfer.setData("ampm_id",p.snapProdId);e.dataTransfer.effectAllowed="move";}}
+                                  style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px 5px 6px",background:badge?badge.bg:"#fff8f3",border:`1.5px solid ${badge?badge.border:"#e8d8cc"}`,borderRadius:20,cursor:"grab",userSelect:"none",transition:"opacity .15s"}}>
+                                  <div style={{width:22,height:22,borderRadius:5,overflow:"hidden",flexShrink:0,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".65rem"}}>
+                                    {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{catEmoji(p.category)}</span>}
+                                  </div>
+                                  <span style={{fontSize:".7rem",color:"#3a2e27",maxWidth:80,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+                                  {badge&&<span style={{fontSize:".62rem",color:badge.col,flexShrink:0}}>{badge.icon}</span>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                 </div>
               )}
@@ -2152,9 +2687,34 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
               ✦ Compare Routines
             </button>
           )}
-          {pastSnaps.length===0&&!showCompare&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No past snapshots yet — they appear here when your routine changes</div>}
-          {!showCompare&&pastSnaps.map(snap=><SnapCard key={snap.id} snap={snap} onDeleteSnapshot={onDeleteSnapshot}/>)}
+          {pastSnaps.length===0&&!showCompare&&(
+            <div style={{textAlign:"center",padding:"40px 16px"}}>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",fontStyle:"italic",color:"#b09080",marginBottom:8}}>No history yet</div>
+              <div style={{fontSize:".74rem",color:"#c0a898",lineHeight:1.7}}>Your past routines will appear here each time you update what you're using.</div>
+            </div>
+          )}
+          {!showCompare&&pastSnaps.length>0&&(
+            <div style={{position:"relative",paddingLeft:24}}>
+              {/* Timeline spine */}
+              <div style={{position:"absolute",left:6,top:20,bottom:20,width:1.5,background:"linear-gradient(to bottom,#e8d8cc,#f4ece6)"}}/>
+              {pastSnaps.map((snap,i)=>(
+                <div key={snap.id} style={{position:"relative",marginBottom:12}}>
+                  {/* Timeline dot */}
+                  <div style={{position:"absolute",left:-24,top:20,width:13,height:13,borderRadius:"50%",
+                    background:i===0?"#b07a5e":"#fdf6f0",
+                    border:`2px solid ${i===0?"#b07a5e":"#d0c0b8"}`,
+                    boxShadow:i===0?"0 0 0 3px rgba(176,122,94,.12)":"none"}}/>
+                  <SnapCard snap={snap} onDeleteSnapshot={onDeleteSnapshot}/>
+                </div>
+              ))}
+            </div>
+          )}
         </>
+      )}
+
+      {/* Edit modal */}
+      {showForm&&editProd&&isEditingProd&&(
+        <SlimEditForm key={editProd.id} initialData={editProd} onSave={save} onClose={handleCloseForm}/>
       )}
 
       {/* Finalize confirmation */}
@@ -2280,7 +2840,7 @@ function TreatmentHistoryCard({ tx, doneDates }) {
   );
 }
 
-function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRangeEnd }) {
+function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRangeEnd, needleDates=[] }) {
   const today=fmt(new Date());
   const [calM, setCalM]=useState({y:new Date().getFullYear(),m:new Date().getMonth()});
   const [hov, setHov]=useState(null);
@@ -2344,16 +2904,18 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
           const sel=selectedDates.includes(d);
           const isPending=d===pendingStart&&rangeMode;
           const prev=inPreview(d);
+          const isNeedle=needleDates.includes(d);
           return (
             <div key={d} onClick={()=>handleClick(d)}
               onMouseEnter={()=>rangeMode&&setHov(d)}
               onMouseLeave={()=>setHov(null)}
-              style={{aspectRatio:1,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:"50%",fontSize:".78rem",cursor:"pointer",
+              style={{aspectRatio:1,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:"50%",fontSize:".78rem",cursor:"pointer",position:"relative",
                 background:sel?"#b07a5e":isPending?"#c08870":prev?"#f7e8de":"transparent",
                 color:sel||isPending?"#fff":"#3a2e27",fontWeight:sel?600:400,
                 border:d===today&&!sel?"1.5px solid #b07a5e":"none",
                 boxShadow:isPending?"0 0 0 2px #fff,0 0 0 4px #b07a5e":"none"}}>
               {parse(d).getDate()}
+              {isNeedle&&<span style={{position:"absolute",bottom:1,right:1,fontSize:".42rem",lineHeight:1,pointerEvents:"none"}}>💉</span>}
             </div>
           );
         })}
@@ -2366,18 +2928,22 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
   );
 }
 
-function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsProp, schedules, treatments, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose, onAddItem, initialPlan, initialTreatment }) {
-  const [screen, setScreen]=useState(initialPlan?"editPlan":initialTreatment?"editTreatment":"chooseType"); // chooseType | editPlan | editTreatment
-  const [editing, setEditing]=useState(initialPlan?{...initialPlan,itemIds:initialPlan.itemIds||[initialPlan.itemId].filter(Boolean),dates:initialPlan.dates||[],startDate:initialPlan.startDate||fmt(new Date())}:{id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),reminder:false,time:"08:00",location:""});
-  const [editTx, setEditTx]=useState(initialTreatment?{...initialTreatment}:{id:uid(),name:"",type:"skin",dates:[]});
+function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsProp, schedules, treatments, entries, products, wishlist, today, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose, onAddItem, initialPlan, initialTreatment }) {
+  const _today = today || fmt(new Date());
+  const [screen, setScreen]=useState(initialPlan?(initialPlan._editMode?"editPlan":"viewPlan"):initialTreatment?"editTreatment":"chooseType"); // chooseType | viewPlan | editPlan | editTreatment
+  const [editing, setEditing]=useState(initialPlan?{...initialPlan,itemIds:initialPlan.itemIds||[initialPlan.itemId].filter(Boolean),dates:initialPlan.dates||[],startDate:initialPlan.startDate||"",endDate:initialPlan.endDate||"",linkedProductId:initialPlan.linkedProductId||""}:{id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),endDate:"",linkedProductId:"",reminder:false,time:"08:00",location:""});
+  const [editTx, setEditTx]=useState(initialTreatment?{...initialTreatment}:{id:uid(),name:"",type:"skin",dates:[],completedDates:[],location:"",price:"",notes:""});
+  const [txMode, setTxMode]=useState(initialTreatment?"upcoming":null); // null | "past" | "upcoming"
+  const [pastDate, setPastDate]=useState(fmt(new Date()));
   const [showItemPick, setShowItemPick]=useState(false);
+  const [showProductPick, setShowProductPick]=useState(false);
   const [calRangeStart, setCalRangeStart]=useState(null);
   const [newStepLabel, setNewStepLabel]=useState("");
   const [newStepEmoji, setNewStepEmoji]=useState("🌿");
   const [showNewStepEmoji, setShowNewStepEmoji]=useState(false);
 
-  const startNewPlan=()=>{ setEditing({id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),reminder:false,time:"08:00",location:""}); setScreen("editPlan"); };
-  const startEditPlan=s=>{ setEditing({...s,itemIds:s.itemIds||[s.itemId].filter(Boolean),dates:s.dates||[],startDate:s.startDate||fmt(new Date())}); setScreen("editPlan"); };
+  const startNewPlan=()=>{ setEditing({id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),endDate:"",linkedProductId:"",reminder:false,time:"08:00",location:""}); setScreen("editPlan"); };
+  const startEditPlan=s=>{ setEditing({...s,itemIds:s.itemIds||[s.itemId].filter(Boolean),dates:s.dates||[],startDate:s.startDate||"",endDate:s.endDate||"",linkedProductId:s.linkedProductId||""}); setScreen("editPlan"); };
   const startNewTx=()=>{ setEditTx({id:uid(),name:"",type:"skin",dates:[]}); setScreen("editTreatment"); };
   const startEditTx=t=>{ setEditTx({...t}); setScreen("editTreatment"); };
 
@@ -2399,10 +2965,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
     onSaveMany(plans);
     setEditing(null); setScreen("list");
   };
-  const saveTx=()=>{
-    if(!editTx.name.trim()||!editTx.dates.length) return;
-    onSaveTreatment(editTx); setEditTx(null); setScreen("list");
-  };
+  const saveTx=()=>{}; // replaced by inline handlers below
 
   if(screen==="chooseType"){
     return (
@@ -2432,6 +2995,109 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
     );
   }
 
+  if(screen==="viewPlan"&&editing){
+    const it=allItems.find(x=>x.id===(editing.itemIds?.[0]||editing.itemId));
+    const recurDays=(editing.days||[]).sort().map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
+    const dateCount=(editing.dates||[]).length;
+    const linkedProd=[...(products||[]),(wishlist||[]).map(w=>({...w,_fromWishlist:true}))].flat().find(p=>p.id===editing.linkedProductId);
+    // Completion rate
+    const itemType=skinItemsProp?.find(r=>r.id===(editing.itemIds?.[0]||editing.itemId))?"skin":"hair";
+    let completion=null;
+    if(editing.dates?.length>0){
+      const done=editing.dates.filter(d=>(entries?.[d]?.[itemType]||[]).includes(editing.itemIds?.[0]||editing.itemId)).length;
+      completion={done,total:editing.dates.length};
+    } else if(editing.days?.length>0&&editing.startDate){
+      const start=new Date(editing.startDate+"T12:00:00"),end=new Date(_today+"T12:00:00");
+      let total=0,done=0,cur=new Date(start);
+      while(cur<=end){
+        if(editing.days.includes(cur.getDay())){
+          total++;
+          const d=fmt(cur);
+          if((entries?.[d]?.[itemType]||[]).includes(editing.itemIds?.[0]||editing.itemId)) done++;
+        }
+        cur.setDate(cur.getDate()+1);
+      }
+      if(total>0) completion={done,total};
+    }
+    const pct=completion?Math.round((completion.done/completion.total)*100):null;
+    return (
+      <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+        <div className="modal">
+          <div className="modal-top">
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.15rem",fontStyle:"italic",color:"#3a2e27"}}>Plan Details</div>
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>startEditPlan(editing)}>Edit</button>
+              <button className="modal-x" onClick={onClose}>×</button>
+            </div>
+          </div>
+          {/* Item */}
+          {it&&<div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 0 18px",borderBottom:"1px solid #f0e4dc"}}>
+            <div style={{width:48,height:48,borderRadius:14,background:"#f7ece4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.6rem",flexShrink:0}}>{it.emoji}</div>
+            <div>
+              <div style={{fontSize:"1rem",fontWeight:500,color:"#3a2e27"}}>{it.label}</div>
+              {editing.ended_at&&<div style={{fontSize:".7rem",background:"#e8d8cc",color:"#a08070",borderRadius:10,padding:"2px 8px",display:"inline-block",marginTop:4}}>Ended</div>}
+            </div>
+          </div>}
+          {/* Details grid */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px 16px",padding:"16px 0",borderBottom:"1px solid #f0e4dc"}}>
+            <div>
+              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080",marginBottom:3}}>Started</div>
+              <div style={{fontSize:".84rem",color:"#3a2e27"}}>{editing.startDate?parse(editing.startDate).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"—"}</div>
+            </div>
+            {editing.endDate&&<div>
+              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080",marginBottom:3}}>Until</div>
+              <div style={{fontSize:".84rem",color:"#3a2e27"}}>{parse(editing.endDate).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
+            </div>}
+            {editing.ended_at&&<div>
+              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080",marginBottom:3}}>Ended</div>
+              <div style={{fontSize:".84rem",color:"#3a2e27"}}>{parse(editing.ended_at).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
+            </div>}
+            <div>
+              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080",marginBottom:3}}>Frequency</div>
+              <div style={{fontSize:".84rem",color:"#3a2e27"}}>
+                {(editing.days||[]).length===7?"Every day":recurDays?`Every ${recurDays}`:dateCount>0?`${dateCount} specific date${dateCount!==1?"s":""}`:editing.startDate?"One-off":"—"}
+              </div>
+            </div>
+            {editing.location&&<div>
+              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080",marginBottom:3}}>Location</div>
+              <div style={{fontSize:".84rem",color:"#b07a5e",cursor:"pointer",textDecoration:"underline"}} onClick={()=>openUrl&&openUrl(`https://www.google.com/maps/search/${encodeURIComponent(editing.location)}`)}>📍 {editing.location}</div>
+            </div>}
+          </div>
+          {/* Completion rate */}
+          {completion&&<div style={{padding:"14px 0",borderBottom:"1px solid #f0e4dc"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080"}}>Completion</div>
+              <div style={{fontSize:".84rem",color:"#3a2e27",fontWeight:500}}>{completion.done}/{completion.total} <span style={{color:"#b09080",fontWeight:400}}>({pct}%)</span></div>
+            </div>
+            <div style={{height:6,borderRadius:4,background:"#f0e4dc",overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${pct}%`,borderRadius:4,background:"linear-gradient(90deg,#d4a090,#b07a5e)",transition:"width .4s"}}/>
+            </div>
+          </div>}
+          {/* Linked product */}
+          {linkedProd&&<div style={{padding:"14px 0",borderBottom:"1px solid #f0e4dc",display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:38,height:38,borderRadius:10,overflow:"hidden",background:"#f0e0d4",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".9rem"}}>
+              {(linkedProd.image||linkedProd.media_url)?<img src={linkedProd.image||linkedProd.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>🧴</span>}
+            </div>
+            <div>
+              <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080",marginBottom:2}}>Linked Product</div>
+              <div style={{fontSize:".84rem",color:"#3a2e27"}}>{linkedProd.name}</div>
+              {linkedProd._fromWishlist&&<div style={{fontSize:".62rem",color:"#b09080"}}>Wishlist</div>}
+            </div>
+          </div>}
+          {/* Actions */}
+          <div style={{display:"flex",flexDirection:"column",gap:8,paddingTop:16}}>
+            {!editing.ended_at&&schedules.find(s=>s.id===editing.id)&&(
+              <button className="ghost-btn" style={{color:"#b07a5e",fontSize:".84rem"}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>
+            )}
+            {schedules.find(s=>s.id===editing.id)&&(
+              <button className="del-btn" style={{alignSelf:"center"}} onClick={()=>{onDelete(editing.id);onClose();}}>Delete Plan</button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if(screen==="editPlan"&&editing){
     const canSave=editing.itemIds?.length>0&&(editing.days.length>0||editing.dates.length>0||!!editing.startDate);
     const toggleItemSel=id=>setEditing(e=>({...e,itemIds:e.itemIds.includes(id)?e.itemIds.filter(x=>x!==id):[...e.itemIds,id]}));
@@ -2444,6 +3110,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
               <div className="modal-title">{schedules.find(s=>s.id===editing.id)?"Edit Plan":"New Plan"}</div>
             </div>
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              {schedules.find(s=>s.id===editing.id)&&!editing.ended_at&&<button className="ghost-btn" style={{fontSize:".75rem",padding:"4px 10px",color:"#b07a5e"}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>}
               {schedules.find(s=>s.id===editing.id)&&<button className="del-btn" onClick={()=>{onDelete(editing.id);onClose();}}>Delete</button>}
               <button className="modal-x" onClick={onClose}>×</button>
             </div>
@@ -2510,15 +3177,62 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             </>
           )}
           {editing._category==="treatment"&&<>
-            <div className="modal-sub" style={{marginBottom:6}}>📍 Location <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional)</span></div>
+            <div className="modal-sub" style={{marginBottom:6}}>📍 Location</div>
             <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Glow Clinic, Miami"
               value={editing.location||""} onChange={e=>setEditing(ed=>({...ed,location:e.target.value}))}/>
           </>}
-          <div className="modal-sub">Start date</div>
-          <input type="date" className="time-input" style={{width:"100%",marginBottom:14}}
-            value={editing.startDate||fmt(new Date())}
-            onChange={e=>setEditing(ed=>({...ed,startDate:e.target.value}))}/>
-          <div className="modal-sub" style={{marginBottom:8}}>Every <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional — leave blank for one-off)</span></div>
+          <div style={{display:"flex",gap:10,marginBottom:14}}>
+            <div style={{flex:1}}>
+              <div className="modal-sub" style={{marginBottom:4}}>Start date</div>
+              <input type="date" className="time-input" style={{width:"100%"}}
+                value={editing.startDate||fmt(new Date())}
+                onChange={e=>setEditing(ed=>({...ed,startDate:e.target.value}))}/>
+            </div>
+            <div style={{flex:1}}>
+              <div className="modal-sub" style={{marginBottom:4}}>End date <span style={{color:"#c0a898",fontWeight:400}}>(optional)</span></div>
+              <input type="date" className="time-input" style={{width:"100%"}}
+                value={editing.endDate||""}
+                onChange={e=>setEditing(ed=>({...ed,endDate:e.target.value}))}/>
+            </div>
+          </div>
+          {/* Linked product picker */}
+          {(products?.length>0||(wishlist||[]).length>0)&&(()=>{
+            const allPickable=[...(products||[]),...(wishlist||[]).map(w=>({...w,_fromWishlist:true}))];
+            const linked=allPickable.find(p=>p.id===editing.linkedProductId);
+            return (
+              <div style={{marginBottom:14}}>
+                <div className="modal-sub" style={{marginBottom:6}}>Linked product <span style={{fontWeight:400,color:"#c0a898"}}>(optional)</span></div>
+                {linked?(
+                  <div style={{display:"flex",alignItems:"center",gap:10,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"8px 10px"}}>
+                    <div style={{width:32,height:32,borderRadius:8,overflow:"hidden",background:"#f0e0d4",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem"}}>
+                      {(linked.image||linked.media_url)?<img src={linked.image||linked.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>🧴</span>}
+                    </div>
+                    <span style={{flex:1,fontSize:".82rem",color:"#3a2e27"}}>{linked.name}</span>
+                    <button onClick={()=>setEditing(ed=>({...ed,linkedProductId:""}))} style={{background:"none",border:"none",color:"#b09080",cursor:"pointer",fontSize:".9rem",padding:"0 4px"}}>×</button>
+                  </div>
+                ):(
+                  <button className="ghost-btn" style={{width:"100%",fontSize:".78rem"}} onClick={()=>setShowProductPick(p=>!p)}>+ Link a product</button>
+                )}
+                {showProductPick&&!linked&&(
+                  <div style={{maxHeight:160,overflowY:"auto",border:"1px solid #f0e4dc",borderRadius:12,marginTop:6,background:"#fff"}}>
+                    {allPickable.map(p=>(
+                      <div key={p.id} onClick={()=>{setEditing(ed=>({...ed,linkedProductId:p.id}));setShowProductPick(false);}}
+                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",cursor:"pointer",borderBottom:"1px solid #f8f0ec"}}>
+                        <div style={{width:28,height:28,borderRadius:7,overflow:"hidden",background:"#f0e0d4",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".75rem"}}>
+                          {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>🧴</span>}
+                        </div>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:".8rem",color:"#3a2e27"}}>{p.name}</div>
+                          {p._fromWishlist&&<div style={{fontSize:".62rem",color:"#b09080"}}>Wishlist</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+          <div className="modal-sub" style={{marginBottom:8}}>Every — leave blank for one-off</div>
           <div className="toggle-row" style={{marginBottom:8}}>
             <div><div className="toggle-lbl">Every day</div></div>
             <Toggle on={editing.days.length===7} onChange={v=>setEditing(e=>({...e,days:v?[0,1,2,3,4,5,6]:[]}))}/>
@@ -2554,42 +3268,143 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
   }
 
   if(screen==="editTreatment"&&editTx){
-    const canSave=editTx.name.trim()&&editTx.dates.length>0;
+    const isExisting=treatments.find(t=>t.id===editTx.id);
+    const TypeToggle=()=>(
+      <div style={{display:"flex",gap:8,marginBottom:12}}>
+        {["skin","hair"].map(tp=>(
+          <button key={tp} className={`dow-chip ${editTx.type===tp?"on":""}`} style={{flex:1,textAlign:"center"}}
+            onClick={()=>setEditTx(t=>({...t,type:tp}))}>
+            {tp==="skin"?"🌿 Skin":"✨ Hair"}
+          </button>
+        ))}
+      </div>
+    );
+    const SharedFields=()=>(
+      <>
+        <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Treatment name (e.g. Facial, Microneedling…)"
+          value={editTx.name} onChange={e=>setEditTx(t=>({...t,name:e.target.value}))} autoFocus/>
+        <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="📍 Location"
+          value={editTx.location||""} onChange={e=>setEditTx(t=>({...t,location:e.target.value}))}/>
+        <TypeToggle/>
+        <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="💰 Price (e.g. $80)"
+          value={editTx.price||""} onChange={e=>setEditTx(t=>({...t,price:e.target.value}))}/>
+        <textarea className="ifield" style={{width:"100%",marginBottom:12,minHeight:60,resize:"vertical"}} placeholder="Notes…"
+          value={editTx.notes||""} onChange={e=>setEditTx(t=>({...t,notes:e.target.value}))}/>
+      </>
+    );
+
+    // ── Mode chooser (new treatments only) ──────────────────────────────────
+    if(!txMode&&!isExisting){
+      return (
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+          <div className="modal">
+            <div className="modal-top">
+              <button className="ghost-btn" style={{padding:"4px 10px",fontSize:".75rem"}} onClick={()=>setScreen("chooseType")}>← Back</button>
+              <div className="modal-title">New Treatment</div>
+              <button className="modal-x" onClick={onClose}>×</button>
+            </div>
+            <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Treatment name (e.g. Facial, Microneedling…)"
+              value={editTx.name} onChange={e=>setEditTx(t=>({...t,name:e.target.value}))} autoFocus/>
+            <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="📍 Location"
+              value={editTx.location||""} onChange={e=>setEditTx(t=>({...t,location:e.target.value}))}/>
+            <TypeToggle/>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.15rem",color:"#3a2e27",marginBottom:14,fontStyle:"italic"}}>When is this treatment?</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <button onClick={()=>setTxMode("past")} style={{display:"flex",alignItems:"center",gap:14,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
+                <span style={{fontSize:"1.5rem"}}>📅</span>
+                <div>
+                  <div style={{fontSize:".9rem",color:"#3a2e27",fontWeight:500}}>Register a past treatment</div>
+                  <div style={{fontSize:".74rem",color:"#a08070",marginTop:2}}>Log something you've already had</div>
+                </div>
+              </button>
+              <button onClick={()=>setTxMode("upcoming")} style={{display:"flex",alignItems:"center",gap:14,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
+                <span style={{fontSize:"1.5rem"}}>💉</span>
+                <div>
+                  <div style={{fontSize:".9rem",color:"#3a2e27",fontWeight:500}}>Plan an upcoming treatment</div>
+                  <div style={{fontSize:".74rem",color:"#a08070",marginTop:2}}>Schedule something coming up</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Past treatment form ─────────────────────────────────────────────────
+    if(txMode==="past"&&!isExisting){
+      const canSave=editTx.name.trim()&&pastDate;
+      const doSave=(addMore)=>{
+        if(!canSave) return;
+        const tx={...editTx,completedDates:[...(editTx.completedDates||[]),pastDate]};
+        onSaveTreatment(tx);
+        if(addMore){
+          setEditTx({id:uid(),name:"",type:editTx.type,dates:[],completedDates:[],location:"",price:"",notes:""});
+          setPastDate(fmt(new Date()));
+        } else {
+          setEditTx(null); setScreen("list");
+        }
+      };
+      return (
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+          <div className="modal">
+            <div className="modal-top">
+              <button className="ghost-btn" style={{padding:"4px 10px",fontSize:".75rem"}} onClick={()=>setTxMode(null)}>← Back</button>
+              <div className="modal-title">Past Treatment</div>
+              <button className="modal-x" onClick={onClose}>×</button>
+            </div>
+            <SharedFields/>
+            <input type="date" className="time-input" style={{width:"100%",marginBottom:14}}
+              value={pastDate} onChange={e=>setPastDate(e.target.value)}/>
+            <div style={{display:"flex",gap:8}}>
+              <button className="save-btn" onClick={()=>doSave(false)} disabled={!canSave} style={{flex:1,opacity:canSave?1:.4}}>Save</button>
+              <button className="ghost-btn" onClick={()=>doSave(true)} disabled={!canSave} style={{flex:1,opacity:canSave?1:.4,padding:"10px 0",fontSize:".82rem"}}>+ Add More</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Upcoming / edit existing form ───────────────────────────────────────
+    const canSaveFinal=isExisting?editTx.name.trim():(editTx.name.trim()&&editTx.dates.length>0);
+    const doSaveUpcoming=(addMore)=>{
+      if(!canSaveFinal) return;
+      onSaveTreatment(editTx);
+      if(addMore&&!isExisting){
+        setEditTx({id:uid(),name:"",type:editTx.type,dates:[],completedDates:[],location:"",price:"",notes:""});
+      } else {
+        setEditTx(null); setScreen("list");
+      }
+    };
     return (
       <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
         <div className="modal">
           <div className="modal-top">
-            <div className="modal-title">{editTx.name?"Edit Treatment":"New Treatment"}</div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              {!isExisting&&<button className="ghost-btn" style={{padding:"4px 10px",fontSize:".75rem"}} onClick={()=>setTxMode(null)}>← Back</button>}
+              <div className="modal-title">{isExisting?"Edit Treatment":"Upcoming Treatment"}</div>
+            </div>
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              {treatments.find(t=>t.id===editTx.id)&&<button className="del-btn" onClick={()=>{onDeleteTreatment(editTx.id);onClose();}}>Delete</button>}
+              {isExisting&&<button className="del-btn" onClick={()=>{onDeleteTreatment(editTx.id);onClose();}}>Delete</button>}
               <button className="modal-x" onClick={onClose}>×</button>
             </div>
           </div>
-          <div className="modal-sub">Treatment name</div>
-          <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Facial, Microneedling…"
-            value={editTx.name} onChange={e=>setEditTx(t=>({...t,name:e.target.value}))} autoFocus/>
-          <div className="modal-sub" style={{marginBottom:6}}>📍 Location <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional)</span></div>
-          <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Glow Clinic, Miami"
-            value={editTx.location||""} onChange={e=>setEditTx(t=>({...t,location:e.target.value}))}/>
-          <div className="modal-sub">Skin or Hair</div>
-          <div style={{display:"flex",gap:8,marginBottom:14}}>
-            {["skin","hair"].map(tp=>(
-              <button key={tp} className={`dow-chip ${editTx.type===tp?"on":""}`} style={{flex:1,textAlign:"center"}}
-                onClick={()=>setEditTx(t=>({...t,type:tp}))}>
-                {tp==="skin"?"🌿 Skin":"✨ Hair"}
-              </button>
-            ))}
-          </div>
-          <div className="modal-sub">Scheduled date(s)</div>
+          <SharedFields/>
+          <div className="modal-sub" style={{marginBottom:6}}>{isExisting?"Scheduled date(s)":"Pick date(s)"}</div>
           <MiniCal
             selectedDates={editTx.dates}
             onToggleDate={d=>setEditTx(t=>({...t,dates:t.dates.includes(d)?t.dates.filter(x=>x!==d):[...t.dates,d]}))}
             rangeStart={calRangeStart}
             onRangeStart={d=>setCalRangeStart(d)}
             onRangeEnd={range=>{ setEditTx(t=>({...t,dates:[...new Set([...t.dates,...range])]})); setCalRangeStart(null); }}
+            needleDates={editTx.completedDates||[]}
           />
-
-          <button className="save-btn" onClick={saveTx} disabled={!canSave} style={{opacity:canSave?1:.4}}>Schedule Treatment</button>
+          {(editTx.completedDates||[]).length>0&&<div style={{fontSize:".7rem",color:"#a08070",marginBottom:10}}>💉 marks a completed past session</div>}
+          <div style={{display:"flex",gap:8}}>
+            <button className="save-btn" onClick={()=>doSaveUpcoming(false)} disabled={!canSaveFinal} style={{flex:1,opacity:canSaveFinal?1:.4}}>
+              {isExisting?"Save Changes":"Schedule"}
+            </button>
+            {!isExisting&&<button className="ghost-btn" onClick={()=>doSaveUpcoming(true)} disabled={!canSaveFinal} style={{flex:1,opacity:canSaveFinal?1:.4,padding:"10px 0",fontSize:".82rem"}}>+ Add More</button>}
+          </div>
         </div>
       </div>
     );
@@ -2809,7 +3624,7 @@ function HairLengthCard({ hairLengths, setHairLengths, saveHairLength }) {
 
 export default function App({ user }) {
   const today = fmt(new Date());
-  const [view,        setView]        = useState("log");
+  const [view,        setView]        = useState(() => sessionStorage.getItem('ritual_view') || "log");
   const [activeTab,   setActiveTab]   = useState("skin");
   const [activeDate,  setActiveDate]  = useState(today);
   const [entries,     setEntries]     = useState({});
@@ -2836,40 +3651,44 @@ export default function App({ user }) {
   const [wishlist,      setWishlist]      = useState([]);
   const [snapshots,     setSnapshots]     = useState([]);
   const [sideMenu,      setSideMenu]      = useState(false);
-  const [pageView,      setPageView]      = useState(null); // null=main, "purchases", "account", "products", "wishlist"
+  const [pageView,      setPageView]      = useState(() => sessionStorage.getItem('ritual_pageView') || null); // null=main, "purchases", "account", "products", "wishlist"
   const [selectedPlan,  setSelectedPlan]  = useState(null); // plan/treatment being viewed
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [lightboxPhoto, setLightboxPhoto] = useState(null); // {message, onConfirm}
   const [prefillPurchase, setPrefillPurchase] = useState(null); // when moving wishlist item to purchases
-  const [treatments,    setTreatments]    = useState([]); // [{id, name, type(skin/hair), dates:[], completedDates:[]}]
+  const [treatments,      setTreatments]      = useState([]);
+  const [plannedPurchases,setPlannedPurchases] = useState([]);
+  const [plansViewMode,   setPlansViewMode]   = useState("carousel"); // "carousel" | "list"
+  const [plansFilter,     setPlansFilter]     = useState("active");   // "active" | "past" | "all"
+  const [txFilter,        setTxFilter]        = useState("all");      // "all" | "upcoming" | "past"
 
-  // Load all data from Supabase on mount — all queries run in parallel
+  // Persist current page across refreshes
+  useEffect(() => { sessionStorage.setItem('ritual_view', view); }, [view]);
+  useEffect(() => {
+    if (pageView) sessionStorage.setItem('ritual_pageView', pageView);
+    else sessionStorage.removeItem('ritual_pageView');
+  }, [pageView]);
+
+  // Load all data from Supabase on mount — two phases so the log/plans UI appears fast
   useEffect(()=>{
+    if(!user) return;
     (async()=>{
-      if(!user) return;
       try {
+        // ── Phase 1: Critical data (log, plans, schedules) ──────────────────
         const [
           { data: entryRows },
           { data: routineRows },
           { data: schedRows, error: schedErr },
           { data: freqRows },
           { data: hlRows },
-          { data: purchRows },
           { data: txRows },
-          { data: prodRows },
-          { data: wishRows },
-          { data: snapRows },
         ] = await Promise.all([
           supabase.from("entries").select("*").eq("user_id", user.id),
           supabase.from("routines").select("*").eq("user_id", user.id),
           supabase.from("schedules").select("*").eq("user_id", user.id),
           supabase.from("freq_settings").select("*").eq("user_id", user.id).single(),
           supabase.from("hair_lengths").select("*").eq("user_id", user.id),
-          supabase.from("purchases").select("*").eq("user_id", user.id).order("date", {ascending:false}),
           supabase.from("treatments").select("*").eq("user_id", user.id),
-          supabase.from("products").select("*").eq("user_id", user.id).order("created_at", {ascending:false}),
-          supabase.from("wishlist").select("*").eq("user_id", user.id).order("created_at", {ascending:false}),
-          supabase.from("snapshots").select("*, snapshot_products(*)").eq("user_id", user.id).order("started_at", {ascending:false}),
         ]);
 
         if (entryRows) {
@@ -2889,23 +3708,35 @@ export default function App({ user }) {
           if (ha) setHairR(ha.items);
         }
         if (schedErr) console.error("Schedule load error:", schedErr);
-        if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days||[], dates:r.dates||[], startDate:r.start_date||null, reminder:r.reminder, time:r.time, location:r.location||'' })));
+        if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days||[], dates:r.dates||[], startDate:r.start_date||null, endDate:r.end_date||"", linkedProductId:r.linked_product_id||"", reminder:r.reminder, time:r.time, location:r.location||'', ended_at:r.ended_at||null })));
         if (freqRows) { setFreqTracked(freqRows.tracked||[]); setFreqPeriod(freqRows.period||"year"); }
         if (hlRows) {
           const map = {};
           hlRows.forEach(r => { map[r.month] = r.length_cm; });
           setHairLengths(map);
         }
-        if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[], image:r.image||'', link:r.link||'', frequency:r.frequency||'' })));
-        if (txRows) setTreatments(txRows.map(r=>({ id:r.id, name:r.name, type:r.type, dates:r.dates||[], completedDates:r.completed_dates||[], location:r.location||'' })));
-        if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", price:r.price||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[] })));
-        if (wishRows) setWishlist(wishRows.map(r=>({ id:r.id, product_id:r.product_id||null, name:r.name||"", brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], priority:r.priority||0 })));
-        if (snapRows) setSnapshots(snapRows.map(r=>({ id:r.id, label:r.label||"", started_at:r.started_at, ended_at:r.ended_at||null, is_base:r.is_base||false, products:r.snapshot_products||[] })));
+        if (txRows) setTreatments(txRows.map(r=>({ id:r.id, name:r.name, type:r.type, dates:r.dates||[], completedDates:r.completed_dates||[], location:r.location||'', price:r.price||'', notes:r.notes||'' })));
 
-        // Show name prompt only if name isn't already set from auth metadata
+        // Show name prompt after phase 1
         const name = user?.user_metadata?.display_name || "";
         if (name) setUserName(name);
         else setShowNamePrompt(true);
+
+        // ── Phase 2: Secondary data (products, purchases, wishlist, snapshots) ─
+        Promise.all([
+          supabase.from("purchases").select("*").eq("user_id", user.id).order("date", {ascending:false}),
+          supabase.from("products").select("*").eq("user_id", user.id).order("created_at", {ascending:false}),
+          supabase.from("wishlist").select("*").eq("user_id", user.id).order("created_at", {ascending:false}),
+          supabase.from("snapshots").select("*, snapshot_products(*)").eq("user_id", user.id).order("started_at", {ascending:false}),
+          supabase.from("planned_purchases").select("*").eq("user_id", user.id).order("created_at", {ascending:false}),
+        ]).then(([{ data: purchRows },{ data: prodRows },{ data: wishRows },{ data: snapRows },{ data: ppRows }]) => {
+          if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[], image:r.image||'', link:r.link||'', frequency:r.frequency||'', product_id:r.product_id||null, treatment_type:r.treatment_type||'' })));
+          if (ppRows) setPlannedPurchases(ppRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", price:r.price||"", notes:r.notes||"", product_id:r.product_id||null, wishlist_id:r.wishlist_id||null })));
+          if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", price:r.price||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[], is_staple:r.is_staple||false, sort_order:r.sort_order||0, media_url:r.media_url||"" })));
+          if (wishRows) setWishlist(wishRows.map(r=>({ id:r.id, product_id:r.product_id||null, name:r.name||"", brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], priority:r.priority||0 })));
+          if (snapRows) setSnapshots(snapRows.map(r=>({ id:r.id, label:r.label||"", started_at:r.started_at, ended_at:r.ended_at||null, is_base:r.is_base||false, products:r.snapshot_products||[] })));
+        }).catch(e=>console.error("Phase 2 load error", e));
+
       } catch(e) { console.error("Load error", e); }
     })();
   },[user]);
@@ -2985,7 +3816,8 @@ export default function App({ user }) {
     try {
       await supabase.from("treatments").upsert({
         id: tx.id, user_id: user.id, name: tx.name, type: tx.type,
-        dates: tx.dates, completed_dates: tx.completedDates, location: tx.location||'', updated_at: new Date().toISOString()
+        dates: tx.dates, completed_dates: tx.completedDates, location: tx.location||'',
+        price: tx.price||null, notes: tx.notes||'', updated_at: new Date().toISOString()
       }, { onConflict: "id" });
     } catch(e) { console.error("Treatment save error", e); }
   };
@@ -3002,8 +3834,10 @@ export default function App({ user }) {
         // Upsert each schedule individually - safer than delete+insert
         const rows = newSchedules.map(s => ({
           id: s.id, user_id: user.id, item_id: s.itemId,
-          days: s.days||[], dates: s.dates||[], start_date: s.startDate||null,
-          reminder: s.reminder, time: s.time||"08:00", location: s.location||''
+          days: s.days||[], dates: s.dates||[], start_date: s.startDate||null, end_date: s.endDate||null,
+          linked_product_id: s.linkedProductId||null,
+          reminder: s.reminder, time: s.time||"08:00", location: s.location||'',
+          ended_at: s.ended_at||null
         }));
         const { error: upsertErr } = await supabase.from("schedules").upsert(rows, { onConflict: "id" });
         if (upsertErr) { console.error("Schedule upsert error:", upsertErr); return; }
@@ -3072,6 +3906,7 @@ export default function App({ user }) {
         category: p.category, price: parseFloat(p.price)||0,
         quantity: parseInt(p.quantity)||1, date: p.date, notes: p.notes||"",
         tags: p.tags||[], image: p.image||'', link: p.link||'', frequency: p.frequency||'',
+        product_id: p.product_id||null, treatment_type: p.treatment_type||null,
         updated_at: new Date().toISOString()
       }, { onConflict: "id" });
       setPurchases(prev => { const f=prev.filter(x=>x.id!==p.id); return [p,...f].sort((a,b)=>b.date.localeCompare(a.date)); });
@@ -3091,26 +3926,35 @@ export default function App({ user }) {
   // ── Products CRUD ──
   const saveProduct = async (p) => {
     if (!user) return;
-    const row = { id:p.id, user_id:user.id, name:p.name, brand:p.brand||"", category:p.category||"skin", image:p.image||"", link:p.link||"", price:p.price||null, notes:p.notes||"", tags:p.tags||[], frequency:p.frequency||"", global_product_id:p.global_product_id||null, ingredients:p.ingredients||[] };
+    // userImage is a UI-only field (data URL from file picker) — strip from DB row
+    const { userImage, ...prod } = p;
+    const row = { id:prod.id, user_id:user.id, name:prod.name, brand:prod.brand||"", category:prod.category||"skin", image:prod.image||"", link:prod.link||"", price:prod.price||null, notes:prod.notes||"", tags:prod.tags||[], frequency:prod.frequency||"", global_product_id:prod.global_product_id||null, ingredients:prod.ingredients||[], is_staple:prod.is_staple||false, sort_order:prod.sort_order||0, media_url:prod.media_url||"" };
     await supabase.from("products").upsert(row, {onConflict:"id"});
-    setProducts(prev => { const idx=prev.findIndex(x=>x.id===p.id); return idx>=0?prev.map(x=>x.id===p.id?p:x):[p,...prev]; });
+    setProducts(prev => { const idx=prev.findIndex(x=>x.id===prod.id); return idx>=0?prev.map(x=>x.id===prod.id?prod:x):[prod,...prev]; });
     // Background lookups — fire and forget
-    if (!p.ingredients?.length && p.name) fetchIngredients(p);
-    if (p.link || (!p.image && p.name)) fetchProductImage(p);
+    if (!prod.ingredients?.length && prod.name) fetchIngredients(prod);
+    if (prod.link || (!prod.image && prod.name) || userImage) fetchProductImage({...prod, userImage});
   };
 
   const fetchProductImage = async (p) => {
     try {
-      const res = await fetch("/api/images", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ link: p.link||"", name: p.name, brand: p.brand||"" })
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.imageUrl) {
-        await supabase.from("products").update({ image: data.imageUrl }).eq("id", p.id).eq("user_id", user.id);
-        setProducts(prev => prev.map(x => x.id===p.id ? {...x, image: data.imageUrl} : x));
+      let imageUrl = null;
+      if (p.link || p.name) {
+        const res = await fetch("/api/images", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ link: p.link||"", name: p.name, brand: p.brand||"" })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.imageUrl) imageUrl = data.imageUrl;
+        }
+      }
+      // Fall back to user-attached photo if link-based fetch found nothing
+      if (!imageUrl && p.userImage) imageUrl = p.userImage;
+      if (imageUrl) {
+        await supabase.from("products").update({ image: imageUrl }).eq("id", p.id).eq("user_id", user.id);
+        setProducts(prev => prev.map(x => x.id===p.id ? {...x, image: imageUrl} : x));
       }
     } catch(e) { console.error("Image fetch error:", e); }
   };
@@ -3132,6 +3976,16 @@ export default function App({ user }) {
       }
       return null;
     } catch(e) { console.error("Ingredient fetch error:", e); return null; }
+  };
+  const saveProductOrder = async (orderedItems) => {
+    // orderedItems: [{id, sort_order}]
+    await Promise.all(orderedItems.map(({id, sort_order}) =>
+      supabase.from("products").update({sort_order}).eq("id",id).eq("user_id",user.id)
+    ));
+    setProducts(prev => prev.map(p => {
+      const found = orderedItems.find(o=>o.id===p.id);
+      return found ? {...p, sort_order: found.sort_order} : p;
+    }));
   };
   const deleteProduct = async (id) => {
     await supabase.from("products").delete().eq("id",id).eq("user_id",user.id);
@@ -3162,6 +4016,25 @@ export default function App({ user }) {
     showT("Removed from wishlist");
   };
   const confirmDeleteWishlistItem = (id) => setConfirmDelete({message:"Remove this item from your wishlist?", onConfirm:()=>deleteWishlistItem(id)});
+
+  // ── Planned Purchases CRUD ──
+  const savePlannedPurchase = async (item) => {
+    if (!user) return;
+    const row = { id:item.id, user_id:user.id, name:item.name, brand:item.brand||"", category:item.category||"skin", image:item.image||"", link:item.link||"", price:item.price||null, notes:item.notes||"", product_id:item.product_id||null, wishlist_id:item.wishlist_id||null };
+    await supabase.from("planned_purchases").upsert(row, {onConflict:"id"});
+    setPlannedPurchases(prev=>{ const idx=prev.findIndex(x=>x.id===item.id); return idx>=0?prev.map(x=>x.id===item.id?item:x):[item,...prev]; });
+    showT("Saved to planned purchases");
+  };
+  const deletePlannedPurchase = async (id) => {
+    await supabase.from("planned_purchases").delete().eq("id",id).eq("user_id",user.id);
+    setPlannedPurchases(prev=>prev.filter(p=>p.id!==id));
+  };
+  const movePlannedToPurchase = async (item, date) => {
+    const purchase = { id:uid(), name:item.name, brand:item.brand||"", category:item.category||"skin", price:String(item.price||""), quantity:"1", date, notes:item.notes||"", tags:[], image:item.image||"", link:item.link||"", frequency:"", product_id:item.product_id||null, treatment_type:"" };
+    await savePurchase(purchase);
+    await deletePlannedPurchase(item.id);
+  };
+
   const moveWishlistToPurchase = async (item) => {
     // Create a purchase from wishlist item
     const newPurchase = { id:crypto.randomUUID(), name:item.name, brand:item.brand||"", category:item.category||"skin", price:"", quantity:"1", date:fmt(new Date()), notes:item.notes||"", tags:item.tags||[], image:item.image||"", link:item.link||"" };
@@ -3213,6 +4086,10 @@ export default function App({ user }) {
   const updateSnapProduct = async (snapProdId, updates) => {
     await supabase.from("snapshot_products").update(updates).eq("id",snapProdId);
     setSnapshots(prev=>prev.map(s=>({...s,products:s.products.map(sp=>sp.id===snapProdId?{...sp,...updates}:sp)})));
+  };
+  const updateSnapProductTimeOfDay = async (snapProdId, time_of_day) => {
+    await supabase.from("snapshot_products").update({time_of_day}).eq("id",snapProdId);
+    setSnapshots(prev=>prev.map(s=>({...s,products:s.products.map(sp=>sp.id===snapProdId?{...sp,time_of_day}:sp)})));
   };
   // Typo fix — propagate corrected name/brand across ALL snapshots for this product
   const updateSnapProductName = async (productId, name, brand) => {
@@ -3386,8 +4263,27 @@ export default function App({ user }) {
 
   const goHome = () => { setView("log"); setActiveDate(today); setPageView(null); };
 
+  const sideMenuEl = (
+    <>
+      {sideMenu&&<div className="side-menu-overlay" onClick={()=>setSideMenu(false)}/>}
+      <div className={`side-menu ${sideMenu?"open":""}`}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+          <div className="side-menu-title" style={{marginBottom:0}}>Menu</div>
+          <button onClick={()=>setSideMenu(false)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#a08070",lineHeight:1,padding:"2px 6px"}}>×</button>
+        </div>
+        <button className="side-menu-item" onClick={()=>{setPageView("account");setSideMenu(false);}}><span>👤</span> My Account</button>
+        <hr style={{border:"none",borderTop:"1px solid #f0e0d4",margin:"8px 0"}}/>
+        <button className="side-menu-item" onClick={()=>{setPageView("products");setSideMenu(false);}}><span>💄</span> My Products</button>
+        <button className="side-menu-item" onClick={()=>{setPageView("wishlist");setSideMenu(false);}}><span>💝</span> Wishlist</button>
+        <button className="side-menu-item" onClick={()=>{setPageView("purchases");setSideMenu(false);}}><span>💳</span> Purchases</button>
+        <hr style={{border:"none",borderTop:"1px solid #f0e0d4",margin:"16px 0"}}/>
+        <button className="side-menu-item" style={{color:"#c0a898"}} onClick={()=>supabase.auth.signOut()}><span>🚪</span> Sign Out</button>
+      </div>
+    </>
+  );
+
   if (pageView==="purchases") return (
-    <div><style>{STYLES}</style><PurchasesPage purchases={purchases} prefill={prefillPurchase} onClearPrefill={()=>setPrefillPurchase(null)} onSave={savePurchase} onDelete={confirmDeletePurchase} onBack={()=>setPageView(null)} onHome={goHome} onMenuOpen={()=>setSideMenu(true)}/></div>
+    <div><style>{STYLES}</style><PurchasesPage purchases={purchases} products={products} wishlist={wishlist} prefill={prefillPurchase} onClearPrefill={()=>setPrefillPurchase(null)} onSave={savePurchase} onDelete={confirmDeletePurchase} onBack={()=>setPageView(null)} onHome={goHome} onMenuOpen={()=>setSideMenu(true)}/>{sideMenuEl}</div>
   );
   if (pageView==="products") return (
     <div><style>{STYLES}</style><MyProductsPage
@@ -3404,20 +4300,26 @@ export default function App({ user }) {
       onFinalizeBase={finalizeBase}
       onDeleteSnapshot={deleteSnapshot}
       onFetchIngredients={fetchIngredients}
+      onSaveProductOrder={saveProductOrder}
+      onUpdateSnapProductTimeOfDay={updateSnapProductTimeOfDay}
       onBack={()=>setPageView(null)}
       onHome={goHome}
-      onMenuOpen={()=>setSideMenu(true)}/></div>
+      onMenuOpen={()=>setSideMenu(true)}/>{sideMenuEl}</div>
   );
   if (pageView==="wishlist") return (
     <div><style>{STYLES}</style><WishlistPage
       wishlist={wishlist}
       products={products}
+      plannedPurchases={plannedPurchases}
       onSave={saveWishlistItem}
       onDelete={confirmDeleteWishlistItem}
+      onSavePlanned={savePlannedPurchase}
+      onDeletePlanned={deletePlannedPurchase}
+      onMovePlannedToPurchase={movePlannedToPurchase}
       onMoveToCart={async(item)=>{ const prefill=await moveWishlistToPurchase(item); setPrefillPurchase(prefill); setPageView("purchases"); }}
       onBack={()=>setPageView(null)}
       onHome={goHome}
-      onMenuOpen={()=>setSideMenu(true)}/></div>
+      onMenuOpen={()=>setSideMenu(true)}/>{sideMenuEl}</div>
   );
   if (pageView==="account") return (
     <div className="app">
@@ -3428,6 +4330,7 @@ export default function App({ user }) {
         <HamburgerBtn onClick={()=>setSideMenu(true)}/>
       </div>
       <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Coming soon</div>
+      {sideMenuEl}
     </div>
   );
 
@@ -3610,54 +4513,108 @@ export default function App({ user }) {
 
         {view==="plan"&&(
           <>
+            {/* ── Plans header ── */}
             <div className="sec-head">
               <div className="sec-title">Plans</div>
-              <button className="ghost-btn" onClick={()=>setModal("plan")}>+ Add</button>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <button className="ghost-btn" style={{fontSize:".72rem",padding:"4px 8px"}}
+                  onClick={()=>setPlansViewMode(p=>p==="carousel"?"list":"carousel")}>
+                  {plansViewMode==="carousel"?"☰ List":"⊟ Carousel"}
+                </button>
+                <button className="ghost-btn" onClick={()=>setModal("plan")}>+ Add</button>
+              </div>
             </div>
-            {(()=>{
-              const skinPlans=schedules.filter(s=>skinR.find(r=>r.id===s.itemId));
-              const hairPlans=schedules.filter(s=>hairR.find(r=>r.id===s.itemId));
-              const skinTreatments=treatments.filter(t=>t.type==="skin");
-              const hairTreatments=treatments.filter(t=>t.type==="hair");
-              const hasAnything=schedules.length||treatments.length;
 
-              const PlanCard=({s})=>{
+            {/* ── Filter tabs ── */}
+            <div style={{display:"flex",gap:6,marginBottom:18}}>
+              {[["active","Active"],["past","Past"],["all","All"]].map(([v,l])=>(
+                <button key={v} onClick={()=>setPlansFilter(v)}
+                  style={{padding:"5px 14px",borderRadius:20,border:"1.5px solid",fontSize:".74rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",transition:"all .15s",
+                    background:plansFilter===v?"#b07a5e":"transparent",
+                    color:plansFilter===v?"#fff":"#a08070",
+                    borderColor:plansFilter===v?"#b07a5e":"#e0cfc4"}}>
+                  {l}
+                </button>
+              ))}
+            </div>
+
+            {(()=>{
+              const filterPlan = s => plansFilter==="active"?!s.ended_at:plansFilter==="past"?!!s.ended_at:true;
+              const filterTx = tx => {
+                const hasFuture = tx.dates.some(d=>d>=today);
+                if(txFilter==="upcoming") return hasFuture;
+                if(txFilter==="past") return !hasFuture;
+                return true;
+              };
+              const skinPlans=schedules.filter(s=>skinR.find(r=>r.id===s.itemId)&&filterPlan(s));
+              const hairPlans=schedules.filter(s=>hairR.find(r=>r.id===s.itemId)&&filterPlan(s));
+              const skinTreatments=treatments.filter(t=>t.type==="skin"&&filterTx(t));
+              const hairTreatments=treatments.filter(t=>t.type==="hair"&&filterTx(t));
+              const hasAnything=schedules.length||treatments.length;
+              const hasVisible=skinPlans.length||hairPlans.length||skinTreatments.length||hairTreatments.length;
+
+              const PlanCardList=({s})=>{
                 const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
                 const recurDays=(s.days||[]).sort().map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
                 const dateCount=(s.dates||[]).length;
-                const isToday=(s.days||[]).includes(new Date().getDay())||(s.dates||[]).includes(today);
                 return (
-                  <div className="sched-card" style={{cursor:"pointer",marginBottom:8}} onClick={()=>setSelectedPlan({type:"plan",data:s})}>
+                  <div className="sched-card" style={{cursor:"pointer",marginBottom:8,opacity:s.ended_at?.4:1}} onClick={()=>setSelectedPlan({type:"plan",data:s})}>
                     <div className="sched-top">
                       <span style={{fontSize:"1rem"}}>{it.emoji}</span>
                       <div style={{flex:1}}>
-                        <div className="sched-label">{it.label}</div>
+                        <div className="sched-label">{it.label}{s.ended_at&&<span style={{fontSize:".62rem",background:"#e8d8cc",color:"#a08070",borderRadius:10,padding:"1px 7px",marginLeft:6}}>Ended</span>}</div>
                         <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
                           {(s.days||[]).length===7?<span>Every day</span>:recurDays&&<span>Every {recurDays}</span>}
                           {recurDays&&dateCount>0&&<span> · </span>}
                           {dateCount>0&&<span>{dateCount} date{dateCount!==1?"s":""}</span>}
                           {s.startDate&&(s.days||[]).length===0&&dateCount===0&&<span style={{color:"#b8a090"}}>from {parse(s.startDate).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
+                          {s.endDate&&!s.ended_at&&<span style={{color:"#b8a090"}}> · until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>}
+                          {s.ended_at&&<span style={{color:"#b8a090"}}> · ended {parse(s.ended_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
                           {s.location&&<span> · <span style={{cursor:"pointer",color:"#b07a5e",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(s.location)}`);}}>📍 {s.location}</span></span>}
                         </div>
                       </div>
-                      {isToday&&<span style={{fontSize:".68rem",background:"#b07a5e",color:"#fff",borderRadius:20,padding:"2px 8px",whiteSpace:"nowrap"}}>Today</span>}
                     </div>
-                    {s.reminder&&<div className="sched-reminder">🔔 at {s.time}</div>}
+                    {s.reminder&&!s.ended_at&&<div className="sched-reminder">🔔 at {s.time}</div>}
                   </div>
                 );
               };
 
-              const TxCard=({tx})=>{
+              const PlanCardCarousel=({s})=>{
+                const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
+                const recurDays=(s.days||[]).sort().map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
+                return (
+                  <div style={{flexShrink:0,width:148,position:"relative"}}>
+                    <div onClick={()=>setSelectedPlan({type:"plan",data:s})}
+                      style={{background:"#fff8f3",border:`1.5px solid ${s.ended_at?"#e8d8cc":"#d4c4b4"}`,borderRadius:16,padding:"14px 12px 10px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:s.ended_at?.55:1,height:"100%"}}>
+                      <div style={{fontSize:"1.6rem",textAlign:"center"}}>{it.emoji}</div>
+                      <div style={{fontSize:".82rem",fontWeight:500,color:"#3a2e27",textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{it.label}</div>
+                      {s.ended_at
+                        ?<div style={{fontSize:".6rem",color:"#a08070",textAlign:"center",background:"#f0e4d8",borderRadius:10,padding:"2px 6px"}}>Ended</div>
+                        :<div style={{fontSize:".64rem",color:"#9a7050",textAlign:"center"}}>
+                          {(s.days||[]).length===7?"Every day":recurDays||`${(s.dates||[]).length} date${(s.dates||[]).length!==1?"s":""}`}
+                        </div>
+                      }
+                      {s.endDate&&!s.ended_at&&<div style={{fontSize:".58rem",color:"#b8a090",textAlign:"center"}}>until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>}
+                    </div>
+                    <button onClick={e=>{e.stopPropagation();setSelectedPlan({type:"plan",data:{...s,_editMode:true}});}}
+                      style={{position:"absolute",top:8,right:8,background:"rgba(255,248,243,.9)",border:"1px solid #e8d8cc",borderRadius:8,color:"#a08070",fontSize:".58rem",padding:"2px 6px",cursor:"pointer",lineHeight:1.4}}>Edit</button>
+                  </div>
+                );
+              };
+
+              const TxCardList=({tx})=>{
                 const upcoming=tx.dates.filter(d=>d>=today).sort();
                 const next=upcoming[0];
+                const isPast=!upcoming.length;
                 return (
-                  <div className="sched-card treatment-card" style={{cursor:"pointer",marginBottom:8}} onClick={()=>setSelectedPlan({type:"treatment",data:tx})}>
+                  <div className="sched-card treatment-card" style={{cursor:"pointer",marginBottom:8,opacity:isPast?.55:1}} onClick={()=>setSelectedPlan({type:"treatment",data:tx})}>
                     <div className="sched-top">
                       <span style={{fontSize:"1rem"}}>💉</span>
                       <div style={{flex:1}}>
-                        <div className="sched-label">{tx.name}</div>
+                        <div className="sched-label">{tx.name}{isPast&&<span style={{fontSize:".62rem",background:"#e8d8cc",color:"#a08070",borderRadius:10,padding:"1px 7px",marginLeft:6}}>Past</span>}</div>
                         <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
-                          {tx.dates.length} date{tx.dates.length!==1?"s":""} · {tx.completedDates?.length||0} done{tx.location?<span> · <span style={{cursor:"pointer",color:"#b07a5e",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(tx.location)}`);}}>📍 {tx.location}</span></span>:null}
+                          {tx.completedDates?.length||0} done
+                          {tx.location?<span> · <span style={{cursor:"pointer",color:"#b07a5e",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(tx.location)}`);}}>📍 {tx.location}</span></span>:null}
                           {next&&<span> · Next: {parse(next).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
                         </div>
                       </div>
@@ -3667,20 +4624,96 @@ export default function App({ user }) {
                 );
               };
 
-              return !hasAnything?(
-                <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No plans yet — tap + Add to start</div>
-              ):(
+              const TxCardCarousel=({tx})=>{
+                const upcoming=tx.dates.filter(d=>d>=today).sort();
+                const next=upcoming[0];
+                const isPast=!upcoming.length;
+                return (
+                  <div onClick={()=>setSelectedPlan({type:"treatment",data:tx})}
+                    style={{flexShrink:0,width:148,background:"#fff8f3",border:`1.5px solid ${isPast?"#e8d8cc":"#e0c8b8"}`,borderRadius:16,padding:"14px 12px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:isPast?.55:1}}>
+                    <div style={{fontSize:"1.6rem",textAlign:"center"}}>💉</div>
+                    <div style={{fontSize:".82rem",fontWeight:500,color:"#3a2e27",textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{tx.name}</div>
+                    {isPast
+                      ?<div style={{fontSize:".6rem",color:"#a08070",textAlign:"center",background:"#f0e4d8",borderRadius:10,padding:"2px 6px"}}>Past</div>
+                      :<div style={{fontSize:".64rem",color:"#9a7050",textAlign:"center"}}>
+                        {next?`Next: ${parse(next).toLocaleDateString("en-US",{month:"short",day:"numeric"})}`:`${tx.completedDates?.length||0} done`}
+                      </div>
+                    }
+                    {tx.dates.includes(today)&&<div style={{fontSize:".6rem",background:"#e06050",color:"#fff",borderRadius:10,padding:"2px 6px",textAlign:"center"}}>Today</div>}
+                  </div>
+                );
+              };
+
+              // Treatments filter bar — defined before SectionCarousel so carousel can use it
+              const TxFilterBar=()=>(
+                <div style={{display:"flex",gap:6,marginBottom:10}}>
+                  {[["all","All"],["upcoming","Upcoming"],["past","Past"]].map(([v,l])=>(
+                    <button key={v} onClick={()=>setTxFilter(v)}
+                      style={{padding:"3px 10px",borderRadius:14,border:"1px solid",fontSize:".68rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",
+                        background:txFilter===v?"#b07a5e":"transparent",
+                        color:txFilter===v?"#fff":"#a08070",
+                        borderColor:txFilter===v?"#b07a5e":"#e0cfc4"}}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              );
+
+              const ScrollHint=()=>(<div style={{display:"flex",justifyContent:"center",marginTop:8}}><div style={{width:28,height:3,borderRadius:2,background:"linear-gradient(90deg,transparent,#d8c4b8,transparent)"}}/></div>);
+
+              const SectionCarousel=({label,planItems=[],txItems=[],allTxForSection=[]})=>{
+                if(!planItems.length&&!txItems.length) return null;
+                const total=planItems.length+txItems.length;
+                return (
+                  <div style={{marginBottom:16,background:"#fffaf7",border:"1.5px solid #f0e4dc",borderRadius:18,padding:"14px 14px 10px"}}>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:allTxForSection.length?6:10}}>
+                      <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",fontWeight:600}}>{label}</div>
+                    </div>
+                    {allTxForSection.length>0&&<TxFilterBar/>}
+                    <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:4,scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch"}}>
+                      {planItems.map(s=><PlanCardCarousel key={s.id} s={s}/>)}
+                      {txItems.map(tx=><TxCardCarousel key={tx.id} tx={tx}/>)}
+                    </div>
+                    {total>2&&<ScrollHint/>}
+                  </div>
+                );
+              };
+
+              if(!hasAnything) return <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No plans yet — tap + Add to start</div>;
+              if(!hasVisible) return <div style={{textAlign:"center",padding:"24px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem"}}>No {plansFilter} plans</div>;
+
+              const allSkinTx=treatments.filter(t=>t.type==="skin");
+              const allHairTx=treatments.filter(t=>t.type==="hair");
+
+              if(plansViewMode==="carousel") return (
                 <>
-                  {(skinPlans.length>0||skinTreatments.length>0)&&<>
-                    <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,display:"flex",alignItems:"center",gap:6}}>🌿 Skin</div>
-                    {skinPlans.map(s=><PlanCard key={s.id} s={s}/>)}
-                    {skinTreatments.map(tx=><TxCard key={tx.id} tx={tx}/>)}
-                  </>}
-                  {(hairPlans.length>0||hairTreatments.length>0)&&<>
-                    <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,marginTop:(skinPlans.length||skinTreatments.length)?20:0,display:"flex",alignItems:"center",gap:6}}>✨ Hair</div>
-                    {hairPlans.map(s=><PlanCard key={s.id} s={s}/>)}
-                    {hairTreatments.map(tx=><TxCard key={tx.id} tx={tx}/>)}
-                  </>}
+                  <SectionCarousel label="🌿 Skin" planItems={skinPlans} txItems={skinTreatments} allTxForSection={allSkinTx}/>
+                  <SectionCarousel label="✨ Hair" planItems={hairPlans} txItems={hairTreatments} allTxForSection={allHairTx}/>
+                </>
+              );
+
+              return (
+                <>
+                  {(skinPlans.length>0||skinTreatments.length>0)&&(
+                    <div style={{marginBottom:16,background:"#fffaf7",border:"1.5px solid #f0e4dc",borderRadius:18,padding:"14px 14px 6px"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",fontWeight:600}}>🌿 Skin</div>
+                        {skinTreatments.length>0&&<TxFilterBar/>}
+                      </div>
+                      {skinPlans.map(s=><PlanCardList key={s.id} s={s}/>)}
+                      {skinTreatments.map(tx=><TxCardList key={tx.id} tx={tx}/>)}
+                    </div>
+                  )}
+                  {(hairPlans.length>0||hairTreatments.length>0)&&(
+                    <div style={{marginBottom:16,background:"#fffaf7",border:"1.5px solid #f0e4dc",borderRadius:18,padding:"14px 14px 6px"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",fontWeight:600}}>✨ Hair</div>
+                        {hairTreatments.length>0&&<TxFilterBar/>}
+                      </div>
+                      {hairPlans.map(s=><PlanCardList key={s.id} s={s}/>)}
+                      {hairTreatments.map(tx=><TxCardList key={tx.id} tx={tx}/>)}
+                    </div>
+                  )}
                 </>
               );
             })()}
@@ -3739,6 +4772,7 @@ export default function App({ user }) {
 
       {modal==="manageItems"&&<ManageItemsModal type={activeTab} items={activeTab==="skin"?skinR:hairR} onAdd={item=>addItem(activeTab,item)} onRemove={id=>removeItem(activeTab,id)} onEdit={(id,changes)=>editItem(activeTab,id,changes)} onClose={()=>setModal(null)}/>}
       {selectedPlan&&<PlanModal allItems={allItems} skinItems={skinR} hairItems={hairR} schedules={schedules} treatments={treatments}
+        entries={entries} products={products} wishlist={wishlist} today={today}
         onSave={async s=>{ await saveSched(s); setSelectedPlan(null); }}
         onSaveMany={async plans=>{ await saveSchedMany(plans); setSelectedPlan(null); }}
         onDelete={id=>{ confirmDeleteSched(id); setSelectedPlan(null); }}
@@ -3788,30 +4822,7 @@ export default function App({ user }) {
         }}/>}
       {confirmDelete&&<ConfirmDialog message={confirmDelete.message} onConfirm={()=>{confirmDelete.onConfirm();setConfirmDelete(null);}} onCancel={()=>setConfirmDelete(null)}/>}
 
-      {sideMenu&&<div className="side-menu-overlay" onClick={()=>setSideMenu(false)}/>}
-      <div className={`side-menu ${sideMenu?"open":""}`}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-          <div className="side-menu-title" style={{marginBottom:0}}>Menu</div>
-          <button onClick={()=>setSideMenu(false)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#a08070",lineHeight:1,padding:"2px 6px"}}>×</button>
-        </div>
-        <button className="side-menu-item" onClick={()=>{setPageView("account");setSideMenu(false);}}>
-          <span>👤</span> My Account
-        </button>
-        <hr style={{border:"none",borderTop:"1px solid #f0e0d4",margin:"8px 0"}}/>
-        <button className="side-menu-item" onClick={()=>{setPageView("products");setSideMenu(false);}}>
-          <span>💄</span> My Products
-        </button>
-        <button className="side-menu-item" onClick={()=>{setPageView("wishlist");setSideMenu(false);}}>
-          <span>💝</span> Wishlist
-        </button>
-        <button className="side-menu-item" onClick={()=>{setPageView("purchases");setSideMenu(false);}}>
-          <span>💳</span> Purchases
-        </button>
-        <hr style={{border:"none",borderTop:"1px solid #f0e0d4",margin:"16px 0"}}/>
-        <button className="side-menu-item" style={{color:"#c0a898"}} onClick={()=>supabase.auth.signOut()}>
-          <span>🚪</span> Sign Out
-        </button>
-      </div>
+      {sideMenuEl}
     </div>
   );
 }
