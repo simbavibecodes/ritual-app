@@ -581,75 +581,50 @@ function SpendingSummary({ purchases, period, onGoToPurchases }) {
 // ProductSearch removed — Open Beauty Facts data was low quality.
 // Global product autofill will be re-introduced when the in-house catalog has sufficient data.
 
-function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, onBack, onHome, onMenuOpen }) {
+function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill, onSave, onDelete, onBack, onHome, onMenuOpen }) {
   const today = fmt(new Date());
   const thisYear = new Date().getFullYear().toString();
-  const [showForm, setShowForm] = useState(false);
+  const [addMode, setAddMode] = useState(null); // null | "source" | "picker" | "form"
+  const [pickerType, setPickerType] = useState(null); // "products" | "wishlist"
+  const [pickerSearch, setPickerSearch] = useState("");
   const [editP, setEditP] = useState(null);
   const [filterCat, setFilterCat] = useState("all");
-  const [chooseCat, setChooseCat] = useState(false);
   const [openMonths, setOpenMonths] = useState({[today.slice(0,7)]:true});
   const [openYears, setOpenYears] = useState({});
+  const [historyItem, setHistoryItem] = useState(null);
 
-  const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, price:"", quantity:"1", date:today, notes:"", tags:[], image:"" });
-  const startAdd = () => { setChooseCat(true); };
+  const blank = (cat, extra={}) => ({ id:uid(), name:"", brand:"", category:cat, price:"", quantity:"1", date:today, notes:"", tags:[], image:"", link:"", treatment_type:"", product_id:null, ...extra });
 
-  // Handle prefill from wishlist
   useEffect(()=>{
-    if (prefill) { setEditP(prefill); setShowForm(true); setChooseCat(false); onClearPrefill&&onClearPrefill(); }
+    if (prefill) { setEditP({...prefill, price:String(prefill.price||""), quantity:String(prefill.quantity||1), treatment_type:prefill.treatment_type||"", product_id:prefill.product_id||null}); setAddMode("form"); onClearPrefill&&onClearPrefill(); }
   }, [prefill]);
-  const startEdit = p => { setEditP({...p, price:String(p.price), quantity:String(p.quantity)}); setShowForm(true); setChooseCat(false); };
-  const save = () => { if(!editP.name.trim()||!editP.date) return; onSave(editP); setShowForm(false); setEditP(null); };
+
+  const startEdit = p => { setEditP({...p, price:String(p.price), quantity:String(p.quantity||1), treatment_type:p.treatment_type||""}); setAddMode("form"); };
+  const save = () => { if(!editP.name.trim()||!editP.date) return; onSave(editP); setAddMode(null); setEditP(null); };
+  const cancelForm = () => { setAddMode(null); setEditP(null); setPickerType(null); setPickerSearch(""); };
   const toggleMonth = m => setOpenMonths(s=>({...s,[m]:!s[m]}));
   const toggleYear = y => setOpenYears(s=>({...s,[y]:!s[y]}));
 
   const filtered = purchases.filter(p=>filterCat==="all"||p.category===filterCat);
   const grandTotal = filtered.reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
 
-  // Separate current year (live months) from past years (tiles)
   const currentYearPurchases = filtered.filter(p=>p.date.startsWith(thisYear));
   const pastPurchases = filtered.filter(p=>!p.date.startsWith(thisYear));
-
-  // Group current year by month
   const monthGroups = {};
-  currentYearPurchases.forEach(p=>{
-    const m=p.date.slice(0,7);
-    if(!monthGroups[m]) monthGroups[m]=[];
-    monthGroups[m].push(p);
-  });
+  currentYearPurchases.forEach(p=>{ const m=p.date.slice(0,7); if(!monthGroups[m]) monthGroups[m]=[]; monthGroups[m].push(p); });
   const currentMonths = Object.keys(monthGroups).sort((a,b)=>b.localeCompare(a));
-
-  // Group past by year
   const yearGroups = {};
-  pastPurchases.forEach(p=>{
-    const y=p.date.slice(0,4);
-    if(!yearGroups[y]) yearGroups[y]=[];
-    yearGroups[y].push(p);
-  });
+  pastPurchases.forEach(p=>{ const y=p.date.slice(0,4); if(!yearGroups[y]) yearGroups[y]=[]; yearGroups[y].push(p); });
   const pastYears = Object.keys(yearGroups).sort((a,b)=>b.localeCompare(a));
 
-  const PurchaseCard = ({p}) => (
-    <div className="purch-card">
-      {p.image
-        ?<img src={p.image} alt="" style={{width:40,height:40,objectFit:"cover",borderRadius:8,flexShrink:0}}/>
-        :<div style={{fontSize:"1.1rem",flexShrink:0}}>{p.category==="skin"?"🌿":p.category==="treatment"?"💉":"✨"}</div>
-      }
-      <div className="purch-info">
-        <div className="purch-name">{p.name}</div>
-        <div className="purch-meta">{p.brand&&`${p.brand} · `}{p.category} · {parse(p.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})}{p.quantity>1&&` · qty ${p.quantity}`}</div>
-        {p.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>{p.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 8px",color:"#8a6858"}}>{t}</span>)}</div>}
-        {p.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
-      </div>
-      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}}>
-        <div className="purch-price">${((parseFloat(p.price)||0)*(parseInt(p.quantity)||1)).toFixed(2)}</div>
-        <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
-          {p.link&&<button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px",color:"#b07a5e"}} onClick={()=>openUrl(p.link)}>Buy Now</button>}
-          <button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px"}} onClick={()=>startEdit(p)}>Edit</button>
-          <button className="del-btn" style={{fontSize:".68rem"}} onClick={()=>onDelete(p.id)}>✕</button>
-        </div>
-      </div>
-    </div>
-  );
+  const getProductHistory = (p) => {
+    const key = p.name.toLowerCase().trim()+"|"+(p.brand||"").toLowerCase().trim();
+    return purchases.filter(x=>x.name.toLowerCase().trim()+"|"+(x.brand||"").toLowerCase().trim()===key).sort((a,b)=>a.date.localeCompare(b.date));
+  };
+
+  const pickerItems = pickerType==="products"
+    ? (products||[]).filter(p=>!pickerSearch||p.name.toLowerCase().includes(pickerSearch.toLowerCase())||(p.brand||"").toLowerCase().includes(pickerSearch.toLowerCase()))
+    : (wishlist||[]).filter(p=>!pickerSearch||p.name.toLowerCase().includes(pickerSearch.toLowerCase())||(p.brand||"").toLowerCase().includes(pickerSearch.toLowerCase()));
 
   const YearSplit = ({ps}) => {
     const skin=ps.filter(p=>p.category==="skin").reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
@@ -672,16 +647,86 @@ function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, o
     );
   };
 
+  const PURCH_STYLES = `
+    .purch-form{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:16px;padding:18px;margin-bottom:16px}
+    .purch-month-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:12px;cursor:pointer;margin-bottom:6px;transition:background .15s}
+    .purch-month-header:hover{background:#fdf0e8}
+    .year-tile{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:16px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:all .15s}
+    .year-tile:hover{background:#fdf0e8}
+  `;
+
+  // ── Purchase history deep-dive ───────────────────────────────────────────
+  if (historyItem) {
+    const history = getProductHistory(historyItem);
+    const totalSpent = history.reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
+    const dates = history.map(p=>p.date).sort();
+    let avgDays = null;
+    if (dates.length>1) {
+      const gaps=dates.slice(1).map((d,i)=>(parse(d)-parse(dates[i]))/(86400000));
+      avgDays=Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length);
+    }
+    return (
+      <div className="app">
+        <style>{PURCH_STYLES}</style>
+        <div className="header" style={{position:"relative"}}>
+          <button onClick={()=>setHistoryItem(null)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",fontFamily:"'DM Sans',sans-serif",fontSize:".82rem"}}>← Back</button>
+          <div className="header-title"><span>{historyItem.name}</span></div>
+          {onMenuOpen&&<HamburgerBtn onClick={onMenuOpen}/>}
+        </div>
+        {historyItem.brand&&<div style={{fontSize:".78rem",color:"#a08070",marginBottom:16,marginTop:-4}}>{historyItem.brand}</div>}
+        <div style={{display:"flex",gap:10,marginBottom:20}}>
+          {[
+            [history.length, history.length===1?"purchase":"purchases"],
+            ["$"+totalSpent.toFixed(0),"total spent"],
+            avgDays?["~"+avgDays+"d","avg. frequency"]:null
+          ].filter(Boolean).map(([val,lbl],i)=>(
+            <div key={i} style={{flex:1,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"14px 10px",textAlign:"center"}}>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.7rem",color:"#3a2e27",lineHeight:1}}>{val}</div>
+              <div style={{fontSize:".64rem",color:"#a08070",marginTop:4,letterSpacing:".08em",textTransform:"uppercase"}}>{lbl}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",color:"#5a3a27",marginBottom:10,fontStyle:"italic"}}>Purchase history</div>
+        {history.slice().reverse().map(p=>(
+          <div key={p.id} style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <div style={{fontSize:".86rem",color:"#3a2e27"}}>{parse(p.date).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
+              {p.quantity>1&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:1}}>qty {p.quantity}</div>}
+              {p.notes&&<div style={{fontSize:".72rem",color:"#a08070",fontStyle:"italic",marginTop:1}}>{p.notes}</div>}
+            </div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",color:"#b07a5e"}}>${((parseFloat(p.price)||0)*(parseInt(p.quantity)||1)).toFixed(2)}</div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const PurchaseCard = ({p}) => (
+    <div className="purch-card" style={{cursor:"pointer"}} onClick={()=>setHistoryItem(p)}>
+      {p.image
+        ?<img src={p.image} alt="" style={{width:40,height:40,objectFit:"cover",borderRadius:8,flexShrink:0}}/>
+        :<div style={{fontSize:"1.1rem",flexShrink:0}}>{p.category==="skin"?"🌿":p.category==="treatment"?"💉":"✨"}</div>
+      }
+      <div className="purch-info">
+        <div className="purch-name">{p.name}</div>
+        <div className="purch-meta">{p.brand&&`${p.brand} · `}{p.category==="treatment"&&p.treatment_type?`${p.treatment_type} · `:""}{p.category} · {parse(p.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})}{p.quantity>1&&` · qty ${p.quantity}`}</div>
+        {p.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>{p.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 8px",color:"#8a6858"}}>{t}</span>)}</div>}
+        {p.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
+      </div>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}} onClick={e=>e.stopPropagation()}>
+        <div className="purch-price">${((parseFloat(p.price)||0)*(parseInt(p.quantity)||1)).toFixed(2)}</div>
+        <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
+          {p.link&&<button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px",color:"#b07a5e"}} onClick={()=>openUrl(p.link)}>Buy Now</button>}
+          <button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px"}} onClick={()=>startEdit(p)}>Edit</button>
+          <button className="del-btn" style={{fontSize:".68rem"}} onClick={()=>onDelete(p.id)}>✕</button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="app">
-      <style>{`
-        .purch-form{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:16px;padding:18px;margin-bottom:16px}
-        .purch-month-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:12px;cursor:pointer;margin-bottom:6px;transition:background .15s}
-        .purch-month-header:hover{background:#fdf0e8}
-        .year-tile{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:16px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:all .15s}
-        .year-tile:hover{background:#fdf0e8}
-        .grand-total{background:linear-gradient(135deg,#f9ede4,#fdf6f0);border:1.5px solid #e8c8b4;border-radius:14px;padding:14px 18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
-      `}</style>
+      <style>{PURCH_STYLES}</style>
       <div className="header" style={{position:"relative"}}>
         <button onClick={onHome||onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
         <div className="header-title">My <span>Purchases</span></div>
@@ -693,84 +738,139 @@ function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, o
           <div style={{fontSize:".68rem",letterSpacing:".12em",textTransform:"uppercase",color:"#a08070",marginBottom:4}}>All Time Spending</div>
           <div style={{display:"flex",alignItems:"baseline",gap:10}}>
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"2.4rem",color:"#3a2e27",lineHeight:1}}>${grandTotal.toFixed(2)}</div>
-            <div style={{fontSize:".76rem",color:"#b07a5e"}}>{filtered.length} product{filtered.length!==1?"s":""}</div>
+            <div style={{fontSize:".76rem",color:"#b07a5e"}}>{filtered.length} purchase{filtered.length!==1?"s":""}</div>
           </div>
         </div>
       )}
 
-      <div style={{display:"flex",gap:8,marginBottom:16}}>
-        {[["all","All"],["skin","🌿"],["hair","✨"],["treatment","💉"]].map(([v,l])=>(
-          <button key={v} className={`period-chip ${filterCat===v?"on":""}`} style={{flex:1,fontSize:".82rem"}} onClick={()=>setFilterCat(v)}>{l}{v!=="all"?" "+v.charAt(0).toUpperCase()+v.slice(1):""}</button>
+      <div style={{display:"flex",gap:6,marginBottom:16}}>
+        {[["all","All"],["skin","🌿 Skin"],["hair","✨ Hair"],["treatment","💉 Treatment"]].map(([v,l])=>(
+          <button key={v} className={`period-chip ${filterCat===v?"on":""}`} style={{flex:1,fontSize:".74rem",padding:"6px 4px"}} onClick={()=>setFilterCat(v)}>{l}</button>
         ))}
       </div>
 
-      {chooseCat&&(
+      {/* ── Source picker ── */}
+      {addMode==="source"&&(
         <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
           <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:14}}>What did you purchase?</div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
-              <button key={cat} onClick={()=>{setEditP(blank(cat));setShowForm(true);setChooseCat(false);}}
-                style={{display:"flex",alignItems:"center",gap:12,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+            {[
+              ["📦","From My Products","Pick a product you already track",()=>{setPickerType("products");setAddMode("picker");}],
+              ["💫","From My Wishlist","Pick something from your wishlist",()=>{setPickerType("wishlist");setAddMode("picker");}],
+              ["💉","Treatment","Facial, microneedling, and more",()=>{setEditP(blank("treatment"));setAddMode("form");}],
+              ["✏️","Add New","Enter a product manually",()=>{setEditP(blank("skin"));setAddMode("form");}],
+            ].map(([emoji,label,sub,fn])=>(
+              <button key={label} onClick={fn}
+                style={{display:"flex",alignItems:"center",gap:12,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
                 <span style={{fontSize:"1.3rem"}}>{emoji}</span>
-                <span style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>{label} Product</span>
+                <div>
+                  <div style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>{label}</div>
+                  <div style={{fontSize:".72rem",color:"#a08070",marginTop:1}}>{sub}</div>
+                </div>
               </button>
             ))}
-            <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".78rem",color:"#a08070",cursor:"pointer",marginTop:4,fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+            <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:".78rem",color:"#a08070",cursor:"pointer",marginTop:4}}>Cancel</button>
           </div>
         </div>
       )}
 
-      {showForm&&editP&&(
+      {/* ── Picker (products or wishlist) ── */}
+      {addMode==="picker"&&(
+        <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <button className="ghost-btn" style={{fontSize:".75rem",padding:"4px 10px"}} onClick={()=>setAddMode("source")}>← Back</button>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#7a5c48"}}>{pickerType==="products"?"My Products":"My Wishlist"}</div>
+            <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#a08070"}}>×</button>
+          </div>
+          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Search…" value={pickerSearch} onChange={e=>setPickerSearch(e.target.value)}/>
+          <div style={{maxHeight:280,overflowY:"auto",display:"flex",flexDirection:"column",gap:6}}>
+            {pickerItems.length===0&&<div style={{textAlign:"center",padding:"20px 0",color:"#b09080",fontStyle:"italic",fontSize:".86rem"}}>Nothing found</div>}
+            {pickerItems.map(item=>(
+              <div key={item.id} onClick={()=>{
+                setEditP(blank(item.category||"skin",{name:item.name,brand:item.brand||"",image:item.image||"",link:item.link||"",price:String(item.price||""),product_id:pickerType==="products"?item.id:null}));
+                setPickerSearch(""); setAddMode("form");
+              }} style={{display:"flex",alignItems:"center",gap:10,background:"#fdf6f0",border:"1px solid #e8d8cc",borderRadius:10,padding:"10px 12px",cursor:"pointer"}}>
+                {item.image
+                  ?<img src={item.image} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:7,flexShrink:0}}/>
+                  :<div style={{width:36,height:36,borderRadius:7,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",flexShrink:0}}>{item.category==="skin"?"🌿":"✨"}</div>
+                }
+                <div style={{minWidth:0}}>
+                  <div style={{fontSize:".86rem",fontWeight:500,color:"#3a2e27",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{item.name}</div>
+                  {item.brand&&<div style={{fontSize:".72rem",color:"#a08070"}}>{item.brand}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Purchase form ── */}
+      {addMode==="form"&&editP&&(
         <div className="purch-form">
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{purchases.find(p=>p.id===editP.id)?"Edit":"Add"} Purchase</div>
-            <button onClick={()=>{setShowForm(false);setEditP(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+            <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
           </div>
-          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editP.name} onChange={e=>setEditP(p=>({...p,name:e.target.value}))}/>
-          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={editP.brand} onChange={e=>setEditP(p=>({...p,brand:e.target.value}))}/>
-          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={editP.link||""} onChange={e=>setEditP(p=>({...p,link:e.target.value}))}/>
-          <div style={{display:"flex",gap:8,marginBottom:10}}>
-            {["skin","hair","treatment"].map(cat=>(
-              <button key={cat} className={`dow-chip ${editP.category===cat?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".74rem"}}
-                onClick={()=>setEditP(p=>({...p,category:cat}))}>
-                {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
-              </button>
-            ))}
-          </div>
-          <div style={{fontSize:".7rem",color:"#a08070",marginBottom:6,letterSpacing:".08em",textTransform:"uppercase"}}>Product Type</div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-            {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
-              <button key={tag} className={`dow-chip ${(editP.tags||[]).includes(tag)?"on":""}`}
-                style={{fontSize:".74rem",padding:"4px 10px"}}
-                onClick={()=>setEditP(p=>({...p,tags:(p.tags||[]).includes(tag)?(p.tags||[]).filter(t=>t!==tag):[...(p.tags||[]),tag]}))}>
-                {tag}
-              </button>
-            ))}
-          </div>
+
+          {editP.category==="treatment"?(
+            <>
+              <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Treatment name *" value={editP.name} onChange={e=>setEditP(p=>({...p,name:e.target.value}))} autoFocus/>
+              <div style={{display:"flex",gap:8,marginBottom:10}}>
+                {["skin","hair"].map(tp=>(
+                  <button key={tp} className={`dow-chip ${editP.treatment_type===tp?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".78rem"}}
+                    onClick={()=>setEditP(p=>({...p,treatment_type:tp}))}>
+                    {tp==="skin"?"🌿 Skin":"✨ Hair"}
+                  </button>
+                ))}
+              </div>
+            </>
+          ):(
+            <>
+              <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editP.name} onChange={e=>setEditP(p=>({...p,name:e.target.value}))} autoFocus/>
+              <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={editP.brand||""} onChange={e=>setEditP(p=>({...p,brand:e.target.value}))}/>
+              <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={editP.link||""} onChange={e=>setEditP(p=>({...p,link:e.target.value}))}/>
+              <div style={{display:"flex",gap:8,marginBottom:10}}>
+                {["skin","hair","treatment"].map(cat=>(
+                  <button key={cat} className={`dow-chip ${editP.category===cat?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".74rem"}}
+                    onClick={()=>setEditP(p=>({...p,category:cat}))}>
+                    {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
+                  </button>
+                ))}
+              </div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+                {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
+                  <button key={tag} className={`dow-chip ${(editP.tags||[]).includes(tag)?"on":""}`} style={{fontSize:".74rem",padding:"4px 10px"}}
+                    onClick={()=>setEditP(p=>({...p,tags:(p.tags||[]).includes(tag)?(p.tags||[]).filter(t=>t!==tag):[...(p.tags||[]),tag]}))}>
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             <div style={{flex:1}}>
               <div style={{fontSize:".7rem",color:"#a08070",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Price ($)</div>
               <input className="ifield" style={{width:"100%"}} type="number" placeholder="0.00" value={editP.price} onChange={e=>setEditP(p=>({...p,price:e.target.value}))}/>
             </div>
-            <div style={{width:70}}>
+            {editP.category!=="treatment"&&<div style={{width:70}}>
               <div style={{fontSize:".7rem",color:"#a08070",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Qty</div>
               <input className="ifield" style={{width:"100%"}} type="number" min="1" value={editP.quantity} onChange={e=>setEditP(p=>({...p,quantity:e.target.value}))}/>
-            </div>
+            </div>}
             <div style={{flex:1}}>
               <div style={{fontSize:".7rem",color:"#a08070",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Date</div>
               <input className="ifield" style={{width:"100%"}} type="date" value={editP.date} onChange={e=>setEditP(p=>({...p,date:e.target.value}))}/>
             </div>
           </div>
-          <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={editP.notes} onChange={e=>setEditP(p=>({...p,notes:e.target.value}))}/>
+          <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={editP.notes||""} onChange={e=>setEditP(p=>({...p,notes:e.target.value}))}/>
           <button className="save-btn" onClick={save} disabled={!editP.name.trim()} style={{opacity:editP.name.trim()?1:.4}}>Save Purchase</button>
         </div>
       )}
 
-      {!showForm&&!chooseCat&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={startAdd}>+ Add Purchase</button>}
+      {!addMode&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>setAddMode("source")}>+ Add Purchase</button>}
 
       {filtered.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No purchases yet</div>}
 
-      {/* Current year - live month dropdowns */}
       {currentMonths.map(m=>{
         const ps=monthGroups[m];
         const mTotal=ps.reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
@@ -790,17 +890,13 @@ function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, o
         );
       })}
 
-      {/* Past years - tiles */}
       {pastYears.map(y=>{
         const ps=yearGroups[y];
         const yTotal=ps.reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
         const isOpen=!!openYears[y];
-
-        // Group by month inside year
         const yMonths={};
         ps.forEach(p=>{ const m=p.date.slice(0,7); if(!yMonths[m]) yMonths[m]=[]; yMonths[m].push(p); });
         const sortedYMonths=Object.keys(yMonths).sort((a,b)=>b.localeCompare(a));
-
         return (
           <div key={y} className="year-tile" onClick={()=>toggleYear(y)}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -843,115 +939,216 @@ function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, o
 
 
 // ── WISHLIST PAGE ──────────────────────────────────────────────
-function WishlistPage({ wishlist, products, onSave, onDelete, onMoveToCart, onBack, onHome, onMenuOpen }) {
+function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, onSavePlanned, onDeletePlanned, onMovePlannedToPurchase, onMoveToCart, onBack, onHome, onMenuOpen }) {
+  const today = fmt(new Date());
+  const [tab, setTab] = useState("wishlist"); // "wishlist" | "staples" | "planned"
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [chooseCat, setChooseCat] = useState(false);
-  const today = fmt(new Date());
+  const [purchasingItem, setPurchasingItem] = useState(null);
+  const [purchaseDate, setPurchaseDate] = useState(today);
+  const [showPlannedForm, setShowPlannedForm] = useState(false);
+  const [newPlanned, setNewPlanned] = useState(null);
 
-  const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, image:"", link:"", notes:"", tags:[], priority:0 });
-  const save = () => { if(!editItem.name.trim()) return; onSave(editItem); setShowForm(false); setEditItem(null); };
+  const blankWish = (cat) => ({ id:uid(), name:"", brand:"", category:cat, image:"", link:"", notes:"", tags:[], priority:0 });
+  const blankPlanned = () => ({ id:uid(), name:"", brand:"", category:"skin", image:"", link:"", price:"", notes:"", product_id:null, wishlist_id:null });
+  const saveWish = () => { if(!editItem.name.trim()) return; onSave(editItem); setShowForm(false); setEditItem(null); };
+  const savePlanned = () => { if(!newPlanned.name.trim()) return; onSavePlanned(newPlanned); setShowPlannedForm(false); setNewPlanned(null); };
 
-  const sorted = [...wishlist].sort((a,b)=>(b.priority||0)-(a.priority||0));
+  const staples = (products||[]).filter(p=>p.is_staple);
+  const sortedWish = [...wishlist].sort((a,b)=>(b.priority||0)-(a.priority||0));
+
+  const WISH_STYLES = `
+    .wish-card{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
+    .wish-card:hover{background:#fdf0e8}
+    .wish-name{font-size:.9rem;font-weight:500;color:#3a2e27;margin-bottom:2px}
+    .wish-meta{font-size:.72rem;color:#a08070}
+    .plan-carousel{display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none}
+    .plan-carousel::-webkit-scrollbar{display:none}
+    .plan-card{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:16px;padding:14px 12px;min-width:152px;max-width:152px;display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;position:relative}
+    .staple-card{background:#fff8f3;border:1.5px solid #e8c8a0;border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:center}
+    .tab-bar{display:flex;gap:0;background:#f0e4d8;border-radius:12px;padding:3px;margin-bottom:18px}
+    .tab-btn{flex:1;padding:7px 4px;border:none;background:transparent;border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.76rem;color:#a08070;transition:all .15s;font-weight:400}
+    .tab-btn.on{background:#fff;color:#3a2e27;font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  `;
 
   return (
     <div className="app">
-      <style>{`
-        .wish-card{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
-        .wish-card:hover{background:#fdf0e8}
-        .wish-name{font-size:.9rem;font-weight:500;color:#3a2e27;margin-bottom:2px}
-        .wish-meta{font-size:.72rem;color:#a08070}
-      `}</style>
+      <style>{WISH_STYLES}</style>
       <div className="header" style={{position:"relative"}}>
         <button onClick={onHome||onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
         <div className="header-title">My <span>Wishlist</span></div>
-        <div className="header-sub">{wishlist.length} item{wishlist.length!==1?"s":""} saved</div>
         {onMenuOpen&&<HamburgerBtn onClick={onMenuOpen}/>}
       </div>
 
-      {chooseCat&&(
-        <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
-          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:14}}>What are you wishing for?</div>
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
-              <button key={cat} onClick={()=>{setEditItem(blank(cat));setShowForm(true);setChooseCat(false);}}
-                style={{display:"flex",alignItems:"center",gap:12,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
-                <span style={{fontSize:"1.3rem"}}>{emoji}</span>
-                <span style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>{label} Product</span>
-              </button>
-            ))}
-            <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".78rem",color:"#a08070",cursor:"pointer",marginTop:4,fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
-          </div>
-        </div>
-      )}
+      <div className="tab-bar">
+        {[["wishlist","Wishlist"],["staples","⭐ Staples"],["planned","📋 Planned"]].map(([v,l])=>(
+          <button key={v} className={`tab-btn${tab===v?" on":""}`} onClick={()=>setTab(v)}>{l}</button>
+        ))}
+      </div>
 
-      {showForm&&editItem&&(
-        <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{wishlist.find(w=>w.id===editItem.id)?"Edit":"Add to"} Wishlist</div>
-            <button onClick={()=>{setShowForm(false);setEditItem(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+      {/* ── WISHLIST TAB ── */}
+      {tab==="wishlist"&&<>
+        {chooseCat&&(
+          <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:14}}>What are you wishing for?</div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
+                <button key={cat} onClick={()=>{setEditItem(blankWish(cat));setShowForm(true);setChooseCat(false);}}
+                  style={{display:"flex",alignItems:"center",gap:12,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+                  <span style={{fontSize:"1.3rem"}}>{emoji}</span>
+                  <span style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>{label} Product</span>
+                </button>
+              ))}
+              <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".78rem",color:"#a08070",cursor:"pointer",marginTop:4}}>Cancel</button>
+            </div>
           </div>
-          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editItem.name} onChange={e=>setEditItem(p=>({...p,name:e.target.value}))}/>
-          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={editItem.brand} onChange={e=>setEditItem(p=>({...p,brand:e.target.value}))}/>
-          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={editItem.link||""} onChange={e=>setEditItem(p=>({...p,link:e.target.value}))}/>
-          <div style={{display:"flex",gap:8,marginBottom:12}}>
-            {["skin","hair","treatment"].map(cat=>(
-              <button key={cat} className={`dow-chip ${editItem.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
-                onClick={()=>setEditItem(p=>({...p,category:cat}))}>
-                {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
-              </button>
-            ))}
-          </div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-            {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
-              <button key={tag} className={`dow-chip ${(editItem.tags||[]).includes(tag)?"on":""}`}
-                style={{fontSize:".74rem",padding:"4px 10px"}}
-                onClick={()=>setEditItem(p=>({...p,tags:(p.tags||[]).includes(tag)?(p.tags||[]).filter(t=>t!==tag):[...(p.tags||[]),tag]}))}>
-                {tag}
-              </button>
-            ))}
-          </div>
-          <div style={{marginBottom:12}}>
-            <div style={{fontSize:".7rem",color:"#a08070",marginBottom:6,letterSpacing:".08em",textTransform:"uppercase"}}>Priority</div>
-            <div style={{display:"flex",gap:8}}>
-              {[["0","Low"],["1","Medium"],["2","High 🔥"]].map(([v,l])=>(
-                <button key={v} className={`dow-chip ${String(editItem.priority||0)===v?"on":""}`}
-                  style={{flex:1,fontSize:".74rem",textAlign:"center"}}
+        )}
+
+        {showForm&&editItem&&(
+          <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{wishlist.find(w=>w.id===editItem.id)?"Edit":"Add to"} Wishlist</div>
+              <button onClick={()=>{setShowForm(false);setEditItem(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+            </div>
+            <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editItem.name} onChange={e=>setEditItem(p=>({...p,name:e.target.value}))}/>
+            <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={editItem.brand||""} onChange={e=>setEditItem(p=>({...p,brand:e.target.value}))}/>
+            <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL" value={editItem.link||""} onChange={e=>setEditItem(p=>({...p,link:e.target.value}))}/>
+            <div style={{display:"flex",gap:8,marginBottom:10}}>
+              {["skin","hair","treatment"].map(cat=>(
+                <button key={cat} className={`dow-chip ${editItem.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
+                  onClick={()=>setEditItem(p=>({...p,category:cat}))}>
+                  {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
+                </button>
+              ))}
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+              {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
+                <button key={tag} className={`dow-chip ${(editItem.tags||[]).includes(tag)?"on":""}`} style={{fontSize:".74rem",padding:"4px 10px"}}
+                  onClick={()=>setEditItem(p=>({...p,tags:(p.tags||[]).includes(tag)?(p.tags||[]).filter(t=>t!==tag):[...(p.tags||[]),tag]}))}>
+                  {tag}
+                </button>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:8,marginBottom:12}}>
+              {[["0","Low"],["1","Medium"],["2","🔥 High"]].map(([v,l])=>(
+                <button key={v} className={`dow-chip ${String(editItem.priority||0)===v?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
                   onClick={()=>setEditItem(p=>({...p,priority:parseInt(v)}))}>
                   {l}
                 </button>
               ))}
             </div>
+            <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={editItem.notes||""} onChange={e=>setEditItem(p=>({...p,notes:e.target.value}))}/>
+            <button className="save-btn" onClick={saveWish} disabled={!editItem.name.trim()} style={{opacity:editItem.name.trim()?1:.4}}>Save to Wishlist</button>
           </div>
-          <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={editItem.notes||""} onChange={e=>setEditItem(p=>({...p,notes:e.target.value}))}/>
-          <button className="save-btn" onClick={save} disabled={!editItem.name.trim()} style={{opacity:editItem.name.trim()?1:.4}}>Save to Wishlist</button>
-        </div>
-      )}
+        )}
 
-      {!showForm&&!chooseCat&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>setChooseCat(true)}>+ Add to Wishlist</button>}
+        {!showForm&&!chooseCat&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>setChooseCat(true)}>+ Add to Wishlist</button>}
+        {sortedWish.length===0&&!showForm&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Your wishlist is empty ✨</div>}
 
-      {sorted.length===0&&!showForm&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Your wishlist is empty ✨</div>}
-
-      {sorted.map(item=>(
-        <div key={item.id} className="wish-card">
-          {item.image
-            ?<img src={item.image} alt="" style={{width:52,height:52,objectFit:"cover",borderRadius:10,flexShrink:0}}/>
-            :<div style={{width:52,height:52,borderRadius:10,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{item.category==="skin"?"🌿":item.category==="treatment"?"💉":"✨"}</div>
-          }
-          <div style={{flex:1,minWidth:0}}>
-            <div className="wish-name">{item.name}</div>
-            <div className="wish-meta">{item.brand&&`${item.brand} · `}{item.category}{item.priority>0&&<span style={{color:item.priority===2?"#c06050":"#b07a5e",marginLeft:4}}>{item.priority===2?"🔥 High":"Medium"}</span>}</div>
-            {item.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>{item.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 8px",color:"#8a6858"}}>{t}</span>)}</div>}
-            {item.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:4,fontStyle:"italic"}}>{item.notes}</div>}
-            <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
-              {item.link&&<button onClick={()=>openUrl(item.link)} style={{background:"#b07a5e",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
-              <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>onMoveToCart(item)}>✓ Mark Purchased</button>
-              <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setEditItem({...item});setShowForm(true);}}>Edit</button>
-              <button className="del-btn" style={{fontSize:".74rem"}} onClick={()=>onDelete(item.id)}>✕</button>
+        {sortedWish.map(item=>(
+          <div key={item.id} className="wish-card">
+            {item.image
+              ?<img src={item.image} alt="" style={{width:52,height:52,objectFit:"cover",borderRadius:10,flexShrink:0}}/>
+              :<div style={{width:52,height:52,borderRadius:10,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{item.category==="skin"?"🌿":item.category==="treatment"?"💉":"✨"}</div>
+            }
+            <div style={{flex:1,minWidth:0}}>
+              <div className="wish-name">{item.name}</div>
+              <div className="wish-meta">{item.brand&&`${item.brand} · `}{item.category}{item.priority>0&&<span style={{color:item.priority===2?"#c06050":"#b07a5e",marginLeft:4}}>{item.priority===2?"🔥 High":"Medium"}</span>}</div>
+              {item.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>{item.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 8px",color:"#8a6858"}}>{t}</span>)}</div>}
+              {item.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:4,fontStyle:"italic"}}>{item.notes}</div>}
+              <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+                {item.link&&<button onClick={()=>openUrl(item.link)} style={{background:"#b07a5e",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
+                <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>onMoveToCart(item)}>✓ Purchased</button>
+                <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setNewPlanned({...blankPlanned(),name:item.name,brand:item.brand||"",category:item.category||"skin",image:item.image||"",link:item.link||"",notes:item.notes||"",wishlist_id:item.id});setShowPlannedForm(true);setTab("planned");}}>📋 Plan</button>
+                <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setEditItem({...item});setShowForm(true);}}>Edit</button>
+                <button className="del-btn" style={{fontSize:".74rem"}} onClick={()=>onDelete(item.id)}>✕</button>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </>}
+
+      {/* ── STAPLES TAB ── */}
+      {tab==="staples"&&<>
+        {staples.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No staples yet — mark a product as ⭐ Staple in My Products</div>}
+        {staples.map(p=>(
+          <div key={p.id} className="staple-card">
+            {p.image
+              ?<img src={p.image} alt="" style={{width:52,height:52,objectFit:"cover",borderRadius:10,flexShrink:0}}/>
+              :<div style={{width:52,height:52,borderRadius:10,background:"#f7ece4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{p.category==="skin"?"🌿":"✨"}</div>
+            }
+            <div style={{flex:1,minWidth:0}}>
+              <div className="wish-name">⭐ {p.name}</div>
+              <div className="wish-meta">{p.brand&&`${p.brand} · `}{p.category}{p.price&&` · $${p.price}`}</div>
+              {p.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
+              <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+                {p.link&&<button onClick={()=>openUrl(p.link)} style={{background:"#b07a5e",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
+                <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setNewPlanned({...blankPlanned(),name:p.name,brand:p.brand||"",category:p.category||"skin",image:p.image||"",link:p.link||"",price:String(p.price||""),product_id:p.id});setShowPlannedForm(true);setTab("planned");}}>📋 Plan to Buy</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </>}
+
+      {/* ── PLANNED PURCHASES TAB ── */}
+      {tab==="planned"&&<>
+        {purchasingItem&&(
+          <div style={{background:"#fff8f3",border:"1.5px solid #b07a5e",borderRadius:16,padding:"18px",marginBottom:16}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#3a2e27",marginBottom:4}}>Mark as purchased?</div>
+            <div style={{fontSize:".8rem",color:"#5a3a27",fontWeight:500,marginBottom:12}}>{purchasingItem.name}</div>
+            <input type="date" className="time-input" style={{width:"100%",marginBottom:14}} value={purchaseDate} onChange={e=>setPurchaseDate(e.target.value)}/>
+            <div style={{display:"flex",gap:8}}>
+              <button className="save-btn" style={{flex:1}} onClick={()=>{onMovePlannedToPurchase(purchasingItem,purchaseDate);setPurchasingItem(null);setPurchaseDate(today);}}>✓ Confirm</button>
+              <button className="ghost-btn" style={{flex:1,padding:"10px 0",fontSize:".82rem"}} onClick={()=>{setPurchasingItem(null);setPurchaseDate(today);}}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {showPlannedForm&&newPlanned&&(
+          <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>Plan to Buy</div>
+              <button onClick={()=>{setShowPlannedForm(false);setNewPlanned(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+            </div>
+            <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={newPlanned.name} onChange={e=>setNewPlanned(p=>({...p,name:e.target.value}))} autoFocus/>
+            <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={newPlanned.brand||""} onChange={e=>setNewPlanned(p=>({...p,brand:e.target.value}))}/>
+            <div style={{display:"flex",gap:8,marginBottom:10}}>
+              {["skin","hair","treatment"].map(cat=>(
+                <button key={cat} className={`dow-chip ${newPlanned.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
+                  onClick={()=>setNewPlanned(p=>({...p,category:cat}))}>
+                  {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
+                </button>
+              ))}
+            </div>
+            <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="💰 Estimated price" value={newPlanned.price||""} onChange={e=>setNewPlanned(p=>({...p,price:e.target.value}))}/>
+            <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={newPlanned.notes||""} onChange={e=>setNewPlanned(p=>({...p,notes:e.target.value}))}/>
+            <button className="save-btn" onClick={savePlanned} disabled={!newPlanned.name.trim()} style={{opacity:newPlanned.name.trim()?1:.4}}>Save Plan</button>
+          </div>
+        )}
+
+        {!showPlannedForm&&!purchasingItem&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>{setNewPlanned(blankPlanned());setShowPlannedForm(true);}}>+ Plan to Buy</button>}
+
+        {(plannedPurchases||[]).length===0&&!showPlannedForm&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Nothing planned yet</div>}
+
+        {(plannedPurchases||[]).length>0&&<div className="plan-carousel">
+          {(plannedPurchases||[]).map(item=>(
+            <div key={item.id} className="plan-card">
+              <button onClick={()=>onDeletePlanned(item.id)} style={{position:"absolute",top:6,right:6,background:"none",border:"none",cursor:"pointer",color:"#c09080",fontSize:".76rem",padding:"2px 5px",lineHeight:1,zIndex:1}}>✕</button>
+              {item.image
+                ?<img src={item.image} alt="" style={{width:72,height:72,borderRadius:12,objectFit:"cover"}}/>
+                :<div style={{width:72,height:72,borderRadius:12,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2rem"}}>{item.category==="skin"?"🌿":item.category==="treatment"?"💉":"✨"}</div>
+              }
+              <div style={{textAlign:"center",width:"100%"}}>
+                <div style={{fontSize:".82rem",fontWeight:500,color:"#3a2e27",lineHeight:1.3,marginBottom:2,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{item.name}</div>
+                {item.brand&&<div style={{fontSize:".68rem",color:"#a08070",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{item.brand}</div>}
+                {item.price&&<div style={{fontSize:".78rem",color:"#b07a5e",marginTop:2,fontWeight:500}}>${item.price}</div>}
+              </div>
+              <button className="save-btn" style={{width:"100%",padding:"7px 0",fontSize:".76rem",marginTop:2}} onClick={()=>{if(!purchasingItem){setPurchasingItem(item);setPurchaseDate(today);}}}>✓ Purchased</button>
+            </div>
+          ))}
+        </div>}
+      </>}
     </div>
   );
 }
@@ -3146,7 +3343,8 @@ export default function App({ user }) {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [lightboxPhoto, setLightboxPhoto] = useState(null); // {message, onConfirm}
   const [prefillPurchase, setPrefillPurchase] = useState(null); // when moving wishlist item to purchases
-  const [treatments,    setTreatments]    = useState([]); // [{id, name, type(skin/hair), dates:[], completedDates:[]}]
+  const [treatments,      setTreatments]      = useState([]);
+  const [plannedPurchases,setPlannedPurchases] = useState([]);
 
   // Persist current page across refreshes
   useEffect(() => { sessionStorage.setItem('ritual_view', view); }, [view]);
@@ -3214,8 +3412,10 @@ export default function App({ user }) {
           supabase.from("products").select("*").eq("user_id", user.id).order("created_at", {ascending:false}),
           supabase.from("wishlist").select("*").eq("user_id", user.id).order("created_at", {ascending:false}),
           supabase.from("snapshots").select("*, snapshot_products(*)").eq("user_id", user.id).order("started_at", {ascending:false}),
-        ]).then(([{ data: purchRows },{ data: prodRows },{ data: wishRows },{ data: snapRows }]) => {
-          if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[], image:r.image||'', link:r.link||'', frequency:r.frequency||'' })));
+          supabase.from("planned_purchases").select("*").eq("user_id", user.id).order("created_at", {ascending:false}),
+        ]).then(([{ data: purchRows },{ data: prodRows },{ data: wishRows },{ data: snapRows },{ data: ppRows }]) => {
+          if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[], image:r.image||'', link:r.link||'', frequency:r.frequency||'', product_id:r.product_id||null, treatment_type:r.treatment_type||'' })));
+          if (ppRows) setPlannedPurchases(ppRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", price:r.price||"", notes:r.notes||"", product_id:r.product_id||null, wishlist_id:r.wishlist_id||null })));
           if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", price:r.price||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[], is_staple:r.is_staple||false, sort_order:r.sort_order||0 })));
           if (wishRows) setWishlist(wishRows.map(r=>({ id:r.id, product_id:r.product_id||null, name:r.name||"", brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], priority:r.priority||0 })));
           if (snapRows) setSnapshots(snapRows.map(r=>({ id:r.id, label:r.label||"", started_at:r.started_at, ended_at:r.ended_at||null, is_base:r.is_base||false, products:r.snapshot_products||[] })));
@@ -3388,6 +3588,7 @@ export default function App({ user }) {
         category: p.category, price: parseFloat(p.price)||0,
         quantity: parseInt(p.quantity)||1, date: p.date, notes: p.notes||"",
         tags: p.tags||[], image: p.image||'', link: p.link||'', frequency: p.frequency||'',
+        product_id: p.product_id||null, treatment_type: p.treatment_type||null,
         updated_at: new Date().toISOString()
       }, { onConflict: "id" });
       setPurchases(prev => { const f=prev.filter(x=>x.id!==p.id); return [p,...f].sort((a,b)=>b.date.localeCompare(a.date)); });
@@ -3497,6 +3698,25 @@ export default function App({ user }) {
     showT("Removed from wishlist");
   };
   const confirmDeleteWishlistItem = (id) => setConfirmDelete({message:"Remove this item from your wishlist?", onConfirm:()=>deleteWishlistItem(id)});
+
+  // ── Planned Purchases CRUD ──
+  const savePlannedPurchase = async (item) => {
+    if (!user) return;
+    const row = { id:item.id, user_id:user.id, name:item.name, brand:item.brand||"", category:item.category||"skin", image:item.image||"", link:item.link||"", price:item.price||null, notes:item.notes||"", product_id:item.product_id||null, wishlist_id:item.wishlist_id||null };
+    await supabase.from("planned_purchases").upsert(row, {onConflict:"id"});
+    setPlannedPurchases(prev=>{ const idx=prev.findIndex(x=>x.id===item.id); return idx>=0?prev.map(x=>x.id===item.id?item:x):[item,...prev]; });
+    showT("Saved to planned purchases");
+  };
+  const deletePlannedPurchase = async (id) => {
+    await supabase.from("planned_purchases").delete().eq("id",id).eq("user_id",user.id);
+    setPlannedPurchases(prev=>prev.filter(p=>p.id!==id));
+  };
+  const movePlannedToPurchase = async (item, date) => {
+    const purchase = { id:uid(), name:item.name, brand:item.brand||"", category:item.category||"skin", price:String(item.price||""), quantity:"1", date, notes:item.notes||"", tags:[], image:item.image||"", link:item.link||"", frequency:"", product_id:item.product_id||null, treatment_type:"" };
+    await savePurchase(purchase);
+    await deletePlannedPurchase(item.id);
+  };
+
   const moveWishlistToPurchase = async (item) => {
     // Create a purchase from wishlist item
     const newPurchase = { id:crypto.randomUUID(), name:item.name, brand:item.brand||"", category:item.category||"skin", price:"", quantity:"1", date:fmt(new Date()), notes:item.notes||"", tags:item.tags||[], image:item.image||"", link:item.link||"" };
@@ -3745,7 +3965,7 @@ export default function App({ user }) {
   );
 
   if (pageView==="purchases") return (
-    <div><style>{STYLES}</style><PurchasesPage purchases={purchases} prefill={prefillPurchase} onClearPrefill={()=>setPrefillPurchase(null)} onSave={savePurchase} onDelete={confirmDeletePurchase} onBack={()=>setPageView(null)} onHome={goHome} onMenuOpen={()=>setSideMenu(true)}/>{sideMenuEl}</div>
+    <div><style>{STYLES}</style><PurchasesPage purchases={purchases} products={products} wishlist={wishlist} prefill={prefillPurchase} onClearPrefill={()=>setPrefillPurchase(null)} onSave={savePurchase} onDelete={confirmDeletePurchase} onBack={()=>setPageView(null)} onHome={goHome} onMenuOpen={()=>setSideMenu(true)}/>{sideMenuEl}</div>
   );
   if (pageView==="products") return (
     <div><style>{STYLES}</style><MyProductsPage
@@ -3772,8 +3992,12 @@ export default function App({ user }) {
     <div><style>{STYLES}</style><WishlistPage
       wishlist={wishlist}
       products={products}
+      plannedPurchases={plannedPurchases}
       onSave={saveWishlistItem}
       onDelete={confirmDeleteWishlistItem}
+      onSavePlanned={savePlannedPurchase}
+      onDeletePlanned={deletePlannedPurchase}
+      onMovePlannedToPurchase={movePlannedToPurchase}
       onMoveToCart={async(item)=>{ const prefill=await moveWishlistToPurchase(item); setPrefillPurchase(prefill); setPageView("purchases"); }}
       onBack={()=>setPageView(null)}
       onHome={goHome}
