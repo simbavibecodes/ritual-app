@@ -4427,20 +4427,7 @@ export default function App({ user }) {
                 );
               };
 
-              const SectionCarousel=({label,planItems=[],txItems=[]})=>{
-                if(!planItems.length&&!txItems.length) return null;
-                return (
-                  <div style={{marginBottom:22}}>
-                    <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10}}>{label}</div>
-                    <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:8,scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch"}}>
-                      {planItems.map(s=><PlanCardCarousel key={s.id} s={s}/>)}
-                      {txItems.map(tx=><TxCardCarousel key={tx.id} tx={tx}/>)}
-                    </div>
-                  </div>
-                );
-              };
-
-              // Treatments filter bar
+              // Treatments filter bar — defined before SectionCarousel so carousel can use it
               const TxFilterBar=()=>(
                 <div style={{display:"flex",gap:6,marginBottom:10}}>
                   {[["all","All"],["upcoming","Upcoming"],["past","Past"]].map(([v,l])=>(
@@ -4455,13 +4442,32 @@ export default function App({ user }) {
                 </div>
               );
 
+              const SectionCarousel=({label,planItems=[],txItems=[],allTxForSection=[]})=>{
+                if(!planItems.length&&!txItems.length) return null;
+                return (
+                  <div style={{marginBottom:22}}>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:allTxForSection.length?6:10}}>
+                      <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070"}}>{label}</div>
+                    </div>
+                    {allTxForSection.length>0&&<TxFilterBar/>}
+                    <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:8,scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch"}}>
+                      {planItems.map(s=><PlanCardCarousel key={s.id} s={s}/>)}
+                      {txItems.map(tx=><TxCardCarousel key={tx.id} tx={tx}/>)}
+                    </div>
+                  </div>
+                );
+              };
+
               if(!hasAnything) return <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No plans yet — tap + Add to start</div>;
               if(!hasVisible) return <div style={{textAlign:"center",padding:"24px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem"}}>No {plansFilter} plans</div>;
 
+              const allSkinTx=treatments.filter(t=>t.type==="skin");
+              const allHairTx=treatments.filter(t=>t.type==="hair");
+
               if(plansViewMode==="carousel") return (
                 <>
-                  <SectionCarousel label="🌿 Skin" planItems={skinPlans} txItems={skinTreatments}/>
-                  <SectionCarousel label="✨ Hair" planItems={hairPlans} txItems={hairTreatments}/>
+                  <SectionCarousel label="🌿 Skin" planItems={skinPlans} txItems={skinTreatments} allTxForSection={allSkinTx}/>
+                  <SectionCarousel label="✨ Hair" planItems={hairPlans} txItems={hairTreatments} allTxForSection={allHairTx}/>
                 </>
               );
 
