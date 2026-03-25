@@ -2487,7 +2487,6 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                     </div>
                     <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0,marginLeft:10}}>
                       {!isDraft&&<button onClick={()=>setShowAnalysis(v=>!v)} style={{background:"#3a2e27",border:"none",borderRadius:9,padding:"6px 12px",color:"#f7ece4",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,whiteSpace:"nowrap"}}>{showAnalysis?"Close":"Analyze My Routine"}</button>}
-                      {!isDraft&&<button onClick={()=>setShowAmPm(v=>!v)} style={{background:"none",border:"1.5px solid #e8d8cc",borderRadius:9,padding:"6px 10px",color:"#a08070",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>🌅 AM/PM</button>}
                       {!isDraft&&<button onClick={enterEditMode} style={{background:"none",border:"1.5px solid #e8d8cc",borderRadius:9,padding:"6px 10px",color:"#a08070",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>Update Routine</button>}
                       {isDraft&&<button onClick={discardChanges} style={{background:"none",border:"1.5px solid #e8d8cc",borderRadius:9,padding:"6px 12px",color:"#a08070",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>Discard</button>}
                       {isDraft&&<button onClick={()=>setConfirmFinalize(true)} style={{background:"#b07a5e",border:"none",borderRadius:9,padding:"6px 14px",color:"#fff",fontSize:".76rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,whiteSpace:"nowrap"}}>Save Routine</button>}
@@ -2501,65 +2500,6 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                     </div>
                   )}
 
-                  {/* AM/PM Routine Builder */}
-                  {showAmPm&&activeSnap&&!isDraft&&(
-                    <div style={{marginBottom:16,borderBottom:"1px solid #f0e0d4",paddingBottom:16}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>Morning & Night Routine</div>
-                        <button onClick={()=>setShowAmPm(false)} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#a08070"}}>×</button>
-                      </div>
-                      <div style={{fontSize:".72rem",color:"#a08070",marginBottom:12,lineHeight:1.6}}>Tag each product as AM, PM, or both. Helps you see your morning vs. night routine at a glance.</div>
-                      {snapProducts.length===0&&<div style={{fontSize:".78rem",color:"#c0a898",fontStyle:"italic"}}>No products in your routine yet.</div>}
-                      {[["skin","🌿 Skin",skinProds],["hair","✨ Hair",hairProds],["treatment","💉 Treatments",txProds]].filter(([,,p])=>p.length>0).map(([cat,label,prods])=>(
-                        <div key={cat} style={{marginBottom:14}}>
-                          <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8}}>{label}</div>
-                          {prods.map(p=>(
-                            <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:7,padding:"8px 10px",background:"#fdf6f0",borderRadius:10}}>
-                              {p.image
-                                ?<img src={p.image} alt="" style={{width:32,height:32,objectFit:"cover",borderRadius:6,flexShrink:0}}/>
-                                :<div style={{width:32,height:32,borderRadius:6,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".9rem",flexShrink:0}}>{catEmoji(cat)}</div>
-                              }
-                              <div style={{flex:1,minWidth:0}}>
-                                <div style={{fontSize:".76rem",fontWeight:500,color:"#3a2e27",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
-                              </div>
-                              <div style={{display:"flex",gap:4,flexShrink:0}}>
-                                {[["am","🌅"],["all","🔁"],["pm","🌙"]].map(([val,emoji])=>(
-                                  <button key={val} onClick={()=>onUpdateSnapProductTimeOfDay(p.snapProdId,val)}
-                                    style={{width:32,height:28,borderRadius:7,border:"1px solid",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:".72rem",
-                                      background:(p.time_of_day||'all')===val?"#b07a5e":"transparent",
-                                      color:(p.time_of_day||'all')===val?"#fff":"#a08070",
-                                      borderColor:(p.time_of_day||'all')===val?"#b07a5e":"#ddd0c4"}}>
-                                    {emoji}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                      {/* AM view */}
-                      {snapProducts.some(p=>p.time_of_day==='am')&&(
-                        <div style={{marginTop:12,padding:"10px 12px",background:"#fffbf5",border:"1px solid #f0e4d0",borderRadius:10}}>
-                          <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b07a5e",marginBottom:6}}>🌅 Morning Routine</div>
-                          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                            {snapProducts.filter(p=>p.time_of_day==='am'||p.time_of_day==='all').map(p=>(
-                              <div key={p.id} style={{fontSize:".68rem",background:"#fdf0e4",border:"1px solid #e8d0b8",borderRadius:20,padding:"3px 10px",color:"#7a5c48"}}>{p.name}</div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {snapProducts.some(p=>p.time_of_day==='pm')&&(
-                        <div style={{marginTop:8,padding:"10px 12px",background:"#f5f4fb",border:"1px solid #dcd8f0",borderRadius:10}}>
-                          <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#7a6a9a",marginBottom:6}}>🌙 Night Routine</div>
-                          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                            {snapProducts.filter(p=>p.time_of_day==='pm'||p.time_of_day==='all').map(p=>(
-                              <div key={p.id} style={{fontSize:".68rem",background:"#ede8f8",border:"1px solid #c8c0e8",borderRadius:20,padding:"3px 10px",color:"#5a4a7a"}}>{p.name}</div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
 
                   {/* Add product form */}
                   {showForm&&editProd&&<ProductForm key={editProd.id} initialData={editProd} isEditingProd={isEditingProd} onSave={save} onClose={handleCloseForm}/>}
@@ -2644,6 +2584,86 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                       </div>
                     </div>
                   ))}
+
+                  {/* ── Morning & Night Routines ── */}
+                  {!isDraft&&snapProducts.length>0&&(
+                    <div style={{marginTop:20,borderTop:"1.5px solid #f0e4dc",paddingTop:16}}>
+                      <div onClick={()=>setShowAmPm(v=>!v)}
+                        style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",marginBottom:showAmPm?16:0}}>
+                        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>Your Morning & Night Routines</div>
+                        <span style={{color:"#b09080",fontSize:".78rem",lineHeight:1}}>{showAmPm?"▲":"▼"}</span>
+                      </div>
+
+                      {showAmPm&&(
+                        <div>
+                          {/* Two drop zones */}
+                          <div style={{display:"flex",gap:10,marginBottom:16}}>
+                            {/* Morning */}
+                            <div
+                              onDragOver={e=>{e.preventDefault();e.currentTarget.dataset.over="1";e.currentTarget.style.background="#FFFAEC";e.currentTarget.style.borderColor="#E8C840";}}
+                              onDragLeave={e=>{e.currentTarget.style.background="#FFFDF5";e.currentTarget.style.borderColor="#EEE0A8";}}
+                              onDrop={e=>{e.preventDefault();e.currentTarget.style.background="#FFFDF5";e.currentTarget.style.borderColor="#EEE0A8";const id=e.dataTransfer.getData("ampm_id");if(id)onUpdateSnapProductTimeOfDay(id,"am");}}
+                              style={{flex:1,minHeight:110,borderRadius:16,background:"#FFFDF5",border:"1.5px solid #EEE0A8",padding:"12px 10px",transition:"background .15s,border-color .15s"}}>
+                              <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#B08820",marginBottom:10,fontWeight:600}}>☀️ Morning</div>
+                              {snapProducts.filter(p=>p.time_of_day==="am").length===0
+                                ?<div style={{fontSize:".7rem",color:"#D4C888",fontStyle:"italic",textAlign:"center",paddingTop:16}}>Drop products here</div>
+                                :snapProducts.filter(p=>p.time_of_day==="am").map(p=>(
+                                  <div key={p.snapProdId} style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,padding:"5px 8px",background:"rgba(255,255,255,.75)",borderRadius:10,border:"1px solid #F0E8C0"}}>
+                                    <div style={{width:22,height:22,borderRadius:5,overflow:"hidden",flexShrink:0,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".7rem"}}>
+                                      {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{catEmoji(p.category)}</span>}
+                                    </div>
+                                    <span style={{flex:1,fontSize:".7rem",color:"#3a2e27",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+                                    <button onClick={()=>onUpdateSnapProductTimeOfDay(p.snapProdId,"all")} style={{background:"none",border:"none",color:"#C8B060",cursor:"pointer",fontSize:".72rem",padding:"2px 4px",lineHeight:1,flexShrink:0}}>×</button>
+                                  </div>
+                                ))
+                              }
+                            </div>
+                            {/* Night */}
+                            <div
+                              onDragOver={e=>{e.preventDefault();e.currentTarget.style.background="#F2F0FA";e.currentTarget.style.borderColor="#A898D8";}}
+                              onDragLeave={e=>{e.currentTarget.style.background="#F8F6FC";e.currentTarget.style.borderColor="#D4CEEC";}}
+                              onDrop={e=>{e.preventDefault();e.currentTarget.style.background="#F8F6FC";e.currentTarget.style.borderColor="#D4CEEC";const id=e.dataTransfer.getData("ampm_id");if(id)onUpdateSnapProductTimeOfDay(id,"pm");}}
+                              style={{flex:1,minHeight:110,borderRadius:16,background:"#F8F6FC",border:"1.5px solid #D4CEEC",padding:"12px 10px",transition:"background .15s,border-color .15s"}}>
+                              <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#6858A0",marginBottom:10,fontWeight:600}}>🌙 Night</div>
+                              {snapProducts.filter(p=>p.time_of_day==="pm").length===0
+                                ?<div style={{fontSize:".7rem",color:"#B8B0D8",fontStyle:"italic",textAlign:"center",paddingTop:16}}>Drop products here</div>
+                                :snapProducts.filter(p=>p.time_of_day==="pm").map(p=>(
+                                  <div key={p.snapProdId} style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,padding:"5px 8px",background:"rgba(255,255,255,.75)",borderRadius:10,border:"1px solid #D8D0F0"}}>
+                                    <div style={{width:22,height:22,borderRadius:5,overflow:"hidden",flexShrink:0,background:"#e8e4f8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".7rem"}}>
+                                      {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{catEmoji(p.category)}</span>}
+                                    </div>
+                                    <span style={{flex:1,fontSize:".7rem",color:"#3a2e27",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+                                    <button onClick={()=>onUpdateSnapProductTimeOfDay(p.snapProdId,"all")} style={{background:"none",border:"none",color:"#9888C8",cursor:"pointer",fontSize:".72rem",padding:"2px 4px",lineHeight:1,flexShrink:0}}>×</button>
+                                  </div>
+                                ))
+                              }
+                            </div>
+                          </div>
+
+                          {/* Draggable product pool */}
+                          <div style={{fontSize:".58rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080",marginBottom:10}}>Your products — drag to assign</div>
+                          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                            {snapProducts.map(p=>{
+                              const tod=p.time_of_day||"all";
+                              const badge=tod==="am"?{icon:"☀️",bg:"#FFFBEE",border:"#E8D060",col:"#A07810"}:tod==="pm"?{icon:"🌙",bg:"#F4F0FC",border:"#C0B8E8",col:"#6858A0"}:null;
+                              return (
+                                <div key={p.snapProdId}
+                                  draggable
+                                  onDragStart={e=>{e.dataTransfer.setData("ampm_id",p.snapProdId);e.dataTransfer.effectAllowed="move";}}
+                                  style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px 5px 6px",background:badge?badge.bg:"#fff8f3",border:`1.5px solid ${badge?badge.border:"#e8d8cc"}`,borderRadius:20,cursor:"grab",userSelect:"none",transition:"opacity .15s"}}>
+                                  <div style={{width:22,height:22,borderRadius:5,overflow:"hidden",flexShrink:0,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".65rem"}}>
+                                    {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{catEmoji(p.category)}</span>}
+                                  </div>
+                                  <span style={{fontSize:".7rem",color:"#3a2e27",maxWidth:80,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+                                  {badge&&<span style={{fontSize:".62rem",color:badge.col,flexShrink:0}}>{badge.icon}</span>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                 </div>
               )}
@@ -2910,7 +2930,7 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
 
 function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsProp, schedules, treatments, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose, onAddItem, initialPlan, initialTreatment }) {
   const [screen, setScreen]=useState(initialPlan?"editPlan":initialTreatment?"editTreatment":"chooseType"); // chooseType | editPlan | editTreatment
-  const [editing, setEditing]=useState(initialPlan?{...initialPlan,itemIds:initialPlan.itemIds||[initialPlan.itemId].filter(Boolean),dates:initialPlan.dates||[],startDate:initialPlan.startDate||fmt(new Date())}:{id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),reminder:false,time:"08:00",location:""});
+  const [editing, setEditing]=useState(initialPlan?{...initialPlan,itemIds:initialPlan.itemIds||[initialPlan.itemId].filter(Boolean),dates:initialPlan.dates||[],startDate:initialPlan.startDate||fmt(new Date()),endDate:initialPlan.endDate||""}:{id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),endDate:"",reminder:false,time:"08:00",location:""});
   const [editTx, setEditTx]=useState(initialTreatment?{...initialTreatment}:{id:uid(),name:"",type:"skin",dates:[],completedDates:[],location:"",price:"",notes:""});
   const [txMode, setTxMode]=useState(initialTreatment?"upcoming":null); // null | "past" | "upcoming"
   const [pastDate, setPastDate]=useState(fmt(new Date()));
@@ -2920,8 +2940,8 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
   const [newStepEmoji, setNewStepEmoji]=useState("🌿");
   const [showNewStepEmoji, setShowNewStepEmoji]=useState(false);
 
-  const startNewPlan=()=>{ setEditing({id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),reminder:false,time:"08:00",location:""}); setScreen("editPlan"); };
-  const startEditPlan=s=>{ setEditing({...s,itemIds:s.itemIds||[s.itemId].filter(Boolean),dates:s.dates||[],startDate:s.startDate||fmt(new Date())}); setScreen("editPlan"); };
+  const startNewPlan=()=>{ setEditing({id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),endDate:"",reminder:false,time:"08:00",location:""}); setScreen("editPlan"); };
+  const startEditPlan=s=>{ setEditing({...s,itemIds:s.itemIds||[s.itemId].filter(Boolean),dates:s.dates||[],startDate:s.startDate||fmt(new Date()),endDate:s.endDate||""}); setScreen("editPlan"); };
   const startNewTx=()=>{ setEditTx({id:uid(),name:"",type:"skin",dates:[]}); setScreen("editTreatment"); };
   const startEditTx=t=>{ setEditTx({...t}); setScreen("editTreatment"); };
 
@@ -3056,10 +3076,20 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Glow Clinic, Miami"
               value={editing.location||""} onChange={e=>setEditing(ed=>({...ed,location:e.target.value}))}/>
           </>}
-          <div className="modal-sub">Start date</div>
-          <input type="date" className="time-input" style={{width:"100%",marginBottom:14}}
-            value={editing.startDate||fmt(new Date())}
-            onChange={e=>setEditing(ed=>({...ed,startDate:e.target.value}))}/>
+          <div style={{display:"flex",gap:10,marginBottom:14}}>
+            <div style={{flex:1}}>
+              <div className="modal-sub" style={{marginBottom:4}}>Start date</div>
+              <input type="date" className="time-input" style={{width:"100%"}}
+                value={editing.startDate||fmt(new Date())}
+                onChange={e=>setEditing(ed=>({...ed,startDate:e.target.value}))}/>
+            </div>
+            <div style={{flex:1}}>
+              <div className="modal-sub" style={{marginBottom:4}}>End date <span style={{color:"#c0a898",fontWeight:400}}>(optional)</span></div>
+              <input type="date" className="time-input" style={{width:"100%"}}
+                value={editing.endDate||""}
+                onChange={e=>setEditing(ed=>({...ed,endDate:e.target.value}))}/>
+            </div>
+          </div>
           <div className="modal-sub" style={{marginBottom:8}}>Every — leave blank for one-off</div>
           <div className="toggle-row" style={{marginBottom:8}}>
             <div><div className="toggle-lbl">Every day</div></div>
@@ -3536,7 +3566,7 @@ export default function App({ user }) {
           if (ha) setHairR(ha.items);
         }
         if (schedErr) console.error("Schedule load error:", schedErr);
-        if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days||[], dates:r.dates||[], startDate:r.start_date||null, reminder:r.reminder, time:r.time, location:r.location||'', ended_at:r.ended_at||null })));
+        if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days||[], dates:r.dates||[], startDate:r.start_date||null, endDate:r.end_date||"", reminder:r.reminder, time:r.time, location:r.location||'', ended_at:r.ended_at||null })));
         if (freqRows) { setFreqTracked(freqRows.tracked||[]); setFreqPeriod(freqRows.period||"year"); }
         if (hlRows) {
           const map = {};
@@ -3662,7 +3692,7 @@ export default function App({ user }) {
         // Upsert each schedule individually - safer than delete+insert
         const rows = newSchedules.map(s => ({
           id: s.id, user_id: user.id, item_id: s.itemId,
-          days: s.days||[], dates: s.dates||[], start_date: s.startDate||null,
+          days: s.days||[], dates: s.dates||[], start_date: s.startDate||null, end_date: s.endDate||null,
           reminder: s.reminder, time: s.time||"08:00", location: s.location||'',
           ended_at: s.ended_at||null
         }));
@@ -4384,7 +4414,6 @@ export default function App({ user }) {
                 const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
                 const recurDays=(s.days||[]).sort().map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
                 const dateCount=(s.dates||[]).length;
-                const isToday=(s.days||[]).includes(new Date().getDay())||(s.dates||[]).includes(today);
                 return (
                   <div className="sched-card" style={{cursor:"pointer",marginBottom:8,opacity:s.ended_at?.4:1}} onClick={()=>setSelectedPlan({type:"plan",data:s})}>
                     <div className="sched-top">
@@ -4396,11 +4425,11 @@ export default function App({ user }) {
                           {recurDays&&dateCount>0&&<span> · </span>}
                           {dateCount>0&&<span>{dateCount} date{dateCount!==1?"s":""}</span>}
                           {s.startDate&&(s.days||[]).length===0&&dateCount===0&&<span style={{color:"#b8a090"}}>from {parse(s.startDate).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
+                          {s.endDate&&!s.ended_at&&<span style={{color:"#b8a090"}}> · until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>}
                           {s.ended_at&&<span style={{color:"#b8a090"}}> · ended {parse(s.ended_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
                           {s.location&&<span> · <span style={{cursor:"pointer",color:"#b07a5e",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(s.location)}`);}}>📍 {s.location}</span></span>}
                         </div>
                       </div>
-                      {isToday&&!s.ended_at&&<span style={{fontSize:".68rem",background:"#b07a5e",color:"#fff",borderRadius:20,padding:"2px 8px",whiteSpace:"nowrap"}}>Today</span>}
                     </div>
                     {s.reminder&&!s.ended_at&&<div className="sched-reminder">🔔 at {s.time}</div>}
                   </div>
@@ -4410,7 +4439,6 @@ export default function App({ user }) {
               const PlanCardCarousel=({s})=>{
                 const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
                 const recurDays=(s.days||[]).sort().map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
-                const isToday=(s.days||[]).includes(new Date().getDay())||(s.dates||[]).includes(today);
                 return (
                   <div onClick={()=>setSelectedPlan({type:"plan",data:s})}
                     style={{flexShrink:0,width:148,background:"#fff8f3",border:`1.5px solid ${s.ended_at?"#e8d8cc":"#d4c4b4"}`,borderRadius:16,padding:"14px 12px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:s.ended_at?.55:1}}>
@@ -4422,7 +4450,7 @@ export default function App({ user }) {
                         {(s.days||[]).length===7?"Every day":recurDays||`${(s.dates||[]).length} date${(s.dates||[]).length!==1?"s":""}`}
                       </div>
                     }
-                    {isToday&&!s.ended_at&&<div style={{fontSize:".6rem",background:"#b07a5e",color:"#fff",borderRadius:10,padding:"2px 6px",textAlign:"center"}}>Today</div>}
+                    {s.endDate&&!s.ended_at&&<div style={{fontSize:".58rem",color:"#b8a090",textAlign:"center"}}>until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>}
                   </div>
                 );
               };
@@ -4487,12 +4515,12 @@ export default function App({ user }) {
               const SectionCarousel=({label,planItems=[],txItems=[],allTxForSection=[]})=>{
                 if(!planItems.length&&!txItems.length) return null;
                 return (
-                  <div style={{marginBottom:22}}>
+                  <div style={{marginBottom:16,background:"#fffaf7",border:"1.5px solid #f0e4dc",borderRadius:18,padding:"14px 14px 10px"}}>
                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:allTxForSection.length?6:10}}>
-                      <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070"}}>{label}</div>
+                      <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",fontWeight:600}}>{label}</div>
                     </div>
                     {allTxForSection.length>0&&<TxFilterBar/>}
-                    <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:8,scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch"}}>
+                    <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:4,scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch"}}>
                       {planItems.map(s=><PlanCardCarousel key={s.id} s={s}/>)}
                       {txItems.map(tx=><TxCardCarousel key={tx.id} tx={tx}/>)}
                     </div>
@@ -4515,22 +4543,26 @@ export default function App({ user }) {
 
               return (
                 <>
-                  {(skinPlans.length>0||skinTreatments.length>0)&&<>
-                    <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
-                      🌿 Skin
-                      {skinTreatments.length>0&&<TxFilterBar/>}
+                  {(skinPlans.length>0||skinTreatments.length>0)&&(
+                    <div style={{marginBottom:16,background:"#fffaf7",border:"1.5px solid #f0e4dc",borderRadius:18,padding:"14px 14px 6px"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",fontWeight:600}}>🌿 Skin</div>
+                        {skinTreatments.length>0&&<TxFilterBar/>}
+                      </div>
+                      {skinPlans.map(s=><PlanCardList key={s.id} s={s}/>)}
+                      {skinTreatments.map(tx=><TxCardList key={tx.id} tx={tx}/>)}
                     </div>
-                    {skinPlans.map(s=><PlanCardList key={s.id} s={s}/>)}
-                    {skinTreatments.map(tx=><TxCardList key={tx.id} tx={tx}/>)}
-                  </>}
-                  {(hairPlans.length>0||hairTreatments.length>0)&&<>
-                    <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,marginTop:(skinPlans.length||skinTreatments.length)?20:0,display:"flex",alignItems:"center",gap:8}}>
-                      ✨ Hair
-                      {hairTreatments.length>0&&<TxFilterBar/>}
+                  )}
+                  {(hairPlans.length>0||hairTreatments.length>0)&&(
+                    <div style={{marginBottom:16,background:"#fffaf7",border:"1.5px solid #f0e4dc",borderRadius:18,padding:"14px 14px 6px"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",fontWeight:600}}>✨ Hair</div>
+                        {hairTreatments.length>0&&<TxFilterBar/>}
+                      </div>
+                      {hairPlans.map(s=><PlanCardList key={s.id} s={s}/>)}
+                      {hairTreatments.map(tx=><TxCardList key={tx.id} tx={tx}/>)}
                     </div>
-                    {hairPlans.map(s=><PlanCardList key={s.id} s={s}/>)}
-                    {hairTreatments.map(tx=><TxCardList key={tx.id} tx={tx}/>)}
-                  </>}
+                  )}
                 </>
               );
             })()}
