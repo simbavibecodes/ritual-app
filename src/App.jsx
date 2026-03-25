@@ -3457,8 +3457,27 @@ export default function App({ user }) {
 
   const goHome = () => { setView("log"); setActiveDate(today); setPageView(null); };
 
+  const sideMenuEl = (
+    <>
+      {sideMenu&&<div className="side-menu-overlay" onClick={()=>setSideMenu(false)}/>}
+      <div className={`side-menu ${sideMenu?"open":""}`}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+          <div className="side-menu-title" style={{marginBottom:0}}>Menu</div>
+          <button onClick={()=>setSideMenu(false)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#a08070",lineHeight:1,padding:"2px 6px"}}>×</button>
+        </div>
+        <button className="side-menu-item" onClick={()=>{setPageView("account");setSideMenu(false);}}><span>👤</span> My Account</button>
+        <hr style={{border:"none",borderTop:"1px solid #f0e0d4",margin:"8px 0"}}/>
+        <button className="side-menu-item" onClick={()=>{setPageView("products");setSideMenu(false);}}><span>💄</span> My Products</button>
+        <button className="side-menu-item" onClick={()=>{setPageView("wishlist");setSideMenu(false);}}><span>💝</span> Wishlist</button>
+        <button className="side-menu-item" onClick={()=>{setPageView("purchases");setSideMenu(false);}}><span>💳</span> Purchases</button>
+        <hr style={{border:"none",borderTop:"1px solid #f0e0d4",margin:"16px 0"}}/>
+        <button className="side-menu-item" style={{color:"#c0a898"}} onClick={()=>supabase.auth.signOut()}><span>🚪</span> Sign Out</button>
+      </div>
+    </>
+  );
+
   if (pageView==="purchases") return (
-    <div><style>{STYLES}</style><PurchasesPage purchases={purchases} prefill={prefillPurchase} onClearPrefill={()=>setPrefillPurchase(null)} onSave={savePurchase} onDelete={confirmDeletePurchase} onBack={()=>setPageView(null)} onHome={goHome} onMenuOpen={()=>setSideMenu(true)}/></div>
+    <div><style>{STYLES}</style><PurchasesPage purchases={purchases} prefill={prefillPurchase} onClearPrefill={()=>setPrefillPurchase(null)} onSave={savePurchase} onDelete={confirmDeletePurchase} onBack={()=>setPageView(null)} onHome={goHome} onMenuOpen={()=>setSideMenu(true)}/>{sideMenuEl}</div>
   );
   if (pageView==="products") return (
     <div><style>{STYLES}</style><MyProductsPage
@@ -3477,7 +3496,7 @@ export default function App({ user }) {
       onFetchIngredients={fetchIngredients}
       onBack={()=>setPageView(null)}
       onHome={goHome}
-      onMenuOpen={()=>setSideMenu(true)}/></div>
+      onMenuOpen={()=>setSideMenu(true)}/>{sideMenuEl}</div>
   );
   if (pageView==="wishlist") return (
     <div><style>{STYLES}</style><WishlistPage
@@ -3488,7 +3507,7 @@ export default function App({ user }) {
       onMoveToCart={async(item)=>{ const prefill=await moveWishlistToPurchase(item); setPrefillPurchase(prefill); setPageView("purchases"); }}
       onBack={()=>setPageView(null)}
       onHome={goHome}
-      onMenuOpen={()=>setSideMenu(true)}/></div>
+      onMenuOpen={()=>setSideMenu(true)}/>{sideMenuEl}</div>
   );
   if (pageView==="account") return (
     <div className="app">
@@ -3499,6 +3518,7 @@ export default function App({ user }) {
         <HamburgerBtn onClick={()=>setSideMenu(true)}/>
       </div>
       <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Coming soon</div>
+      {sideMenuEl}
     </div>
   );
 
@@ -3859,30 +3879,7 @@ export default function App({ user }) {
         }}/>}
       {confirmDelete&&<ConfirmDialog message={confirmDelete.message} onConfirm={()=>{confirmDelete.onConfirm();setConfirmDelete(null);}} onCancel={()=>setConfirmDelete(null)}/>}
 
-      {sideMenu&&<div className="side-menu-overlay" onClick={()=>setSideMenu(false)}/>}
-      <div className={`side-menu ${sideMenu?"open":""}`}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-          <div className="side-menu-title" style={{marginBottom:0}}>Menu</div>
-          <button onClick={()=>setSideMenu(false)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#a08070",lineHeight:1,padding:"2px 6px"}}>×</button>
-        </div>
-        <button className="side-menu-item" onClick={()=>{setPageView("account");setSideMenu(false);}}>
-          <span>👤</span> My Account
-        </button>
-        <hr style={{border:"none",borderTop:"1px solid #f0e0d4",margin:"8px 0"}}/>
-        <button className="side-menu-item" onClick={()=>{setPageView("products");setSideMenu(false);}}>
-          <span>💄</span> My Products
-        </button>
-        <button className="side-menu-item" onClick={()=>{setPageView("wishlist");setSideMenu(false);}}>
-          <span>💝</span> Wishlist
-        </button>
-        <button className="side-menu-item" onClick={()=>{setPageView("purchases");setSideMenu(false);}}>
-          <span>💳</span> Purchases
-        </button>
-        <hr style={{border:"none",borderTop:"1px solid #f0e0d4",margin:"16px 0"}}/>
-        <button className="side-menu-item" style={{color:"#c0a898"}} onClick={()=>supabase.auth.signOut()}>
-          <span>🚪</span> Sign Out
-        </button>
-      </div>
+      {sideMenuEl}
     </div>
   );
 }
