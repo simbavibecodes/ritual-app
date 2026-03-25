@@ -1581,7 +1581,10 @@ function SlimEditForm({ initialData, onSave, onClose }) {
         <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:16}}>
           <input className="ifield" style={{width:"100%"}} placeholder="Product name" value={p.name} onChange={e=>setP(prev=>({...prev,name:e.target.value}))} autoFocus/>
           <input className="ifield" style={{width:"100%"}} placeholder="Brand" value={p.brand||""} onChange={e=>setP(prev=>({...prev,brand:e.target.value}))}/>
-          <input className="ifield" style={{width:"100%"}} placeholder="Product URL" value={p.link||""} onChange={e=>setP(prev=>({...prev,link:e.target.value}))}/>
+          <div style={{display:"flex",gap:8}}>
+            <input className="ifield" style={{flex:1}} placeholder="Product URL" value={p.link||""} onChange={e=>setP(prev=>({...prev,link:e.target.value}))}/>
+            <input className="ifield" style={{width:80}} placeholder="Price" type="number" min="0" step="0.01" value={p.price||""} onChange={e=>setP(prev=>({...prev,price:e.target.value}))}/>
+          </div>
         </div>
 
         {/* Frequency — single compact row */}
