@@ -504,7 +504,27 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
   );
 }
 
+function SwipeableProductImage({ images, height, emoji }) {
+  const [idx, setIdx] = useState(0);
+  const srcs = [...new Set(images.filter(Boolean))];
+  if (srcs.length === 0) return <div style={{height,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"3.5rem"}}>{emoji}</div>;
+  if (srcs.length === 1) return <img src={srcs[0]} alt="" style={{width:"100%",height,objectFit:"cover",display:"block"}}/>;
+  return (
+    <div style={{position:"relative",height,overflow:"hidden"}}>
+      <img src={srcs[idx]} alt="" style={{width:"100%",height,objectFit:"cover",display:"block"}}/>
+      <button onClick={e=>{e.stopPropagation();setIdx(p=>(p-1+srcs.length)%srcs.length);}}
+        style={{position:"absolute",left:6,top:"50%",transform:"translateY(-50%)",background:"rgba(253,246,240,.88)",border:"none",borderRadius:"50%",width:26,height:26,cursor:"pointer",fontSize:"1rem",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2}}>‹</button>
+      <button onClick={e=>{e.stopPropagation();setIdx(p=>(p+1)%srcs.length);}}
+        style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",background:"rgba(253,246,240,.88)",border:"none",borderRadius:"50%",width:26,height:26,cursor:"pointer",fontSize:"1rem",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2}}>›</button>
+      <div style={{position:"absolute",bottom:6,left:"50%",transform:"translateX(-50%)",display:"flex",gap:5,zIndex:2}}>
+        {srcs.map((_,i)=><div key={i} style={{width:5,height:5,borderRadius:"50%",background:i===idx?"#fff":"rgba(255,255,255,.5)",transition:"background .2s"}}/>)}
+      </div>
+    </div>
+  );
+}
+
 function SpendingSummary({ purchases, period, onGoToPurchases }) {
+  const [collapsed, setCollapsed] = useState(false);
   const now = new Date();
   const fmt2 = d => d.toLocaleDateString("en-CA");
 
@@ -527,10 +547,17 @@ function SpendingSummary({ purchases, period, onGoToPurchases }) {
 
   return (
     <div>
-      <div className="sec-head" style={{marginBottom:12}}>
+      <div className="sec-head" style={{marginBottom: collapsed ? 0 : 12}}>
         <div className="sec-title">Spending Summary</div>
-        <button className="ghost-btn" onClick={onGoToPurchases}>View All</button>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <button className="ghost-btn" onClick={onGoToPurchases}>View All</button>
+          <button onClick={()=>setCollapsed(p=>!p)}
+            style={{background:"none",border:"none",cursor:"pointer",color:"#b09080",fontSize:".82rem",padding:"4px 6px",lineHeight:1}}>
+            {collapsed?"▼":"▲"}
+          </button>
+        </div>
       </div>
+      {collapsed ? null : <>
       <div style={{fontSize:".72rem",color:"#a08070",marginBottom:12}}>This {period==="week"?"Week":period==="month"?"Month":"Year"}</div>
       {count===0?(
         <div style={{textAlign:"center",padding:"20px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem"}}>No purchases recorded yet</div>
@@ -574,6 +601,7 @@ function SpendingSummary({ purchases, period, onGoToPurchases }) {
           </div>}
         </div>
       )}
+      </>}
     </div>
   );
 }
@@ -1652,6 +1680,24 @@ function CompareRoutines({ snapshots, products, entries, onClose }) {
 function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
   // Own internal state — never re-mounts on parent re-render, so focus is never lost
   const [p, setP] = useState(initialData);
+  const mediaRef = useRef(null);
+  const handleMediaFile = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const max = 900; let w=img.width, h=img.height;
+        if(w>max||h>max){if(w>h){h=Math.round(h*max/w);w=max;}else{w=Math.round(w*max/h);h=max;}}
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        setP(prev=>({...prev, media_url: canvas.toDataURL('image/jpeg',0.78)}));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
   return (
     <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
@@ -1734,7 +1780,24 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
           </div>
         );
       })()}
-      <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={p.notes||""} onChange={e=>setP(prev=>({...prev,notes:e.target.value}))}/>
+      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Notes" value={p.notes||""} onChange={e=>setP(prev=>({...prev,notes:e.target.value}))}/>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
+        {p.media_url
+          ?<img src={p.media_url} alt="" style={{width:36,height:36,borderRadius:6,objectFit:"cover",border:"1px solid #e8d8cc",flexShrink:0}}/>
+          :<div style={{width:36,height:36,borderRadius:6,background:"#ede4dc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",flexShrink:0}}>📷</div>
+        }
+        <div style={{flex:1}}>
+          <div style={{fontSize:".66rem",color:"#a08070",letterSpacing:".06em",textTransform:"uppercase",marginBottom:1}}>My Photo</div>
+          <div style={{fontSize:".6rem",color:"#c0a898"}}>Swipes with link image in header</div>
+        </div>
+        <button onClick={()=>mediaRef.current.click()}
+          style={{background:"none",border:"1px solid #e0cfc4",borderRadius:7,padding:"5px 10px",fontSize:".68rem",color:"#7a5c48",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",flexShrink:0}}>
+          {p.media_url?"Change":"Add"}
+        </button>
+        {p.media_url&&<button onClick={()=>setP(prev=>({...prev,media_url:""}))}
+          style={{background:"none",border:"none",color:"#c0a898",fontSize:".8rem",cursor:"pointer",padding:"4px",flexShrink:0}}>✕</button>}
+        <input ref={mediaRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleMediaFile(e.target.files[0])}/>
+      </div>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
         <span style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase",flex:1}}>⭐ Staple</span>
         <span style={{fontSize:".7rem",color:"#a08070",marginRight:6}}>{p.is_staple?"Yes — go-to repurchase":"No"}</span>
@@ -1750,6 +1813,24 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
 function SlimEditForm({ initialData, onSave, onClose }) {
   const [p, setP] = useState(initialData);
   const fileRef = useRef(null);
+  const mediaRef = useRef(null);
+  const handleMediaUpload = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const max = 900; let w=img.width,h=img.height;
+        if(w>max||h>max){if(w>h){h=Math.round(h*max/w);w=max;}else{w=Math.round(w*max/h);h=max;}}
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        setP(prev=>({...prev, media_url: canvas.toDataURL('image/jpeg',0.78)}));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
   const raw = p.frequency||"";
   const isDaily = raw==="Daily";
   const match = raw.match(/^(\d+)x (week|month)$/);
@@ -1858,7 +1939,26 @@ function SlimEditForm({ initialData, onSave, onClose }) {
           <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleImageFile(e.target.files[0])}/>
         </div>
 
-        <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={p.notes||""} onChange={e=>setP(prev=>({...prev,notes:e.target.value}))}/>
+        <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Notes" value={p.notes||""} onChange={e=>setP(prev=>({...prev,notes:e.target.value}))}/>
+
+        {/* My Photo — for header swipe alongside link image */}
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
+          {p.media_url
+            ?<img src={p.media_url} alt="" style={{width:36,height:36,borderRadius:6,objectFit:"cover",border:"1px solid #e8d8cc",flexShrink:0}}/>
+            :<div style={{width:36,height:36,borderRadius:6,background:"#ede4dc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",flexShrink:0}}>📷</div>
+          }
+          <div style={{flex:1}}>
+            <div style={{fontSize:".66rem",color:"#a08070",letterSpacing:".06em",textTransform:"uppercase",marginBottom:1}}>My Photo</div>
+            <div style={{fontSize:".6rem",color:"#c0a898"}}>Swipes with link image in header</div>
+          </div>
+          <button onClick={()=>mediaRef.current.click()}
+            style={{background:"none",border:"1px solid #e0cfc4",borderRadius:7,padding:"5px 10px",fontSize:".68rem",color:"#7a5c48",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",flexShrink:0}}>
+            {p.media_url?"Change":"Add"}
+          </button>
+          {p.media_url&&<button onClick={()=>setP(prev=>({...prev,media_url:""}))}
+            style={{background:"none",border:"none",color:"#c0a898",fontSize:".8rem",cursor:"pointer",padding:"4px",flexShrink:0}}>✕</button>}
+          <input ref={mediaRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleMediaUpload(e.target.files[0])}/>
+        </div>
 
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
           <span style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase",flex:1}}>⭐ Staple</span>
@@ -2118,8 +2218,8 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
           <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,scrollbarWidth:"none",WebkitOverflowScrolling:"touch",paddingRight:4}}>
             {catProds.map(p=>(
               <div key={p.id} style={{flexShrink:0,width:96,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:13,overflow:"hidden"}}>
-                {p.image
-                  ?<img src={p.image} alt="" style={{width:"100%",height:76,objectFit:"cover",display:"block"}}/>
+                {(p.image||p.media_url)
+                  ?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:76,objectFit:"cover",display:"block"}}/>
                   :<div style={{width:"100%",height:76,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem"}}>{catEmoji(cat)}</div>
                 }
                 <div style={{padding:"7px 8px 8px"}}>
@@ -2256,9 +2356,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                       {/* Image */}
                       <div style={{position:"relative",height:220,background:"#f0e0d4",
                         display:"flex",alignItems:"center",justifyContent:"center",fontSize:"4rem",overflow:"hidden"}}>
-                        {p.image
-                          ?<img src={p.image} alt="" style={{width:"100%",height:220,objectFit:"cover",display:"block"}}/>
-                          :<div>{catEmoji(featuredView.category)}</div>}
+                        <SwipeableProductImage images={[p.image, p.media_url]} height={220} emoji={catEmoji(featuredView.category)}/>
                         {i===idx&&<button onClick={e=>{e.stopPropagation();openEditForm(p);}}
                           style={{position:"absolute",top:10,right:10,width:30,height:30,borderRadius:"50%",
                             background:"rgba(253,246,240,.92)",border:"1px solid rgba(232,216,204,.8)",
@@ -2489,8 +2587,8 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                                 opacity:isBeingDragged?0.4:1,
                                 transition:"opacity .15s,border-color .15s,background .15s"}}>
                               {isDraft&&<div style={{position:"absolute",top:4,left:4,fontSize:".65rem",color:"rgba(160,128,112,.6)",pointerEvents:"none",zIndex:1}}>⠿</div>}
-                              {p.image
-                                ?<img src={p.image} alt="" style={{width:"100%",height:76,objectFit:"cover",display:"block"}}/>
+                              {(p.image||p.media_url)
+                                ?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:76,objectFit:"cover",display:"block"}}/>
                                 :<div style={{width:"100%",height:76,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem"}}>{catEmoji(cat)}</div>
                               }
                               <div style={{padding:"7px 8px 8px"}}>
@@ -2845,6 +2943,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
               <div className="modal-title">{schedules.find(s=>s.id===editing.id)?"Edit Plan":"New Plan"}</div>
             </div>
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              {schedules.find(s=>s.id===editing.id)&&!editing.ended_at&&<button className="ghost-btn" style={{fontSize:".75rem",padding:"4px 10px",color:"#b07a5e"}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>}
               {schedules.find(s=>s.id===editing.id)&&<button className="del-btn" onClick={()=>{onDelete(editing.id);onClose();}}>Delete</button>}
               <button className="modal-x" onClick={onClose}>×</button>
             </div>
@@ -3345,6 +3444,9 @@ export default function App({ user }) {
   const [prefillPurchase, setPrefillPurchase] = useState(null); // when moving wishlist item to purchases
   const [treatments,      setTreatments]      = useState([]);
   const [plannedPurchases,setPlannedPurchases] = useState([]);
+  const [plansViewMode,   setPlansViewMode]   = useState("carousel"); // "carousel" | "list"
+  const [plansFilter,     setPlansFilter]     = useState("active");   // "active" | "past" | "all"
+  const [txFilter,        setTxFilter]        = useState("all");      // "all" | "upcoming" | "past"
 
   // Persist current page across refreshes
   useEffect(() => { sessionStorage.setItem('ritual_view', view); }, [view]);
@@ -3392,7 +3494,7 @@ export default function App({ user }) {
           if (ha) setHairR(ha.items);
         }
         if (schedErr) console.error("Schedule load error:", schedErr);
-        if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days||[], dates:r.dates||[], startDate:r.start_date||null, reminder:r.reminder, time:r.time, location:r.location||'' })));
+        if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days||[], dates:r.dates||[], startDate:r.start_date||null, reminder:r.reminder, time:r.time, location:r.location||'', ended_at:r.ended_at||null })));
         if (freqRows) { setFreqTracked(freqRows.tracked||[]); setFreqPeriod(freqRows.period||"year"); }
         if (hlRows) {
           const map = {};
@@ -3416,7 +3518,7 @@ export default function App({ user }) {
         ]).then(([{ data: purchRows },{ data: prodRows },{ data: wishRows },{ data: snapRows },{ data: ppRows }]) => {
           if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[], image:r.image||'', link:r.link||'', frequency:r.frequency||'', product_id:r.product_id||null, treatment_type:r.treatment_type||'' })));
           if (ppRows) setPlannedPurchases(ppRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", price:r.price||"", notes:r.notes||"", product_id:r.product_id||null, wishlist_id:r.wishlist_id||null })));
-          if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", price:r.price||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[], is_staple:r.is_staple||false, sort_order:r.sort_order||0 })));
+          if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", price:r.price||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[], is_staple:r.is_staple||false, sort_order:r.sort_order||0, media_url:r.media_url||"" })));
           if (wishRows) setWishlist(wishRows.map(r=>({ id:r.id, product_id:r.product_id||null, name:r.name||"", brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], priority:r.priority||0 })));
           if (snapRows) setSnapshots(snapRows.map(r=>({ id:r.id, label:r.label||"", started_at:r.started_at, ended_at:r.ended_at||null, is_base:r.is_base||false, products:r.snapshot_products||[] })));
         }).catch(e=>console.error("Phase 2 load error", e));
@@ -3519,7 +3621,8 @@ export default function App({ user }) {
         const rows = newSchedules.map(s => ({
           id: s.id, user_id: user.id, item_id: s.itemId,
           days: s.days||[], dates: s.dates||[], start_date: s.startDate||null,
-          reminder: s.reminder, time: s.time||"08:00", location: s.location||''
+          reminder: s.reminder, time: s.time||"08:00", location: s.location||'',
+          ended_at: s.ended_at||null
         }));
         const { error: upsertErr } = await supabase.from("schedules").upsert(rows, { onConflict: "id" });
         if (upsertErr) { console.error("Schedule upsert error:", upsertErr); return; }
@@ -3610,7 +3713,7 @@ export default function App({ user }) {
     if (!user) return;
     // userImage is a UI-only field (data URL from file picker) — strip from DB row
     const { userImage, ...prod } = p;
-    const row = { id:prod.id, user_id:user.id, name:prod.name, brand:prod.brand||"", category:prod.category||"skin", image:prod.image||"", link:prod.link||"", price:prod.price||null, notes:prod.notes||"", tags:prod.tags||[], frequency:prod.frequency||"", global_product_id:prod.global_product_id||null, ingredients:prod.ingredients||[], is_staple:prod.is_staple||false, sort_order:prod.sort_order||0 };
+    const row = { id:prod.id, user_id:user.id, name:prod.name, brand:prod.brand||"", category:prod.category||"skin", image:prod.image||"", link:prod.link||"", price:prod.price||null, notes:prod.notes||"", tags:prod.tags||[], frequency:prod.frequency||"", global_product_id:prod.global_product_id||null, ingredients:prod.ingredients||[], is_staple:prod.is_staple||false, sort_order:prod.sort_order||0, media_url:prod.media_url||"" };
     await supabase.from("products").upsert(row, {onConflict:"id"});
     setProducts(prev => { const idx=prev.findIndex(x=>x.id===prod.id); return idx>=0?prev.map(x=>x.id===prod.id?prod:x):[prod,...prev]; });
     // Background lookups — fire and forget
@@ -4195,54 +4298,106 @@ export default function App({ user }) {
 
         {view==="plan"&&(
           <>
+            {/* ── Plans header ── */}
             <div className="sec-head">
               <div className="sec-title">Plans</div>
-              <button className="ghost-btn" onClick={()=>setModal("plan")}>+ Add</button>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <button className="ghost-btn" style={{fontSize:".72rem",padding:"4px 8px"}}
+                  onClick={()=>setPlansViewMode(p=>p==="carousel"?"list":"carousel")}>
+                  {plansViewMode==="carousel"?"☰ List":"⊟ Carousel"}
+                </button>
+                <button className="ghost-btn" onClick={()=>setModal("plan")}>+ Add</button>
+              </div>
             </div>
-            {(()=>{
-              const skinPlans=schedules.filter(s=>skinR.find(r=>r.id===s.itemId));
-              const hairPlans=schedules.filter(s=>hairR.find(r=>r.id===s.itemId));
-              const skinTreatments=treatments.filter(t=>t.type==="skin");
-              const hairTreatments=treatments.filter(t=>t.type==="hair");
-              const hasAnything=schedules.length||treatments.length;
 
-              const PlanCard=({s})=>{
+            {/* ── Filter tabs ── */}
+            <div style={{display:"flex",gap:6,marginBottom:18}}>
+              {[["active","Active"],["past","Past"],["all","All"]].map(([v,l])=>(
+                <button key={v} onClick={()=>setPlansFilter(v)}
+                  style={{padding:"5px 14px",borderRadius:20,border:"1.5px solid",fontSize:".74rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",transition:"all .15s",
+                    background:plansFilter===v?"#b07a5e":"transparent",
+                    color:plansFilter===v?"#fff":"#a08070",
+                    borderColor:plansFilter===v?"#b07a5e":"#e0cfc4"}}>
+                  {l}
+                </button>
+              ))}
+            </div>
+
+            {(()=>{
+              const filterPlan = s => plansFilter==="active"?!s.ended_at:plansFilter==="past"?!!s.ended_at:true;
+              const filterTx = tx => {
+                const hasFuture = tx.dates.some(d=>d>=today);
+                if(txFilter==="upcoming") return hasFuture;
+                if(txFilter==="past") return !hasFuture;
+                return true;
+              };
+              const skinPlans=schedules.filter(s=>skinR.find(r=>r.id===s.itemId)&&filterPlan(s));
+              const hairPlans=schedules.filter(s=>hairR.find(r=>r.id===s.itemId)&&filterPlan(s));
+              const skinTreatments=treatments.filter(t=>t.type==="skin"&&filterTx(t));
+              const hairTreatments=treatments.filter(t=>t.type==="hair"&&filterTx(t));
+              const hasAnything=schedules.length||treatments.length;
+              const hasVisible=skinPlans.length||hairPlans.length||skinTreatments.length||hairTreatments.length;
+
+              const PlanCardList=({s})=>{
                 const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
                 const recurDays=(s.days||[]).sort().map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
                 const dateCount=(s.dates||[]).length;
                 const isToday=(s.days||[]).includes(new Date().getDay())||(s.dates||[]).includes(today);
                 return (
-                  <div className="sched-card" style={{cursor:"pointer",marginBottom:8}} onClick={()=>setSelectedPlan({type:"plan",data:s})}>
+                  <div className="sched-card" style={{cursor:"pointer",marginBottom:8,opacity:s.ended_at?.4:1}} onClick={()=>setSelectedPlan({type:"plan",data:s})}>
                     <div className="sched-top">
                       <span style={{fontSize:"1rem"}}>{it.emoji}</span>
                       <div style={{flex:1}}>
-                        <div className="sched-label">{it.label}</div>
+                        <div className="sched-label">{it.label}{s.ended_at&&<span style={{fontSize:".62rem",background:"#e8d8cc",color:"#a08070",borderRadius:10,padding:"1px 7px",marginLeft:6}}>Ended</span>}</div>
                         <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
                           {(s.days||[]).length===7?<span>Every day</span>:recurDays&&<span>Every {recurDays}</span>}
                           {recurDays&&dateCount>0&&<span> · </span>}
                           {dateCount>0&&<span>{dateCount} date{dateCount!==1?"s":""}</span>}
                           {s.startDate&&(s.days||[]).length===0&&dateCount===0&&<span style={{color:"#b8a090"}}>from {parse(s.startDate).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
+                          {s.ended_at&&<span style={{color:"#b8a090"}}> · ended {parse(s.ended_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
                           {s.location&&<span> · <span style={{cursor:"pointer",color:"#b07a5e",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(s.location)}`);}}>📍 {s.location}</span></span>}
                         </div>
                       </div>
-                      {isToday&&<span style={{fontSize:".68rem",background:"#b07a5e",color:"#fff",borderRadius:20,padding:"2px 8px",whiteSpace:"nowrap"}}>Today</span>}
+                      {isToday&&!s.ended_at&&<span style={{fontSize:".68rem",background:"#b07a5e",color:"#fff",borderRadius:20,padding:"2px 8px",whiteSpace:"nowrap"}}>Today</span>}
                     </div>
-                    {s.reminder&&<div className="sched-reminder">🔔 at {s.time}</div>}
+                    {s.reminder&&!s.ended_at&&<div className="sched-reminder">🔔 at {s.time}</div>}
                   </div>
                 );
               };
 
-              const TxCard=({tx})=>{
+              const PlanCardCarousel=({s})=>{
+                const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
+                const recurDays=(s.days||[]).sort().map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
+                const isToday=(s.days||[]).includes(new Date().getDay())||(s.dates||[]).includes(today);
+                return (
+                  <div onClick={()=>setSelectedPlan({type:"plan",data:s})}
+                    style={{flexShrink:0,width:148,background:"#fff8f3",border:`1.5px solid ${s.ended_at?"#e8d8cc":"#d4c4b4"}`,borderRadius:16,padding:"14px 12px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:s.ended_at?.55:1}}>
+                    <div style={{fontSize:"1.6rem",textAlign:"center"}}>{it.emoji}</div>
+                    <div style={{fontSize:".82rem",fontWeight:500,color:"#3a2e27",textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{it.label}</div>
+                    {s.ended_at
+                      ?<div style={{fontSize:".6rem",color:"#a08070",textAlign:"center",background:"#f0e4d8",borderRadius:10,padding:"2px 6px"}}>Ended</div>
+                      :<div style={{fontSize:".64rem",color:"#9a7050",textAlign:"center"}}>
+                        {(s.days||[]).length===7?"Every day":recurDays||`${(s.dates||[]).length} date${(s.dates||[]).length!==1?"s":""}`}
+                      </div>
+                    }
+                    {isToday&&!s.ended_at&&<div style={{fontSize:".6rem",background:"#b07a5e",color:"#fff",borderRadius:10,padding:"2px 6px",textAlign:"center"}}>Today</div>}
+                  </div>
+                );
+              };
+
+              const TxCardList=({tx})=>{
                 const upcoming=tx.dates.filter(d=>d>=today).sort();
                 const next=upcoming[0];
+                const isPast=!upcoming.length;
                 return (
-                  <div className="sched-card treatment-card" style={{cursor:"pointer",marginBottom:8}} onClick={()=>setSelectedPlan({type:"treatment",data:tx})}>
+                  <div className="sched-card treatment-card" style={{cursor:"pointer",marginBottom:8,opacity:isPast?.55:1}} onClick={()=>setSelectedPlan({type:"treatment",data:tx})}>
                     <div className="sched-top">
                       <span style={{fontSize:"1rem"}}>💉</span>
                       <div style={{flex:1}}>
-                        <div className="sched-label">{tx.name}</div>
+                        <div className="sched-label">{tx.name}{isPast&&<span style={{fontSize:".62rem",background:"#e8d8cc",color:"#a08070",borderRadius:10,padding:"1px 7px",marginLeft:6}}>Past</span>}</div>
                         <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
-                          {tx.dates.length} date{tx.dates.length!==1?"s":""} · {tx.completedDates?.length||0} done{tx.location?<span> · <span style={{cursor:"pointer",color:"#b07a5e",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(tx.location)}`);}}>📍 {tx.location}</span></span>:null}
+                          {tx.completedDates?.length||0} done
+                          {tx.location?<span> · <span style={{cursor:"pointer",color:"#b07a5e",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(tx.location)}`);}}>📍 {tx.location}</span></span>:null}
                           {next&&<span> · Next: {parse(next).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
                         </div>
                       </div>
@@ -4252,19 +4407,81 @@ export default function App({ user }) {
                 );
               };
 
-              return !hasAnything?(
-                <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No plans yet — tap + Add to start</div>
-              ):(
+              const TxCardCarousel=({tx})=>{
+                const upcoming=tx.dates.filter(d=>d>=today).sort();
+                const next=upcoming[0];
+                const isPast=!upcoming.length;
+                return (
+                  <div onClick={()=>setSelectedPlan({type:"treatment",data:tx})}
+                    style={{flexShrink:0,width:148,background:"#fff8f3",border:`1.5px solid ${isPast?"#e8d8cc":"#e0c8b8"}`,borderRadius:16,padding:"14px 12px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:isPast?.55:1}}>
+                    <div style={{fontSize:"1.6rem",textAlign:"center"}}>💉</div>
+                    <div style={{fontSize:".82rem",fontWeight:500,color:"#3a2e27",textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{tx.name}</div>
+                    {isPast
+                      ?<div style={{fontSize:".6rem",color:"#a08070",textAlign:"center",background:"#f0e4d8",borderRadius:10,padding:"2px 6px"}}>Past</div>
+                      :<div style={{fontSize:".64rem",color:"#9a7050",textAlign:"center"}}>
+                        {next?`Next: ${parse(next).toLocaleDateString("en-US",{month:"short",day:"numeric"})}`:`${tx.completedDates?.length||0} done`}
+                      </div>
+                    }
+                    {tx.dates.includes(today)&&<div style={{fontSize:".6rem",background:"#e06050",color:"#fff",borderRadius:10,padding:"2px 6px",textAlign:"center"}}>Today</div>}
+                  </div>
+                );
+              };
+
+              const SectionCarousel=({label,planItems=[],txItems=[]})=>{
+                if(!planItems.length&&!txItems.length) return null;
+                return (
+                  <div style={{marginBottom:22}}>
+                    <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10}}>{label}</div>
+                    <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:8,scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch"}}>
+                      {planItems.map(s=><PlanCardCarousel key={s.id} s={s}/>)}
+                      {txItems.map(tx=><TxCardCarousel key={tx.id} tx={tx}/>)}
+                    </div>
+                  </div>
+                );
+              };
+
+              // Treatments filter bar
+              const TxFilterBar=()=>(
+                <div style={{display:"flex",gap:6,marginBottom:10}}>
+                  {[["all","All"],["upcoming","Upcoming"],["past","Past"]].map(([v,l])=>(
+                    <button key={v} onClick={()=>setTxFilter(v)}
+                      style={{padding:"3px 10px",borderRadius:14,border:"1px solid",fontSize:".68rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",
+                        background:txFilter===v?"#b07a5e":"transparent",
+                        color:txFilter===v?"#fff":"#a08070",
+                        borderColor:txFilter===v?"#b07a5e":"#e0cfc4"}}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              );
+
+              if(!hasAnything) return <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No plans yet — tap + Add to start</div>;
+              if(!hasVisible) return <div style={{textAlign:"center",padding:"24px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem"}}>No {plansFilter} plans</div>;
+
+              if(plansViewMode==="carousel") return (
+                <>
+                  <SectionCarousel label="🌿 Skin" planItems={skinPlans} txItems={skinTreatments}/>
+                  <SectionCarousel label="✨ Hair" planItems={hairPlans} txItems={hairTreatments}/>
+                </>
+              );
+
+              return (
                 <>
                   {(skinPlans.length>0||skinTreatments.length>0)&&<>
-                    <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,display:"flex",alignItems:"center",gap:6}}>🌿 Skin</div>
-                    {skinPlans.map(s=><PlanCard key={s.id} s={s}/>)}
-                    {skinTreatments.map(tx=><TxCard key={tx.id} tx={tx}/>)}
+                    <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
+                      🌿 Skin
+                      {skinTreatments.length>0&&<TxFilterBar/>}
+                    </div>
+                    {skinPlans.map(s=><PlanCardList key={s.id} s={s}/>)}
+                    {skinTreatments.map(tx=><TxCardList key={tx.id} tx={tx}/>)}
                   </>}
                   {(hairPlans.length>0||hairTreatments.length>0)&&<>
-                    <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,marginTop:(skinPlans.length||skinTreatments.length)?20:0,display:"flex",alignItems:"center",gap:6}}>✨ Hair</div>
-                    {hairPlans.map(s=><PlanCard key={s.id} s={s}/>)}
-                    {hairTreatments.map(tx=><TxCard key={tx.id} tx={tx}/>)}
+                    <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10,marginTop:(skinPlans.length||skinTreatments.length)?20:0,display:"flex",alignItems:"center",gap:8}}>
+                      ✨ Hair
+                      {hairTreatments.length>0&&<TxFilterBar/>}
+                    </div>
+                    {hairPlans.map(s=><PlanCardList key={s.id} s={s}/>)}
+                    {hairTreatments.map(tx=><TxCardList key={tx.id} tx={tx}/>)}
                   </>}
                 </>
               );
