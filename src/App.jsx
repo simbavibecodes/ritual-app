@@ -685,7 +685,6 @@ function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, o
       <div className="header" style={{position:"relative"}}>
         <button onClick={onHome||onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
         <div className="header-title">My <span>Purchases</span></div>
-        <div className="header-sub">Skin · Hair Spending</div>
         {onMenuOpen&&<HamburgerBtn onClick={onMenuOpen}/>}
       </div>
 
@@ -728,8 +727,8 @@ function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, o
             <button onClick={()=>{setShowForm(false);setEditP(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
           </div>
           <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editP.name} onChange={e=>setEditP(p=>({...p,name:e.target.value}))}/>
-          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand (optional)" value={editP.brand} onChange={e=>setEditP(p=>({...p,brand:e.target.value}))}/>
-          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL (optional — enables Buy Now)" value={editP.link||""} onChange={e=>setEditP(p=>({...p,link:e.target.value}))}/>
+          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={editP.brand} onChange={e=>setEditP(p=>({...p,brand:e.target.value}))}/>
+          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={editP.link||""} onChange={e=>setEditP(p=>({...p,link:e.target.value}))}/>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             {["skin","hair","treatment"].map(cat=>(
               <button key={cat} className={`dow-chip ${editP.category===cat?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".74rem"}}
@@ -762,7 +761,7 @@ function PurchasesPage({ purchases, prefill, onClearPrefill, onSave, onDelete, o
               <input className="ifield" style={{width:"100%"}} type="date" value={editP.date} onChange={e=>setEditP(p=>({...p,date:e.target.value}))}/>
             </div>
           </div>
-          <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes (optional)" value={editP.notes} onChange={e=>setEditP(p=>({...p,notes:e.target.value}))}/>
+          <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={editP.notes} onChange={e=>setEditP(p=>({...p,notes:e.target.value}))}/>
           <button className="save-btn" onClick={save} disabled={!editP.name.trim()} style={{opacity:editP.name.trim()?1:.4}}>Save Purchase</button>
         </div>
       )}
@@ -893,7 +892,7 @@ function WishlistPage({ wishlist, products, onSave, onDelete, onMoveToCart, onBa
             <button onClick={()=>{setShowForm(false);setEditItem(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
           </div>
           <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editItem.name} onChange={e=>setEditItem(p=>({...p,name:e.target.value}))}/>
-          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand (optional)" value={editItem.brand} onChange={e=>setEditItem(p=>({...p,brand:e.target.value}))}/>
+          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={editItem.brand} onChange={e=>setEditItem(p=>({...p,brand:e.target.value}))}/>
           <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={editItem.link||""} onChange={e=>setEditItem(p=>({...p,link:e.target.value}))}/>
           <div style={{display:"flex",gap:8,marginBottom:12}}>
             {["skin","hair","treatment"].map(cat=>(
@@ -924,7 +923,7 @@ function WishlistPage({ wishlist, products, onSave, onDelete, onMoveToCart, onBa
               ))}
             </div>
           </div>
-          <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes (optional)" value={editItem.notes||""} onChange={e=>setEditItem(p=>({...p,notes:e.target.value}))}/>
+          <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={editItem.notes||""} onChange={e=>setEditItem(p=>({...p,notes:e.target.value}))}/>
           <button className="save-btn" onClick={save} disabled={!editItem.name.trim()} style={{opacity:editItem.name.trim()?1:.4}}>Save to Wishlist</button>
         </div>
       )}
@@ -1539,6 +1538,11 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
         );
       })()}
       <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={p.notes||""} onChange={e=>setP(prev=>({...prev,notes:e.target.value}))}/>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
+        <span style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase",flex:1}}>⭐ Staple</span>
+        <span style={{fontSize:".7rem",color:"#a08070",marginRight:6}}>{p.is_staple?"Yes — go-to repurchase":"No"}</span>
+        <Toggle on={!!p.is_staple} onChange={v=>setP(prev=>({...prev,is_staple:v}))}/>
+      </div>
       <button className="save-btn" onClick={()=>onSave(p)} disabled={!p.name.trim()} style={{opacity:p.name.trim()?1:.4}}>
         {isEditingProd?"Save Changes":"Add to My Routine"}
       </button>
@@ -1548,6 +1552,7 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
 
 function SlimEditForm({ initialData, onSave, onClose }) {
   const [p, setP] = useState(initialData);
+  const fileRef = useRef(null);
   const raw = p.frequency||"";
   const isDaily = raw==="Daily";
   const match = raw.match(/^(\d+)x (week|month)$/);
@@ -1560,13 +1565,32 @@ function SlimEditForm({ initialData, onSave, onClose }) {
   };
   const bump = delta => setFreq(Math.min(7,Math.max(1,count+delta)), period==="day"?"week":period);
   const catLabel = p.category==="skin"?"Skin":p.category==="treatment"?"Treatment":"Hair";
+  const handleImageFile = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const max = 900;
+        let w = img.width, h = img.height;
+        if (w > max || h > max) { if (w>h){h=Math.round(h*max/w);w=max;}else{w=Math.round(w*max/h);h=max;} }
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        setP(prev=>({...prev, userImage: canvas.toDataURL('image/jpeg',0.78)}));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+  const displayImage = p.userImage || p.image;
   return (
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal" style={{padding:"24px 22px 28px"}} onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
         <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:20}}>
-          {p.image&&<img src={p.image} alt="" style={{width:52,height:52,borderRadius:9,objectFit:"cover",flexShrink:0,border:"1px solid #f0e0d4"}}/>}
+          {displayImage&&<img src={displayImage} alt="" style={{width:52,height:52,borderRadius:9,objectFit:"cover",flexShrink:0,border:"1px solid #f0e0d4"}}/>}
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",color:"#3a2e27",lineHeight:1.1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
             {p.brand&&<div style={{fontSize:".74rem",color:"#a08070",marginTop:1}}>{p.brand}</div>}
@@ -1618,6 +1642,33 @@ function SlimEditForm({ initialData, onSave, onClose }) {
           </div>
         </div>
 
+        {/* Photo attachment */}
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
+          {displayImage
+            ?<img src={displayImage} alt="" style={{width:36,height:36,borderRadius:6,objectFit:"cover",border:"1px solid #e8d8cc",flexShrink:0}}/>
+            :<div style={{width:36,height:36,borderRadius:6,background:"#ede4dc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",flexShrink:0}}>📷</div>
+          }
+          <div style={{flex:1}}>
+            <div style={{fontSize:".66rem",color:"#a08070",letterSpacing:".06em",textTransform:"uppercase",marginBottom:2}}>Product Photo</div>
+            <div style={{fontSize:".62rem",color:"#c0a898"}}>Used if no image from link</div>
+          </div>
+          <button onClick={()=>fileRef.current.click()}
+            style={{background:"none",border:"1px solid #e0cfc4",borderRadius:7,padding:"5px 10px",fontSize:".68rem",color:"#7a5c48",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",flexShrink:0}}>
+            {displayImage?"Change":"Add"}
+          </button>
+          {p.userImage&&<button onClick={()=>setP(prev=>({...prev,userImage:null}))}
+            style={{background:"none",border:"none",color:"#c0a898",fontSize:".8rem",cursor:"pointer",padding:"4px",flexShrink:0}}>✕</button>}
+          <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleImageFile(e.target.files[0])}/>
+        </div>
+
+        <input className="ifield" style={{width:"100%",marginBottom:12}} placeholder="Notes" value={p.notes||""} onChange={e=>setP(prev=>({...prev,notes:e.target.value}))}/>
+
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
+          <span style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase",flex:1}}>⭐ Staple</span>
+          <span style={{fontSize:".7rem",color:"#a08070",marginRight:6}}>{p.is_staple?"Yes — go-to repurchase":"No"}</span>
+          <Toggle on={!!p.is_staple} onChange={v=>setP(prev=>({...prev,is_staple:v}))}/>
+        </div>
+
         <button onClick={()=>onSave(p)} disabled={!p.name.trim()}
           style={{width:"100%",padding:"12px",background:p.name.trim()?"#b07a5e":"#e8d8cc",border:"none",borderRadius:12,
             color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:".84rem",fontWeight:600,cursor:p.name.trim()?"pointer":"default",
@@ -1629,7 +1680,7 @@ function SlimEditForm({ initialData, onSave, onClose }) {
   );
 }
 
-function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onUpdateSnapProduct, onUpdateSnapProductName, onRemoveFromSnapshot, onFinalizeBase, onDeleteSnapshot, onFetchIngredients, onBack, onHome, onMenuOpen }) {
+function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onUpdateSnapProduct, onUpdateSnapProductName, onRemoveFromSnapshot, onFinalizeBase, onDeleteSnapshot, onFetchIngredients, onSaveProductOrder, onUpdateSnapProductTimeOfDay, onBack, onHome, onMenuOpen }) {
   const [tab, setTab] = useState("current");
   const [editMode, setEditMode] = useState(false); // draft edit mode on finalized routine
   const [showForm, setShowForm] = useState(false);
@@ -1648,6 +1699,10 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   const [pendingNav, setPendingNav] = useState(null); // callback to run after discard/save
   const touchStartRef = useRef(null);
   const carouselScrollRef = useRef(null);
+  const draftChangesRef = useRef(null);
+  const dragItem = useRef(null);
+  const [dragTargetId, setDragTargetId] = useState(null);
+  const [showAmPm, setShowAmPm] = useState(false);
 
   // Scroll carousel to correct position when featured view opens or category changes
   useLayoutEffect(() => {
@@ -1673,14 +1728,15 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
           name:      sp.name_snapshot  || prod.name,
           brand:     sp.brand_snapshot || prod.brand,
           frequency: sp.frequency      || prod.frequency,
+          time_of_day: sp.time_of_day  || 'all',
         };
       }).filter(Boolean)
     : [];
-  const skinProds = snapProducts.filter(p=>p.category==="skin");
-  const hairProds = snapProducts.filter(p=>p.category==="hair");
-  const txProds   = snapProducts.filter(p=>p.category==="treatment");
+  const skinProds = snapProducts.filter(p=>p.category==="skin").sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const hairProds = snapProducts.filter(p=>p.category==="hair").sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const txProds   = snapProducts.filter(p=>p.category==="treatment").sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
 
-  const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, image:"", link:"", price:"", notes:"", tags:[], frequency:"" });
+  const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, image:"", link:"", price:"", notes:"", tags:[], frequency:"", is_staple:false });
 
   const handleCloseForm = useCallback(() => { setShowForm(false); setEditProd(null); setIsEditingProd(false); }, []);
   const handleSetEditProd = useCallback((fn) => setEditProd(fn), []);
@@ -1698,13 +1754,16 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   };
 
   const enterEditMode = () => {
+    const initial = {added:[], removed:[], edited:[]};
     setEditMode(true);
-    setDraftChanges({added:[], removed:[], edited:[]});
+    setDraftChanges(initial);
+    draftChangesRef.current = initial;
   };
 
   const discardChanges = () => {
     setEditMode(false);
     setDraftChanges(null);
+    draftChangesRef.current = null;
     setShowForm(false);
     setEditProd(null);
     setUnsavedWarning(false);
@@ -1772,7 +1831,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
         if (Object.keys(spUpdates).length) await onUpdateSnapProduct(sp.id, spUpdates);
       }
 
-      if (draftChanges) setDraftChanges(prev=>({...prev, edited:[...prev.edited, data.name]}));
+      const cur1 = draftChangesRef.current; if (cur1) { const u={...cur1,edited:[...cur1.edited,data.name]}; draftChangesRef.current=u; setDraftChanges(u); }
     } else {
       // ── Adding a new product ──
       await onSaveProduct(data);
@@ -1780,7 +1839,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
       if (activeSnap) {
         if (!activeSnap.products.find(p=>p.product_id===data.id)) {
           await onAddToSnapshot(activeSnap.id, data.id, meta);
-          if (draftChanges) setDraftChanges(prev=>({...prev, added:[...prev.added, data.name]}));
+          const cur2 = draftChangesRef.current; if (cur2) { const u={...cur2,added:[...cur2.added,data.name]}; draftChangesRef.current=u; setDraftChanges(u); }
         }
       } else {
         const newSnapId = await onOpenSnapshot(true);
@@ -1793,17 +1852,23 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   const removeProduct = async (snapProdId, prodName) => {
     if (!activeSnap) return;
     await onRemoveFromSnapshot(activeSnap.id, snapProdId);
-    if (draftChanges) setDraftChanges(prev=>({...prev, removed:[...prev.removed, prodName]}));
+    const cur = draftChangesRef.current;
+    if (cur) {
+      const updated = {...cur, removed:[...cur.removed, prodName]};
+      draftChangesRef.current = updated;
+      setDraftChanges(updated);
+    }
   };
 
   const doFinalize = async () => {
     setConfirmFinalize(false);
+    const changes = draftChangesRef.current;
     if (draftSnap) {
       // First time finalize
       await onFinalizeBase(draftSnap.id);
     } else if (editMode && currentSnap) {
       // Re-finalize after edit
-      const productChanges = (draftChanges?.added?.length||0) + (draftChanges?.removed?.length||0);
+      const productChanges = (changes?.added?.length||0) + (changes?.removed?.length||0);
       if (productChanges > 0) {
         // Products changed — close current snapshot, open new one with current products
         const newSnapId = await onOpenSnapshot(false);
@@ -1818,14 +1883,15 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
         }
         // Notify
         const parts = [];
-        if (draftChanges.added.length) parts.push(`Added: ${draftChanges.added.join(", ")}`);
-        if (draftChanges.removed.length) parts.push(`Removed: ${draftChanges.removed.join(", ")}`);
+        if (changes.added.length) parts.push(`Added: ${changes.added.join(", ")}`);
+        if (changes.removed.length) parts.push(`Removed: ${changes.removed.join(", ")}`);
         setRoutineSuccess({ title: "Routine updated", body: (parts.length ? parts.join(" · ") + ". " : "") + "Your previous routine has been preserved in Snapshot History." });
       }
       // Edits only (link/frequency/notes) — no new snapshot, already saved
     }
     setEditMode(false);
     setDraftChanges(null);
+    draftChangesRef.current = null;
   };
 
   const catEmoji = (cat) => cat==="skin"?"🌿":cat==="treatment"?"💉":"✨";
@@ -2084,6 +2150,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                     </div>
                     <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0,marginLeft:10}}>
                       {!isDraft&&<button onClick={()=>setShowAnalysis(v=>!v)} style={{background:"#3a2e27",border:"none",borderRadius:9,padding:"6px 12px",color:"#f7ece4",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,whiteSpace:"nowrap"}}>{showAnalysis?"Close":"Analyze My Routine"}</button>}
+                      {!isDraft&&<button onClick={()=>setShowAmPm(v=>!v)} style={{background:"none",border:"1.5px solid #e8d8cc",borderRadius:9,padding:"6px 10px",color:"#a08070",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>🌅 AM/PM</button>}
                       {!isDraft&&<button onClick={enterEditMode} style={{background:"none",border:"1.5px solid #e8d8cc",borderRadius:9,padding:"6px 10px",color:"#a08070",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>Update Routine</button>}
                       {isDraft&&<button onClick={discardChanges} style={{background:"none",border:"1.5px solid #e8d8cc",borderRadius:9,padding:"6px 12px",color:"#a08070",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>Discard</button>}
                       {isDraft&&<button onClick={()=>setConfirmFinalize(true)} style={{background:"#b07a5e",border:"none",borderRadius:9,padding:"6px 14px",color:"#fff",fontSize:".76rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,whiteSpace:"nowrap"}}>Save Routine</button>}
@@ -2094,6 +2161,66 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                   {showAnalysis&&activeSnap&&!isDraft&&(
                     <div style={{marginBottom:16,borderBottom:"1px solid #f0e0d4",paddingBottom:16}}>
                       <RoutineAnalysis products={products} snapProducts={activeSnap.products} entries={entries} dateRange={{start:activeSnap.started_at,end:null}} isCurrent={true} onClose={()=>setShowAnalysis(false)} onFetchIngredients={onFetchIngredients}/>
+                    </div>
+                  )}
+
+                  {/* AM/PM Routine Builder */}
+                  {showAmPm&&activeSnap&&!isDraft&&(
+                    <div style={{marginBottom:16,borderBottom:"1px solid #f0e0d4",paddingBottom:16}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>Morning & Night Routine</div>
+                        <button onClick={()=>setShowAmPm(false)} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#a08070"}}>×</button>
+                      </div>
+                      <div style={{fontSize:".72rem",color:"#a08070",marginBottom:12,lineHeight:1.6}}>Tag each product as AM, PM, or both. Helps you see your morning vs. night routine at a glance.</div>
+                      {snapProducts.length===0&&<div style={{fontSize:".78rem",color:"#c0a898",fontStyle:"italic"}}>No products in your routine yet.</div>}
+                      {[["skin","🌿 Skin",skinProds],["hair","✨ Hair",hairProds],["treatment","💉 Treatments",txProds]].filter(([,,p])=>p.length>0).map(([cat,label,prods])=>(
+                        <div key={cat} style={{marginBottom:14}}>
+                          <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:8}}>{label}</div>
+                          {prods.map(p=>(
+                            <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:7,padding:"8px 10px",background:"#fdf6f0",borderRadius:10}}>
+                              {p.image
+                                ?<img src={p.image} alt="" style={{width:32,height:32,objectFit:"cover",borderRadius:6,flexShrink:0}}/>
+                                :<div style={{width:32,height:32,borderRadius:6,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".9rem",flexShrink:0}}>{catEmoji(cat)}</div>
+                              }
+                              <div style={{flex:1,minWidth:0}}>
+                                <div style={{fontSize:".76rem",fontWeight:500,color:"#3a2e27",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
+                              </div>
+                              <div style={{display:"flex",gap:4,flexShrink:0}}>
+                                {[["am","🌅"],["all","🔁"],["pm","🌙"]].map(([val,emoji])=>(
+                                  <button key={val} onClick={()=>onUpdateSnapProductTimeOfDay(p.snapProdId,val)}
+                                    style={{width:32,height:28,borderRadius:7,border:"1px solid",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:".72rem",
+                                      background:(p.time_of_day||'all')===val?"#b07a5e":"transparent",
+                                      color:(p.time_of_day||'all')===val?"#fff":"#a08070",
+                                      borderColor:(p.time_of_day||'all')===val?"#b07a5e":"#ddd0c4"}}>
+                                    {emoji}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                      {/* AM view */}
+                      {snapProducts.some(p=>p.time_of_day==='am')&&(
+                        <div style={{marginTop:12,padding:"10px 12px",background:"#fffbf5",border:"1px solid #f0e4d0",borderRadius:10}}>
+                          <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b07a5e",marginBottom:6}}>🌅 Morning Routine</div>
+                          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                            {snapProducts.filter(p=>p.time_of_day==='am'||p.time_of_day==='all').map(p=>(
+                              <div key={p.id} style={{fontSize:".68rem",background:"#fdf0e4",border:"1px solid #e8d0b8",borderRadius:20,padding:"3px 10px",color:"#7a5c48"}}>{p.name}</div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {snapProducts.some(p=>p.time_of_day==='pm')&&(
+                        <div style={{marginTop:8,padding:"10px 12px",background:"#f5f4fb",border:"1px solid #dcd8f0",borderRadius:10}}>
+                          <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#7a6a9a",marginBottom:6}}>🌙 Night Routine</div>
+                          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                            {snapProducts.filter(p=>p.time_of_day==='pm'||p.time_of_day==='all').map(p=>(
+                              <div key={p.id} style={{fontSize:".68rem",background:"#ede8f8",border:"1px solid #c8c0e8",borderRadius:20,padding:"3px 10px",color:"#5a4a7a"}}>{p.name}</div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -2129,24 +2256,54 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                   {[["skin","🌿 Skin",skinProds],["hair","✨ Hair",hairProds],["treatment","💉 Treatments",txProds]].filter(([,,p])=>p.length>0).map(([cat,label,prods],ri,arr)=>(
                     <div key={cat} style={{marginBottom:ri<arr.length-1?18:0}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:9}}>
-                        <div style={{fontSize:".66rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070"}}>{label}</div>
+                        <div style={{fontSize:".66rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070"}}>
+                          {label}{isDraft&&<span style={{fontSize:".56rem",color:"#c0b0a8",marginLeft:6,fontStyle:"italic"}}>drag to reorder</span>}
+                        </div>
                         <div style={{fontSize:".62rem",color:"#c0b0a8"}}>{prods.length} product{prods.length!==1?"s":""}</div>
                       </div>
                       <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,scrollbarWidth:"none",WebkitOverflowScrolling:"touch",paddingRight:18,marginRight:-18}}>
-                        {prods.map((p,i)=>(
-                          <div key={p.id} onClick={()=>setFeaturedView({category:cat,index:i})}
-                            style={{flexShrink:0,width:96,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:13,overflow:"hidden",cursor:"pointer"}}>
-                            {p.image
-                              ?<img src={p.image} alt="" style={{width:"100%",height:76,objectFit:"cover",display:"block"}}/>
-                              :<div style={{width:"100%",height:76,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem"}}>{catEmoji(cat)}</div>
-                            }
-                            <div style={{padding:"7px 8px 8px"}}>
-                              <div style={{fontSize:".7rem",fontWeight:500,color:"#3a2e27",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
-                              {p.brand&&<div style={{fontSize:".6rem",color:"#a08070",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.brand}</div>}
-                              {p.frequency&&<div style={{fontSize:".56rem",background:"#f0e8f4",borderRadius:5,padding:"1px 5px",color:"#7a6a8a",display:"inline-block",marginTop:3}}>{p.frequency}</div>}
+                        {prods.map((p,i)=>{
+                          const isBeingDragged = dragItem.current?.id===p.id;
+                          const isDropTarget = dragTargetId===p.id && dragItem.current?.cat===cat && dragItem.current?.id!==p.id;
+                          return (
+                            <div key={p.id}
+                              draggable={isDraft}
+                              onDragStart={isDraft ? e=>{e.dataTransfer.effectAllowed="move"; dragItem.current={id:p.id,cat,i}; setTimeout(()=>setDragTargetId(null),0);} : undefined}
+                              onDragEnd={isDraft ? ()=>{dragItem.current=null; setDragTargetId(null);} : undefined}
+                              onDragOver={isDraft ? e=>{e.preventDefault(); e.dataTransfer.dropEffect="move"; if(dragTargetId!==p.id) setDragTargetId(p.id);} : undefined}
+                              onDragLeave={isDraft ? ()=>setDragTargetId(d=>d===p.id?null:d) : undefined}
+                              onDrop={isDraft ? e=>{
+                                e.preventDefault();
+                                const from = dragItem.current;
+                                if (!from||from.id===p.id||from.cat!==cat){setDragTargetId(null);return;}
+                                const fromIdx = prods.findIndex(x=>x.id===from.id);
+                                const reordered=[...prods];
+                                const [moved]=reordered.splice(fromIdx,1);
+                                reordered.splice(i,0,moved);
+                                onSaveProductOrder(reordered.map((x,idx)=>({id:x.id,sort_order:idx})));
+                                dragItem.current=null; setDragTargetId(null);
+                              } : undefined}
+                              onClick={()=>{ if(!dragItem.current) setFeaturedView({category:cat,index:i}); }}
+                              style={{flexShrink:0,width:96,position:"relative",
+                                background:isDropTarget?"#fdf0e8":"#fff8f3",
+                                border:isDropTarget?"1.5px solid #b07a5e":"1.5px solid #e8d8cc",
+                                borderRadius:13,overflow:"hidden",
+                                cursor:isDraft?"grab":"pointer",
+                                opacity:isBeingDragged?0.4:1,
+                                transition:"opacity .15s,border-color .15s,background .15s"}}>
+                              {isDraft&&<div style={{position:"absolute",top:4,left:4,fontSize:".65rem",color:"rgba(160,128,112,.6)",pointerEvents:"none",zIndex:1}}>⠿</div>}
+                              {p.image
+                                ?<img src={p.image} alt="" style={{width:"100%",height:76,objectFit:"cover",display:"block"}}/>
+                                :<div style={{width:"100%",height:76,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem"}}>{catEmoji(cat)}</div>
+                              }
+                              <div style={{padding:"7px 8px 8px"}}>
+                                <div style={{fontSize:".7rem",fontWeight:500,color:"#3a2e27",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
+                                {p.brand&&<div style={{fontSize:".6rem",color:"#a08070",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.brand}</div>}
+                                {p.frequency&&<div style={{fontSize:".56rem",background:"#f0e8f4",borderRadius:5,padding:"1px 5px",color:"#7a6a8a",display:"inline-block",marginTop:3}}>{p.frequency}</div>}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
@@ -2326,7 +2483,7 @@ function TreatmentHistoryCard({ tx, doneDates }) {
   );
 }
 
-function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRangeEnd }) {
+function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRangeEnd, needleDates=[] }) {
   const today=fmt(new Date());
   const [calM, setCalM]=useState({y:new Date().getFullYear(),m:new Date().getMonth()});
   const [hov, setHov]=useState(null);
@@ -2390,16 +2547,18 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
           const sel=selectedDates.includes(d);
           const isPending=d===pendingStart&&rangeMode;
           const prev=inPreview(d);
+          const isNeedle=needleDates.includes(d);
           return (
             <div key={d} onClick={()=>handleClick(d)}
               onMouseEnter={()=>rangeMode&&setHov(d)}
               onMouseLeave={()=>setHov(null)}
-              style={{aspectRatio:1,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:"50%",fontSize:".78rem",cursor:"pointer",
+              style={{aspectRatio:1,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:"50%",fontSize:".78rem",cursor:"pointer",position:"relative",
                 background:sel?"#b07a5e":isPending?"#c08870":prev?"#f7e8de":"transparent",
                 color:sel||isPending?"#fff":"#3a2e27",fontWeight:sel?600:400,
                 border:d===today&&!sel?"1.5px solid #b07a5e":"none",
                 boxShadow:isPending?"0 0 0 2px #fff,0 0 0 4px #b07a5e":"none"}}>
               {parse(d).getDate()}
+              {isNeedle&&<span style={{position:"absolute",bottom:1,right:1,fontSize:".42rem",lineHeight:1,pointerEvents:"none"}}>💉</span>}
             </div>
           );
         })}
@@ -2415,7 +2574,9 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
 function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsProp, schedules, treatments, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose, onAddItem, initialPlan, initialTreatment }) {
   const [screen, setScreen]=useState(initialPlan?"editPlan":initialTreatment?"editTreatment":"chooseType"); // chooseType | editPlan | editTreatment
   const [editing, setEditing]=useState(initialPlan?{...initialPlan,itemIds:initialPlan.itemIds||[initialPlan.itemId].filter(Boolean),dates:initialPlan.dates||[],startDate:initialPlan.startDate||fmt(new Date())}:{id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),reminder:false,time:"08:00",location:""});
-  const [editTx, setEditTx]=useState(initialTreatment?{...initialTreatment}:{id:uid(),name:"",type:"skin",dates:[]});
+  const [editTx, setEditTx]=useState(initialTreatment?{...initialTreatment}:{id:uid(),name:"",type:"skin",dates:[],completedDates:[],location:"",price:"",notes:""});
+  const [txMode, setTxMode]=useState(initialTreatment?"upcoming":null); // null | "past" | "upcoming"
+  const [pastDate, setPastDate]=useState(fmt(new Date()));
   const [showItemPick, setShowItemPick]=useState(false);
   const [calRangeStart, setCalRangeStart]=useState(null);
   const [newStepLabel, setNewStepLabel]=useState("");
@@ -2445,10 +2606,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
     onSaveMany(plans);
     setEditing(null); setScreen("list");
   };
-  const saveTx=()=>{
-    if(!editTx.name.trim()||!editTx.dates.length) return;
-    onSaveTreatment(editTx); setEditTx(null); setScreen("list");
-  };
+  const saveTx=()=>{}; // replaced by inline handlers below
 
   if(screen==="chooseType"){
     return (
@@ -2556,7 +2714,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             </>
           )}
           {editing._category==="treatment"&&<>
-            <div className="modal-sub" style={{marginBottom:6}}>📍 Location <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional)</span></div>
+            <div className="modal-sub" style={{marginBottom:6}}>📍 Location</div>
             <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Glow Clinic, Miami"
               value={editing.location||""} onChange={e=>setEditing(ed=>({...ed,location:e.target.value}))}/>
           </>}
@@ -2564,7 +2722,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
           <input type="date" className="time-input" style={{width:"100%",marginBottom:14}}
             value={editing.startDate||fmt(new Date())}
             onChange={e=>setEditing(ed=>({...ed,startDate:e.target.value}))}/>
-          <div className="modal-sub" style={{marginBottom:8}}>Every <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional — leave blank for one-off)</span></div>
+          <div className="modal-sub" style={{marginBottom:8}}>Every — leave blank for one-off</div>
           <div className="toggle-row" style={{marginBottom:8}}>
             <div><div className="toggle-lbl">Every day</div></div>
             <Toggle on={editing.days.length===7} onChange={v=>setEditing(e=>({...e,days:v?[0,1,2,3,4,5,6]:[]}))}/>
@@ -2600,42 +2758,143 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
   }
 
   if(screen==="editTreatment"&&editTx){
-    const canSave=editTx.name.trim()&&editTx.dates.length>0;
+    const isExisting=treatments.find(t=>t.id===editTx.id);
+    const TypeToggle=()=>(
+      <div style={{display:"flex",gap:8,marginBottom:12}}>
+        {["skin","hair"].map(tp=>(
+          <button key={tp} className={`dow-chip ${editTx.type===tp?"on":""}`} style={{flex:1,textAlign:"center"}}
+            onClick={()=>setEditTx(t=>({...t,type:tp}))}>
+            {tp==="skin"?"🌿 Skin":"✨ Hair"}
+          </button>
+        ))}
+      </div>
+    );
+    const SharedFields=()=>(
+      <>
+        <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Treatment name (e.g. Facial, Microneedling…)"
+          value={editTx.name} onChange={e=>setEditTx(t=>({...t,name:e.target.value}))} autoFocus/>
+        <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="📍 Location"
+          value={editTx.location||""} onChange={e=>setEditTx(t=>({...t,location:e.target.value}))}/>
+        <TypeToggle/>
+        <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="💰 Price (e.g. $80)"
+          value={editTx.price||""} onChange={e=>setEditTx(t=>({...t,price:e.target.value}))}/>
+        <textarea className="ifield" style={{width:"100%",marginBottom:12,minHeight:60,resize:"vertical"}} placeholder="Notes…"
+          value={editTx.notes||""} onChange={e=>setEditTx(t=>({...t,notes:e.target.value}))}/>
+      </>
+    );
+
+    // ── Mode chooser (new treatments only) ──────────────────────────────────
+    if(!txMode&&!isExisting){
+      return (
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+          <div className="modal">
+            <div className="modal-top">
+              <button className="ghost-btn" style={{padding:"4px 10px",fontSize:".75rem"}} onClick={()=>setScreen("chooseType")}>← Back</button>
+              <div className="modal-title">New Treatment</div>
+              <button className="modal-x" onClick={onClose}>×</button>
+            </div>
+            <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Treatment name (e.g. Facial, Microneedling…)"
+              value={editTx.name} onChange={e=>setEditTx(t=>({...t,name:e.target.value}))} autoFocus/>
+            <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="📍 Location"
+              value={editTx.location||""} onChange={e=>setEditTx(t=>({...t,location:e.target.value}))}/>
+            <TypeToggle/>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.15rem",color:"#3a2e27",marginBottom:14,fontStyle:"italic"}}>When is this treatment?</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <button onClick={()=>setTxMode("past")} style={{display:"flex",alignItems:"center",gap:14,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
+                <span style={{fontSize:"1.5rem"}}>📅</span>
+                <div>
+                  <div style={{fontSize:".9rem",color:"#3a2e27",fontWeight:500}}>Register a past treatment</div>
+                  <div style={{fontSize:".74rem",color:"#a08070",marginTop:2}}>Log something you've already had</div>
+                </div>
+              </button>
+              <button onClick={()=>setTxMode("upcoming")} style={{display:"flex",alignItems:"center",gap:14,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
+                <span style={{fontSize:"1.5rem"}}>💉</span>
+                <div>
+                  <div style={{fontSize:".9rem",color:"#3a2e27",fontWeight:500}}>Plan an upcoming treatment</div>
+                  <div style={{fontSize:".74rem",color:"#a08070",marginTop:2}}>Schedule something coming up</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Past treatment form ─────────────────────────────────────────────────
+    if(txMode==="past"&&!isExisting){
+      const canSave=editTx.name.trim()&&pastDate;
+      const doSave=(addMore)=>{
+        if(!canSave) return;
+        const tx={...editTx,completedDates:[...(editTx.completedDates||[]),pastDate]};
+        onSaveTreatment(tx);
+        if(addMore){
+          setEditTx({id:uid(),name:"",type:editTx.type,dates:[],completedDates:[],location:"",price:"",notes:""});
+          setPastDate(fmt(new Date()));
+        } else {
+          setEditTx(null); setScreen("list");
+        }
+      };
+      return (
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+          <div className="modal">
+            <div className="modal-top">
+              <button className="ghost-btn" style={{padding:"4px 10px",fontSize:".75rem"}} onClick={()=>setTxMode(null)}>← Back</button>
+              <div className="modal-title">Past Treatment</div>
+              <button className="modal-x" onClick={onClose}>×</button>
+            </div>
+            <SharedFields/>
+            <input type="date" className="time-input" style={{width:"100%",marginBottom:14}}
+              value={pastDate} onChange={e=>setPastDate(e.target.value)}/>
+            <div style={{display:"flex",gap:8}}>
+              <button className="save-btn" onClick={()=>doSave(false)} disabled={!canSave} style={{flex:1,opacity:canSave?1:.4}}>Save</button>
+              <button className="ghost-btn" onClick={()=>doSave(true)} disabled={!canSave} style={{flex:1,opacity:canSave?1:.4,padding:"10px 0",fontSize:".82rem"}}>+ Add More</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Upcoming / edit existing form ───────────────────────────────────────
+    const canSaveFinal=isExisting?editTx.name.trim():(editTx.name.trim()&&editTx.dates.length>0);
+    const doSaveUpcoming=(addMore)=>{
+      if(!canSaveFinal) return;
+      onSaveTreatment(editTx);
+      if(addMore&&!isExisting){
+        setEditTx({id:uid(),name:"",type:editTx.type,dates:[],completedDates:[],location:"",price:"",notes:""});
+      } else {
+        setEditTx(null); setScreen("list");
+      }
+    };
     return (
       <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
         <div className="modal">
           <div className="modal-top">
-            <div className="modal-title">{editTx.name?"Edit Treatment":"New Treatment"}</div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              {!isExisting&&<button className="ghost-btn" style={{padding:"4px 10px",fontSize:".75rem"}} onClick={()=>setTxMode(null)}>← Back</button>}
+              <div className="modal-title">{isExisting?"Edit Treatment":"Upcoming Treatment"}</div>
+            </div>
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              {treatments.find(t=>t.id===editTx.id)&&<button className="del-btn" onClick={()=>{onDeleteTreatment(editTx.id);onClose();}}>Delete</button>}
+              {isExisting&&<button className="del-btn" onClick={()=>{onDeleteTreatment(editTx.id);onClose();}}>Delete</button>}
               <button className="modal-x" onClick={onClose}>×</button>
             </div>
           </div>
-          <div className="modal-sub">Treatment name</div>
-          <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Facial, Microneedling…"
-            value={editTx.name} onChange={e=>setEditTx(t=>({...t,name:e.target.value}))} autoFocus/>
-          <div className="modal-sub" style={{marginBottom:6}}>📍 Location <span style={{fontWeight:400,color:"#b8a090",fontSize:".78rem"}}>(optional)</span></div>
-          <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="e.g. Glow Clinic, Miami"
-            value={editTx.location||""} onChange={e=>setEditTx(t=>({...t,location:e.target.value}))}/>
-          <div className="modal-sub">Skin or Hair</div>
-          <div style={{display:"flex",gap:8,marginBottom:14}}>
-            {["skin","hair"].map(tp=>(
-              <button key={tp} className={`dow-chip ${editTx.type===tp?"on":""}`} style={{flex:1,textAlign:"center"}}
-                onClick={()=>setEditTx(t=>({...t,type:tp}))}>
-                {tp==="skin"?"🌿 Skin":"✨ Hair"}
-              </button>
-            ))}
-          </div>
-          <div className="modal-sub">Scheduled date(s)</div>
+          <SharedFields/>
+          <div className="modal-sub" style={{marginBottom:6}}>{isExisting?"Scheduled date(s)":"Pick date(s)"}</div>
           <MiniCal
             selectedDates={editTx.dates}
             onToggleDate={d=>setEditTx(t=>({...t,dates:t.dates.includes(d)?t.dates.filter(x=>x!==d):[...t.dates,d]}))}
             rangeStart={calRangeStart}
             onRangeStart={d=>setCalRangeStart(d)}
             onRangeEnd={range=>{ setEditTx(t=>({...t,dates:[...new Set([...t.dates,...range])]})); setCalRangeStart(null); }}
+            needleDates={editTx.completedDates||[]}
           />
-
-          <button className="save-btn" onClick={saveTx} disabled={!canSave} style={{opacity:canSave?1:.4}}>Schedule Treatment</button>
+          {(editTx.completedDates||[]).length>0&&<div style={{fontSize:".7rem",color:"#a08070",marginBottom:10}}>💉 marks a completed past session</div>}
+          <div style={{display:"flex",gap:8}}>
+            <button className="save-btn" onClick={()=>doSaveUpcoming(false)} disabled={!canSaveFinal} style={{flex:1,opacity:canSaveFinal?1:.4}}>
+              {isExisting?"Save Changes":"Schedule"}
+            </button>
+            {!isExisting&&<button className="ghost-btn" onClick={()=>doSaveUpcoming(true)} disabled={!canSaveFinal} style={{flex:1,opacity:canSaveFinal?1:.4,padding:"10px 0",fontSize:".82rem"}}>+ Add More</button>}
+          </div>
         </div>
       </div>
     );
@@ -2855,7 +3114,7 @@ function HairLengthCard({ hairLengths, setHairLengths, saveHairLength }) {
 
 export default function App({ user }) {
   const today = fmt(new Date());
-  const [view,        setView]        = useState("log");
+  const [view,        setView]        = useState(() => sessionStorage.getItem('ritual_view') || "log");
   const [activeTab,   setActiveTab]   = useState("skin");
   const [activeDate,  setActiveDate]  = useState(today);
   const [entries,     setEntries]     = useState({});
@@ -2882,12 +3141,19 @@ export default function App({ user }) {
   const [wishlist,      setWishlist]      = useState([]);
   const [snapshots,     setSnapshots]     = useState([]);
   const [sideMenu,      setSideMenu]      = useState(false);
-  const [pageView,      setPageView]      = useState(null); // null=main, "purchases", "account", "products", "wishlist"
+  const [pageView,      setPageView]      = useState(() => sessionStorage.getItem('ritual_pageView') || null); // null=main, "purchases", "account", "products", "wishlist"
   const [selectedPlan,  setSelectedPlan]  = useState(null); // plan/treatment being viewed
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [lightboxPhoto, setLightboxPhoto] = useState(null); // {message, onConfirm}
   const [prefillPurchase, setPrefillPurchase] = useState(null); // when moving wishlist item to purchases
   const [treatments,    setTreatments]    = useState([]); // [{id, name, type(skin/hair), dates:[], completedDates:[]}]
+
+  // Persist current page across refreshes
+  useEffect(() => { sessionStorage.setItem('ritual_view', view); }, [view]);
+  useEffect(() => {
+    if (pageView) sessionStorage.setItem('ritual_pageView', pageView);
+    else sessionStorage.removeItem('ritual_pageView');
+  }, [pageView]);
 
   // Load all data from Supabase on mount — two phases so the log/plans UI appears fast
   useEffect(()=>{
@@ -2935,7 +3201,7 @@ export default function App({ user }) {
           hlRows.forEach(r => { map[r.month] = r.length_cm; });
           setHairLengths(map);
         }
-        if (txRows) setTreatments(txRows.map(r=>({ id:r.id, name:r.name, type:r.type, dates:r.dates||[], completedDates:r.completed_dates||[], location:r.location||'' })));
+        if (txRows) setTreatments(txRows.map(r=>({ id:r.id, name:r.name, type:r.type, dates:r.dates||[], completedDates:r.completed_dates||[], location:r.location||'', price:r.price||'', notes:r.notes||'' })));
 
         // Show name prompt after phase 1
         const name = user?.user_metadata?.display_name || "";
@@ -2950,7 +3216,7 @@ export default function App({ user }) {
           supabase.from("snapshots").select("*, snapshot_products(*)").eq("user_id", user.id).order("started_at", {ascending:false}),
         ]).then(([{ data: purchRows },{ data: prodRows },{ data: wishRows },{ data: snapRows }]) => {
           if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[], image:r.image||'', link:r.link||'', frequency:r.frequency||'' })));
-          if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", price:r.price||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[] })));
+          if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", price:r.price||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[], is_staple:r.is_staple||false, sort_order:r.sort_order||0 })));
           if (wishRows) setWishlist(wishRows.map(r=>({ id:r.id, product_id:r.product_id||null, name:r.name||"", brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", notes:r.notes||"", tags:r.tags||[], priority:r.priority||0 })));
           if (snapRows) setSnapshots(snapRows.map(r=>({ id:r.id, label:r.label||"", started_at:r.started_at, ended_at:r.ended_at||null, is_base:r.is_base||false, products:r.snapshot_products||[] })));
         }).catch(e=>console.error("Phase 2 load error", e));
@@ -3034,7 +3300,8 @@ export default function App({ user }) {
     try {
       await supabase.from("treatments").upsert({
         id: tx.id, user_id: user.id, name: tx.name, type: tx.type,
-        dates: tx.dates, completed_dates: tx.completedDates, location: tx.location||'', updated_at: new Date().toISOString()
+        dates: tx.dates, completed_dates: tx.completedDates, location: tx.location||'',
+        price: tx.price||null, notes: tx.notes||'', updated_at: new Date().toISOString()
       }, { onConflict: "id" });
     } catch(e) { console.error("Treatment save error", e); }
   };
@@ -3140,26 +3407,35 @@ export default function App({ user }) {
   // ── Products CRUD ──
   const saveProduct = async (p) => {
     if (!user) return;
-    const row = { id:p.id, user_id:user.id, name:p.name, brand:p.brand||"", category:p.category||"skin", image:p.image||"", link:p.link||"", price:p.price||null, notes:p.notes||"", tags:p.tags||[], frequency:p.frequency||"", global_product_id:p.global_product_id||null, ingredients:p.ingredients||[] };
+    // userImage is a UI-only field (data URL from file picker) — strip from DB row
+    const { userImage, ...prod } = p;
+    const row = { id:prod.id, user_id:user.id, name:prod.name, brand:prod.brand||"", category:prod.category||"skin", image:prod.image||"", link:prod.link||"", price:prod.price||null, notes:prod.notes||"", tags:prod.tags||[], frequency:prod.frequency||"", global_product_id:prod.global_product_id||null, ingredients:prod.ingredients||[], is_staple:prod.is_staple||false, sort_order:prod.sort_order||0 };
     await supabase.from("products").upsert(row, {onConflict:"id"});
-    setProducts(prev => { const idx=prev.findIndex(x=>x.id===p.id); return idx>=0?prev.map(x=>x.id===p.id?p:x):[p,...prev]; });
+    setProducts(prev => { const idx=prev.findIndex(x=>x.id===prod.id); return idx>=0?prev.map(x=>x.id===prod.id?prod:x):[prod,...prev]; });
     // Background lookups — fire and forget
-    if (!p.ingredients?.length && p.name) fetchIngredients(p);
-    if (p.link || (!p.image && p.name)) fetchProductImage(p);
+    if (!prod.ingredients?.length && prod.name) fetchIngredients(prod);
+    if (prod.link || (!prod.image && prod.name) || userImage) fetchProductImage({...prod, userImage});
   };
 
   const fetchProductImage = async (p) => {
     try {
-      const res = await fetch("/api/images", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ link: p.link||"", name: p.name, brand: p.brand||"" })
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.imageUrl) {
-        await supabase.from("products").update({ image: data.imageUrl }).eq("id", p.id).eq("user_id", user.id);
-        setProducts(prev => prev.map(x => x.id===p.id ? {...x, image: data.imageUrl} : x));
+      let imageUrl = null;
+      if (p.link || p.name) {
+        const res = await fetch("/api/images", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ link: p.link||"", name: p.name, brand: p.brand||"" })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.imageUrl) imageUrl = data.imageUrl;
+        }
+      }
+      // Fall back to user-attached photo if link-based fetch found nothing
+      if (!imageUrl && p.userImage) imageUrl = p.userImage;
+      if (imageUrl) {
+        await supabase.from("products").update({ image: imageUrl }).eq("id", p.id).eq("user_id", user.id);
+        setProducts(prev => prev.map(x => x.id===p.id ? {...x, image: imageUrl} : x));
       }
     } catch(e) { console.error("Image fetch error:", e); }
   };
@@ -3181,6 +3457,16 @@ export default function App({ user }) {
       }
       return null;
     } catch(e) { console.error("Ingredient fetch error:", e); return null; }
+  };
+  const saveProductOrder = async (orderedItems) => {
+    // orderedItems: [{id, sort_order}]
+    await Promise.all(orderedItems.map(({id, sort_order}) =>
+      supabase.from("products").update({sort_order}).eq("id",id).eq("user_id",user.id)
+    ));
+    setProducts(prev => prev.map(p => {
+      const found = orderedItems.find(o=>o.id===p.id);
+      return found ? {...p, sort_order: found.sort_order} : p;
+    }));
   };
   const deleteProduct = async (id) => {
     await supabase.from("products").delete().eq("id",id).eq("user_id",user.id);
@@ -3262,6 +3548,10 @@ export default function App({ user }) {
   const updateSnapProduct = async (snapProdId, updates) => {
     await supabase.from("snapshot_products").update(updates).eq("id",snapProdId);
     setSnapshots(prev=>prev.map(s=>({...s,products:s.products.map(sp=>sp.id===snapProdId?{...sp,...updates}:sp)})));
+  };
+  const updateSnapProductTimeOfDay = async (snapProdId, time_of_day) => {
+    await supabase.from("snapshot_products").update({time_of_day}).eq("id",snapProdId);
+    setSnapshots(prev=>prev.map(s=>({...s,products:s.products.map(sp=>sp.id===snapProdId?{...sp,time_of_day}:sp)})));
   };
   // Typo fix — propagate corrected name/brand across ALL snapshots for this product
   const updateSnapProductName = async (productId, name, brand) => {
@@ -3472,6 +3762,8 @@ export default function App({ user }) {
       onFinalizeBase={finalizeBase}
       onDeleteSnapshot={deleteSnapshot}
       onFetchIngredients={fetchIngredients}
+      onSaveProductOrder={saveProductOrder}
+      onUpdateSnapProductTimeOfDay={updateSnapProductTimeOfDay}
       onBack={()=>setPageView(null)}
       onHome={goHome}
       onMenuOpen={()=>setSideMenu(true)}/>{sideMenuEl}</div>
