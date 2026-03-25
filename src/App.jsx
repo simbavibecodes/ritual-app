@@ -2944,7 +2944,7 @@ export default function App({ user }) {
           supabase.from("purchases").select("*").eq("user_id", user.id).order("date", {ascending:false}),
           supabase.from("products").select("*").eq("user_id", user.id).order("created_at", {ascending:false}),
           supabase.from("wishlist").select("*").eq("user_id", user.id).order("created_at", {ascending:false}),
-          supabase.from("snapshots").select("*, snapshot_products(*)").eq("user_id", user.id).order("started_at", {ascending:false}).order("created_at", {ascending:true, foreignTable:"snapshot_products"}),
+          supabase.from("snapshots").select("*, snapshot_products(*)").eq("user_id", user.id).order("started_at", {ascending:false}),
         ]).then(([{ data: purchRows },{ data: prodRows },{ data: wishRows },{ data: snapRows }]) => {
           if (purchRows) setPurchases(purchRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category, price:r.price||0, quantity:r.quantity||1, date:r.date, notes:r.notes||"", tags:r.tags||[], image:r.image||'', link:r.link||'', frequency:r.frequency||'' })));
           if (prodRows) setProducts(prodRows.map(r=>({ id:r.id, name:r.name, brand:r.brand||"", category:r.category||"skin", image:r.image||"", link:r.link||"", price:r.price||"", notes:r.notes||"", tags:r.tags||[], frequency:r.frequency||"", global_product_id:r.global_product_id||null, ingredients:r.ingredients||[] })));
