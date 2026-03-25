@@ -778,59 +778,101 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
       </div>
 
       {/* ── Source picker ── */}
-      {addMode==="source"&&(
-        <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
-          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:14}}>What did you purchase?</div>
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {[
-              ["📦","From My Products","Pick a product you already track",()=>{setPickerType("products");setAddMode("picker");}],
-              ["💫","From My Wishlist","Pick something from your wishlist",()=>{setPickerType("wishlist");setAddMode("picker");}],
-              ["💉","Treatment","Facial, microneedling, and more",()=>{setEditP(blank("treatment"));setAddMode("form");}],
-              ["✏️","Add New","Enter a product manually",()=>{setEditP(blank("skin"));setAddMode("form");}],
-            ].map(([emoji,label,sub,fn])=>(
-              <button key={label} onClick={fn}
-                style={{display:"flex",alignItems:"center",gap:12,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
-                <span style={{fontSize:"1.3rem"}}>{emoji}</span>
-                <div>
-                  <div style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>{label}</div>
-                  <div style={{fontSize:".72rem",color:"#a08070",marginTop:1}}>{sub}</div>
-                </div>
-              </button>
-            ))}
-            <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:".78rem",color:"#a08070",cursor:"pointer",marginTop:4}}>Cancel</button>
-          </div>
-        </div>
-      )}
+      {addMode==="source"&&(()=>{
+        const catEmoji = cat => cat==="skin"?"🌿":cat==="treatment"?"💉":"✨";
+        const allProds = [...(products||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)), ...(wishlist||[]).slice().sort((a,b)=>(b.priority||0)-(a.priority||0))];
+        const featured = allProds.slice(0,6);
+        const pickItem = item => {
+          setEditP(blank(item.category||"skin",{name:item.name,brand:item.brand||"",image:item.image||"",link:item.link||"",price:String(item.price||""),product_id:(products||[]).find(p=>p.id===item.id)?item.id:null}));
+          setAddMode("form");
+        };
+        return (
+          <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>What did you purchase?</div>
+              <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070",lineHeight:1}}>×</button>
+            </div>
 
-      {/* ── Picker (products or wishlist) ── */}
-      {addMode==="picker"&&(
-        <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-            <button className="ghost-btn" style={{fontSize:".75rem",padding:"4px 10px"}} onClick={()=>setAddMode("source")}>← Back</button>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#7a5c48"}}>{pickerType==="products"?"My Products":"My Wishlist"}</div>
-            <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#a08070"}}>×</button>
+            {/* Products carousel */}
+            <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10}}>Products</div>
+            <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:10,scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch",marginBottom:14}}>
+              {featured.map(item=>(
+                <div key={item.id} onClick={()=>pickItem(item)}
+                  style={{flexShrink:0,width:84,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
+                  <div style={{width:72,height:72,borderRadius:14,overflow:"hidden",background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.6rem",border:"1.5px solid #e8d8cc",flexShrink:0}}>
+                    {(item.image||item.media_url)
+                      ?<img src={item.image||item.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                      :<span>{catEmoji(item.category)}</span>}
+                  </div>
+                  <div style={{fontSize:".64rem",color:"#3a2e27",textAlign:"center",lineHeight:1.25,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",width:"100%"}}>{item.name}</div>
+                </div>
+              ))}
+              {/* See All card */}
+              <div onClick={()=>{setPickerSearch("");setAddMode("allProducts");}}
+                style={{flexShrink:0,width:72,height:72,borderRadius:14,border:"1.5px dashed #c8b0a0",background:"transparent",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,cursor:"pointer",marginTop:0}}>
+                <span style={{fontSize:".7rem",color:"#b07a5e",fontWeight:500}}>See All</span>
+                <span style={{fontSize:".8rem",color:"#b07a5e"}}>›</span>
+              </div>
+            </div>
+
+            {/* Treatment */}
+            <button onClick={()=>{setEditP(blank("treatment"));setAddMode("form");}}
+              style={{display:"flex",alignItems:"center",gap:12,width:"100%",background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
+              <span style={{fontSize:"1.3rem"}}>💉</span>
+              <div>
+                <div style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>Treatment</div>
+                <div style={{fontSize:".72rem",color:"#a08070",marginTop:1}}>Facial, microneedling, and more</div>
+              </div>
+            </button>
           </div>
-          <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Search…" value={pickerSearch} onChange={e=>setPickerSearch(e.target.value)}/>
-          <div style={{maxHeight:280,overflowY:"auto",display:"flex",flexDirection:"column",gap:6}}>
-            {pickerItems.length===0&&<div style={{textAlign:"center",padding:"20px 0",color:"#b09080",fontStyle:"italic",fontSize:".86rem"}}>Nothing found</div>}
-            {pickerItems.map(item=>(
-              <div key={item.id} onClick={()=>{
-                setEditP(blank(item.category||"skin",{name:item.name,brand:item.brand||"",image:item.image||"",link:item.link||"",price:String(item.price||""),product_id:pickerType==="products"?item.id:null}));
-                setPickerSearch(""); setAddMode("form");
-              }} style={{display:"flex",alignItems:"center",gap:10,background:"#fdf6f0",border:"1px solid #e8d8cc",borderRadius:10,padding:"10px 12px",cursor:"pointer"}}>
-                {item.image
-                  ?<img src={item.image} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:7,flexShrink:0}}/>
-                  :<div style={{width:36,height:36,borderRadius:7,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",flexShrink:0}}>{item.category==="skin"?"🌿":"✨"}</div>
-                }
-                <div style={{minWidth:0}}>
-                  <div style={{fontSize:".86rem",fontWeight:500,color:"#3a2e27",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{item.name}</div>
-                  {item.brand&&<div style={{fontSize:".72rem",color:"#a08070"}}>{item.brand}</div>}
+        );
+      })()}
+
+      {/* ── All Products grid ── */}
+      {addMode==="allProducts"&&(()=>{
+        const catEmoji = cat => cat==="skin"?"🌿":cat==="treatment"?"💉":"✨";
+        const allProds = [
+          ...(products||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)),
+          ...(wishlist||[]).slice().sort((a,b)=>(b.priority||0)-(a.priority||0))
+        ];
+        const q = pickerSearch.toLowerCase();
+        const visible = q ? allProds.filter(p=>p.name.toLowerCase().includes(q)||(p.brand||"").toLowerCase().includes(q)) : allProds;
+        const pickItem = item => {
+          setEditP(blank(item.category||"skin",{name:item.name,brand:item.brand||"",image:item.image||"",link:item.link||"",price:String(item.price||""),product_id:(products||[]).find(p=>p.id===item.id)?item.id:null}));
+          setPickerSearch(""); setAddMode("form");
+        };
+        return (
+          <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <button className="ghost-btn" style={{fontSize:".75rem",padding:"4px 10px"}} onClick={()=>setAddMode("source")}>← Back</button>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#7a5c48"}}>All Products</div>
+              <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#a08070"}}>×</button>
+            </div>
+            <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="Search…" value={pickerSearch} onChange={e=>setPickerSearch(e.target.value)} autoFocus/>
+            <div style={{display:"flex",flexWrap:"wrap",gap:10,maxHeight:340,overflowY:"auto"}}>
+              {visible.map(item=>(
+                <div key={item.id} onClick={()=>pickItem(item)}
+                  style={{width:"calc(33.33% - 7px)",display:"flex",flexDirection:"column",alignItems:"center",gap:5,cursor:"pointer"}}>
+                  <div style={{width:"100%",aspectRatio:"1",borderRadius:12,overflow:"hidden",background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem",border:"1.5px solid #e8d8cc"}}>
+                    {(item.image||item.media_url)
+                      ?<img src={item.image||item.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                      :<span>{catEmoji(item.category)}</span>}
+                  </div>
+                  <div style={{fontSize:".64rem",color:"#3a2e27",textAlign:"center",lineHeight:1.2,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",width:"100%"}}>{item.name}</div>
+                </div>
+              ))}
+              {/* Add New square */}
+              <div onClick={()=>{setPickerSearch("");setEditP(blank("skin"));setAddMode("form");}}
+                style={{width:"calc(33.33% - 7px)",display:"flex",flexDirection:"column",alignItems:"center",gap:5,cursor:"pointer"}}>
+                <div style={{width:"100%",aspectRatio:"1",borderRadius:12,border:"1.5px dashed #c8b0a0",background:"transparent",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>
+                  <span style={{fontSize:"1.2rem",color:"#b07a5e"}}>+</span>
+                  <span style={{fontSize:".6rem",color:"#b07a5e",fontWeight:500}}>Add New</span>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Purchase form ── */}
       {addMode==="form"&&editP&&(
