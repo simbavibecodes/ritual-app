@@ -3,23 +3,41 @@ import { supabase } from "./supabase";
 
 const STYLES = `
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
-.auth-wrap{min-height:100vh;background:#fdf6f0;display:flex;align-items:center;justify-content:center;padding:24px;font-family:'DM Sans',sans-serif}
-.auth-card{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:24px;padding:40px 32px;width:100%;max-width:380px}
-.auth-title{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:300;color:#3a2e27;text-align:center;line-height:1.1;margin-bottom:6px}
-.auth-title span{font-style:italic;color:#b07a5e}
-.auth-sub{font-size:.76rem;letter-spacing:.15em;text-transform:uppercase;color:#a08070;text-align:center;margin-bottom:32px}
-.auth-tabs{display:flex;gap:0;background:#f0e8e0;border-radius:20px;padding:3px;margin-bottom:24px}
-.auth-tab{flex:1;background:none;border:none;border-radius:17px;padding:8px 0;font-family:'DM Sans',sans-serif;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:#a08070;cursor:pointer;transition:all .2s}
-.auth-tab.active{background:#b07a5e;color:#fff}
-.auth-field{width:100%;background:#fdf6f0;border:1.5px solid #e8d8cc;border-radius:12px;padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:.9rem;color:#3a2e27;outline:none;margin-bottom:12px;transition:border .18s;box-sizing:border-box}
-.auth-field:focus{border-color:#b07a5e}
-.auth-field::placeholder{color:#c0a898;font-style:italic}
-.auth-btn{width:100%;background:#b07a5e;color:#fff;border:none;border-radius:12px;padding:14px;font-family:'DM Sans',sans-serif;font-size:.84rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:background .2s;margin-top:4px}
-.auth-btn:hover{background:#9a6248}
-.auth-btn:disabled{opacity:.5;cursor:not-allowed}
-.auth-err{background:#fde8e0;border:1px solid #e8c0b0;border-radius:10px;padding:10px 14px;font-size:.82rem;color:#c07060;margin-bottom:12px;line-height:1.4}
-.auth-ok{background:#e8f0e8;border:1px solid #b8d4b8;border-radius:10px;padding:10px 14px;font-size:.82rem;color:#3a5a3a;margin-bottom:12px;line-height:1.4}
-.auth-forgot{background:none;border:none;font-size:.76rem;color:#a08070;cursor:pointer;text-decoration:underline;display:block;margin:10px auto 0;font-family:'DM Sans',sans-serif}
+.auth-wrap{
+  min-height:100vh;
+  background:
+    radial-gradient(ellipse at 22% 10%, rgba(175,200,158,.55) 0%, transparent 48%),
+    radial-gradient(ellipse at 80% 90%, rgba(55,85,70,.5) 0%, transparent 50%),
+    linear-gradient(162deg,#A6BA96 0%,#84A076 22%,#6C9272 50%,#577A68 78%,#47665A 100%);
+  background-attachment:fixed;
+  display:flex;align-items:center;justify-content:center;padding:24px;
+  font-family:'DM Sans',sans-serif
+}
+.auth-card{
+  background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.3);
+  backdrop-filter:blur(32px) saturate(1.4);
+  -webkit-backdrop-filter:blur(32px) saturate(1.4);
+  border-radius:28px;padding:44px 32px;width:100%;max-width:360px;
+  box-shadow:0 24px 64px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.25)
+}
+.auth-title{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:300;color:#fff;text-align:center;line-height:1.1;margin-bottom:6px;text-shadow:0 2px 12px rgba(0,0,0,.15)}
+.auth-title span{font-style:italic;color:rgba(255,255,255,.75)}
+.auth-sub{font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.5);text-align:center;margin-bottom:32px}
+.auth-tabs{display:flex;gap:0;background:rgba(0,0,0,.18);border-radius:24px;padding:3px;margin-bottom:24px}
+.auth-tab{flex:1;background:none;border:none;border-radius:21px;padding:9px 0;font-family:'DM Sans',sans-serif;font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);cursor:pointer;transition:all .2s}
+.auth-tab.active{background:#1E3428;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.auth-field{width:100%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:13px 16px;font-family:'DM Sans',sans-serif;font-size:.9rem;color:#fff;outline:none;margin-bottom:11px;transition:border .18s,background .18s;box-sizing:border-box}
+.auth-field:focus{border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.18)}
+.auth-field::placeholder{color:rgba(255,255,255,.38)}
+.auth-btn{width:100%;background:#1E3428;color:#fff;border:none;border-radius:14px;padding:15px;font-family:'DM Sans',sans-serif;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:background .2s;margin-top:4px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.auth-btn:hover{background:#243D30}
+.auth-btn:disabled{opacity:.45;cursor:not-allowed}
+.auth-err{background:rgba(180,60,40,.25);border:1px solid rgba(255,120,100,.3);border-radius:11px;padding:10px 14px;font-size:.82rem;color:rgba(255,200,190,.9);margin-bottom:12px;line-height:1.4}
+.auth-ok{background:rgba(40,100,60,.3);border:1px solid rgba(100,200,130,.3);border-radius:11px;padding:10px 14px;font-size:.82rem;color:rgba(160,230,190,.95);margin-bottom:12px;line-height:1.4}
+.auth-forgot{background:none;border:none;font-size:.76rem;color:rgba(255,255,255,.45);cursor:pointer;text-decoration:underline;display:block;margin:12px auto 0;font-family:'DM Sans',sans-serif}
+.auth-forgot:hover{color:rgba(255,255,255,.7)}
+.auth-keep{display:flex;align-items:center;gap:9px;margin-bottom:12px;cursor:pointer;font-size:.8rem;color:rgba(255,255,255,.55);font-family:'DM Sans',sans-serif}
 `;
 
 export default function Auth() {
@@ -91,9 +109,9 @@ export default function Auth() {
           )}
 
           {tab==="login"&&(
-            <label style={{display:"flex",alignItems:"center",gap:9,marginBottom:12,cursor:"pointer",fontSize:".8rem",color:"#8a6858",fontFamily:"'DM Sans',sans-serif"}}>
+            <label className="auth-keep">
               <input type="checkbox" checked={keepLoggedIn} onChange={e=>setKeepLoggedIn(e.target.checked)}
-                style={{width:15,height:15,accentColor:"#b07a5e",cursor:"pointer"}}/>
+                style={{width:15,height:15,accentColor:"#7EC49A",cursor:"pointer"}}/>
               Keep me logged in
             </label>
           )}
