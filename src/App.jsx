@@ -2,17 +2,17 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react
 import { supabase } from "./supabase";
 
 const DEFAULT_SKIN = [
-  { id: "tretinoin",    label: "Tretinoin",          emoji: "🔬" },
-  { id: "spf",          label: "SPF",                emoji: "☀️" },
-  { id: "alpyn_serum",  label: "Alpyn Serum",        emoji: "🌿" },
-  { id: "el_serum",     label: "Estee Lauder Serum", emoji: "✨" },
-  { id: "sleeping_mask",label: "Sleeping Mask",      emoji: "🌙" },
-  { id: "lash_serum",   label: "Eyelash Serum",      emoji: "👁️" },
+  { id: "tretinoin",    label: "Tretinoin",          emoji: "🔬", time: "night" },
+  { id: "spf",          label: "SPF",                emoji: "☀️", time: "day"   },
+  { id: "alpyn_serum",  label: "Alpyn Serum",        emoji: "🌿", time: "both"  },
+  { id: "el_serum",     label: "Estee Lauder Serum", emoji: "✨", time: "both"  },
+  { id: "sleeping_mask",label: "Sleeping Mask",      emoji: "🌙", time: "night" },
+  { id: "lash_serum",   label: "Eyelash Serum",      emoji: "👁️", time: "both"  },
 ];
 const DEFAULT_HAIR = [
-  { id: "rosemary_oil", label: "Rosemary Oil", emoji: "🌿" },
-  { id: "minoxidil",    label: "Minoxidil",    emoji: "💊" },
-  { id: "biotin",       label: "Biotin",       emoji: "🌱" },
+  { id: "rosemary_oil", label: "Rosemary Oil", emoji: "🌿", time: "both" },
+  { id: "minoxidil",    label: "Minoxidil",    emoji: "💊", time: "both" },
+  { id: "biotin",       label: "Biotin",       emoji: "🌱", time: "both" },
 ];
 const MOODS = ["✨ Glowing", "😊 Good", "😐 Okay", "😞 Bad"];
 const EMOJI_OPTIONS = [
@@ -391,27 +391,29 @@ function PhotoNotes({ notes, photos, onNotesChange, onPhotosChange, hidePhotos }
 function ManageItemsModal({ type, items, onAdd, onRemove, onEdit, onClose }) {
   const [label,    setLabel]    = useState("");
   const [emoji,    setEmoji]    = useState("🌿");
+  const [time,     setTime]     = useState("both");
   const [showPick, setShowPick] = useState(false);
   const [editingId,setEditingId]= useState(null); // id of item being edited
   const [editLabel,setEditLabel]= useState("");
   const [editEmoji,setEditEmoji]= useState("🌿");
+  const [editTime, setEditTime] = useState("both");
   const [showEditPick,setShowEditPick]=useState(false);
   const ref = useRef();
   useEffect(()=>{ setTimeout(()=>ref.current?.focus(),80); },[]);
 
   const doAdd = () => {
     if (!label.trim()) return;
-    onAdd({ id:uid(), label:label.trim(), emoji });
-    setLabel(""); setEmoji("🌿"); setShowPick(false);
+    onAdd({ id:uid(), label:label.trim(), emoji, time });
+    setLabel(""); setEmoji("🌿"); setTime("both"); setShowPick(false);
     ref.current?.focus();
   };
 
   const startEdit = (it) => {
-    setEditingId(it.id); setEditLabel(it.label); setEditEmoji(it.emoji); setShowEditPick(false);
+    setEditingId(it.id); setEditLabel(it.label); setEditEmoji(it.emoji); setEditTime(it.time||"both"); setShowEditPick(false);
   };
   const saveEdit = () => {
     if (!editLabel.trim()) return;
-    onEdit(editingId, { label: editLabel.trim(), emoji: editEmoji });
+    onEdit(editingId, { label: editLabel.trim(), emoji: editEmoji, time: editTime });
     setEditingId(null); setShowEditPick(false);
   };
   const cancelEdit = () => { setEditingId(null); setShowEditPick(false); };
@@ -432,6 +434,12 @@ function ManageItemsModal({ type, items, onAdd, onRemove, onEdit, onClose }) {
               onChange={e=>setLabel(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doAdd()}/>
             <button className="confirm-btn" onClick={doAdd} disabled={!label.trim()}>+ Add</button>
           </div>
+          <div style={{display:"flex",gap:6}}>
+            {[["day","☀️ AM"],["night","🌙 PM"],["both","✦ Both"]].map(([v,l])=>(
+              <button key={v} className={`dow-chip ${time===v?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".74rem"}}
+                onClick={()=>setTime(v)}>{l}</button>
+            ))}
+          </div>
           {showPick&&<div className="egrid">{EMOJI_OPTIONS.flat().map(em=>(
             <span key={em} className={`eopt ${emoji===em?"on":""}`}
               onClick={()=>{setEmoji(em);setShowPick(false)}}>{em}</span>
@@ -449,6 +457,12 @@ function ManageItemsModal({ type, items, onAdd, onRemove, onEdit, onClose }) {
                   <button className="epick-btn" onClick={()=>setShowEditPick(p=>!p)}>{editEmoji}</button>
                   <input className="ifield" value={editLabel} onChange={e=>setEditLabel(e.target.value)}
                     onKeyDown={e=>e.key==="Enter"&&saveEdit()} autoFocus/>
+                </div>
+                <div style={{display:"flex",gap:6,marginBottom:8}}>
+                  {[["day","☀️ AM"],["night","🌙 PM"],["both","✦ Both"]].map(([v,l])=>(
+                    <button key={v} className={`dow-chip ${editTime===v?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".74rem"}}
+                      onClick={()=>setEditTime(v)}>{l}</button>
+                  ))}
                 </div>
                 {showEditPick&&<div className="egrid" style={{marginBottom:8}}>{EMOJI_OPTIONS.flat().map(em=>(
                   <span key={em} className={`eopt ${editEmoji===em?"on":""}`}
@@ -529,7 +543,7 @@ function SpendingSummary({ purchases, period, onGoToPurchases }) {
   const fmt2 = d => d.toLocaleDateString("en-CA");
 
   const getRange = (p) => {
-    if(p==="week"){ const d=new Date(now); d.setDate(now.getDate()-now.getDay()); return fmt2(d); }
+    if(p==="week"){ const d=new Date(now); d.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1)); return fmt2(d); }
     if(p==="month"){ return fmt2(new Date(now.getFullYear(),now.getMonth(),1)); }
     return fmt2(new Date(now.getFullYear(),0,1));
   };
@@ -617,7 +631,12 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
   const [pickerSearch, setPickerSearch] = useState("");
   const [editP, setEditP] = useState(null);
   const [filterCat, setFilterCat] = useState("all");
-  const [openMonths, setOpenMonths] = useState({[today.slice(0,7)]:true});
+  const [openMonths, setOpenMonths] = useState(()=>{
+    const init={};
+    purchases.forEach(p=>{ if(p.date.startsWith(thisYear)) init[p.date.slice(0,7)]=true; });
+    init[today.slice(0,7)]=true;
+    return init;
+  });
   const [openYears, setOpenYears] = useState({});
   const [historyItem, setHistoryItem] = useState(null);
 
@@ -628,7 +647,7 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
   }, [prefill]);
 
   const startEdit = p => { setEditP({...p, price:String(p.price), quantity:String(p.quantity||1), treatment_type:p.treatment_type||""}); setAddMode("form"); };
-  const save = () => { if(!editP.name.trim()||!editP.date) return; onSave(editP); setAddMode(null); setEditP(null); };
+  const save = () => { if(!editP.name.trim()||!editP.date) return; const m=editP.date.slice(0,7); setOpenMonths(s=>({...s,[m]:true})); onSave(editP); setAddMode(null); setEditP(null); };
   const cancelForm = () => { setAddMode(null); setEditP(null); setPickerType(null); setPickerSearch(""); };
   const toggleMonth = m => setOpenMonths(s=>({...s,[m]:!s[m]}));
   const toggleYear = y => setOpenYears(s=>({...s,[y]:!s[y]}));
@@ -1290,9 +1309,6 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
     const freshSkin = freshList.filter(p => p.category === "skin");
     const freshHair = freshList.filter(p => p.category === "hair");
     const freshTx   = freshList.filter(p => p.category === "treatment");
-    console.log("=== ANALYSIS DEBUG ===");
-    console.log("Total products:", freshList.length, freshList.map(p => p.name + " [" + p.category + "]"));
-    console.log("Skin:", freshSkin.length, "Hair:", freshHair.length, "Treatments:", freshTx.length);
 
     const allHaveIngredients = freshList.every(p => p.ingredients?.length > 0);
     const notes = useNotes ? getNotes() : "";
@@ -4339,7 +4355,7 @@ export default function App({ user }) {
 
   const freqRange=useCallback(()=>{
     const now=new Date();
-    if(freqPeriod==="week"){ const d=new Date(now); d.setDate(now.getDate()-now.getDay()); return {start:fmt(d),label:"this week"}; }
+    if(freqPeriod==="week"){ const d=new Date(now); d.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1)); return {start:fmt(d),label:"this week"}; }
     if(freqPeriod==="month"){ return {start:fmt(new Date(now.getFullYear(),now.getMonth(),1)),label:"this month"}; }
     return {start:fmt(new Date(now.getFullYear(),0,1)),label:"this year"};
   },[freqPeriod]);
@@ -4347,7 +4363,7 @@ export default function App({ user }) {
   const spendStats = useCallback((period) => {
     const now = new Date();
     let start;
-    if(period==="week"){ start=new Date(now); start.setDate(now.getDate()-now.getDay()); }
+    if(period==="week"){ start=new Date(now); start.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1)); }
     else if(period==="month"){ start=new Date(now.getFullYear(),now.getMonth(),1); }
     else { start=new Date(now.getFullYear(),0,1); }
     const startStr=fmt(start);
@@ -4378,80 +4394,53 @@ export default function App({ user }) {
 
   const goHome = () => { setView("log"); setActiveDate(today); setPageView(null); };
 
-  const sideMenuEl = (
-    <>
-      {sideMenu&&<div className="side-menu-overlay" onClick={()=>setSideMenu(false)}/>}
-      <div className={`side-menu ${sideMenu?"open":""}`}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-          <div className="side-menu-title" style={{marginBottom:0}}>Menu</div>
-          <button onClick={()=>setSideMenu(false)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#a08070",lineHeight:1,padding:"2px 6px"}}>×</button>
-        </div>
-        <button className="side-menu-item" onClick={()=>{setPageView("account");setSideMenu(false);}}><span>👤</span> My Account</button>
-        <hr style={{border:"none",borderTop:"1px solid #f0e0d4",margin:"8px 0"}}/>
-        <button className="side-menu-item" onClick={()=>{setPageView("products");setSideMenu(false);}}><span>💄</span> My Products</button>
-        <button className="side-menu-item" onClick={()=>{setPageView("wishlist");setSideMenu(false);}}><span>💝</span> Wishlist</button>
-        <button className="side-menu-item" onClick={()=>{setPageView("purchases");setSideMenu(false);}}><span>💳</span> Purchases</button>
-        <hr style={{border:"none",borderTop:"1px solid #f0e0d4",margin:"16px 0"}}/>
-        <button className="side-menu-item" style={{color:"#c0a898"}} onClick={()=>supabase.auth.signOut()}><span>🚪</span> Sign Out</button>
-      </div>
-    </>
-  );
-
-  if (pageView==="purchases") return (
-    <div><style>{STYLES}</style><PurchasesPage purchases={purchases} products={products} wishlist={wishlist} prefill={prefillPurchase} onClearPrefill={()=>setPrefillPurchase(null)} onSave={savePurchase} onDelete={confirmDeletePurchase} onBack={()=>setPageView(null)} onHome={goHome} onMenuOpen={()=>setSideMenu(true)}/>{sideMenuEl}</div>
-  );
-  if (pageView==="products") return (
-    <div><style>{STYLES}</style><MyProductsPage
-      products={products}
-      snapshots={snapshots}
-      entries={entries}
-      onSaveProduct={saveProduct}
-      onDeleteProduct={confirmDeleteProduct}
-      onOpenSnapshot={openNewSnapshot}
-      onAddToSnapshot={addProductToSnapshot}
-      onUpdateSnapProduct={updateSnapProduct}
-      onUpdateSnapProductName={updateSnapProductName}
-      onRemoveFromSnapshot={removeProductFromSnapshot}
-      onFinalizeBase={finalizeBase}
-      onDeleteSnapshot={deleteSnapshot}
-      onFetchIngredients={fetchIngredients}
-      onSaveProductOrder={saveProductOrder}
-      onUpdateSnapProductTimeOfDay={updateSnapProductTimeOfDay}
-      onBack={()=>setPageView(null)}
-      onHome={goHome}
-      onMenuOpen={()=>setSideMenu(true)}/>{sideMenuEl}</div>
-  );
-  if (pageView==="wishlist") return (
-    <div><style>{STYLES}</style><WishlistPage
-      wishlist={wishlist}
-      products={products}
-      plannedPurchases={plannedPurchases}
-      onSave={saveWishlistItem}
-      onDelete={confirmDeleteWishlistItem}
-      onSavePlanned={savePlannedPurchase}
-      onDeletePlanned={deletePlannedPurchase}
-      onMovePlannedToPurchase={movePlannedToPurchase}
-      onMoveToCart={async(item)=>{ const prefill=await moveWishlistToPurchase(item); setPrefillPurchase(prefill); setPageView("purchases"); }}
-      onBack={()=>setPageView(null)}
-      onHome={goHome}
-      onMenuOpen={()=>setSideMenu(true)}/>{sideMenuEl}</div>
-  );
-  if (pageView==="account") return (
-    <div className="app">
-      <style>{STYLES}</style>
-      <div className="header" style={{position:"relative"}}>
-        <button onClick={()=>{setView("log");setActiveDate(today);setPageView(null);}} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
-        <div className="header-title">My <span>Account</span></div>
-        <HamburgerBtn onClick={()=>setSideMenu(true)}/>
-      </div>
-      <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Coming soon</div>
-      {sideMenuEl}
-    </div>
-  );
-
   return (
     <div>
       <style>{STYLES}</style>
+      {pageView==="purchases"&&<PurchasesPage purchases={purchases} products={products} wishlist={wishlist} prefill={prefillPurchase} onClearPrefill={()=>setPrefillPurchase(null)} onSave={savePurchase} onDelete={confirmDeletePurchase} onBack={()=>setPageView(null)} onHome={goHome} onMenuOpen={()=>setSideMenu(true)}/>}
+      {pageView==="products"&&<MyProductsPage
+        products={products}
+        snapshots={snapshots}
+        entries={entries}
+        onSaveProduct={saveProduct}
+        onDeleteProduct={confirmDeleteProduct}
+        onOpenSnapshot={openNewSnapshot}
+        onAddToSnapshot={addProductToSnapshot}
+        onUpdateSnapProduct={updateSnapProduct}
+        onUpdateSnapProductName={updateSnapProductName}
+        onRemoveFromSnapshot={removeProductFromSnapshot}
+        onFinalizeBase={finalizeBase}
+        onDeleteSnapshot={deleteSnapshot}
+        onFetchIngredients={fetchIngredients}
+        onSaveProductOrder={saveProductOrder}
+        onUpdateSnapProductTimeOfDay={updateSnapProductTimeOfDay}
+        onBack={()=>setPageView(null)}
+        onHome={goHome}
+        onMenuOpen={()=>setSideMenu(true)}/>}
+      {pageView==="wishlist"&&<WishlistPage
+        wishlist={wishlist}
+        products={products}
+        plannedPurchases={plannedPurchases}
+        onSave={saveWishlistItem}
+        onDelete={confirmDeleteWishlistItem}
+        onSavePlanned={savePlannedPurchase}
+        onDeletePlanned={deletePlannedPurchase}
+        onMovePlannedToPurchase={movePlannedToPurchase}
+        onMoveToCart={async(item)=>{ const prefill=await moveWishlistToPurchase(item); setPrefillPurchase(prefill); setPageView("purchases"); }}
+        onBack={()=>setPageView(null)}
+        onHome={goHome}
+        onMenuOpen={()=>setSideMenu(true)}/>}
+      {pageView==="account"&&(
+        <div className="app">
+          <div className="header" style={{position:"relative"}}>
+            <button onClick={()=>{setView("log");setActiveDate(today);setPageView(null);}} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
+            <div className="header-title">My <span>Account</span></div>
+            <HamburgerBtn onClick={()=>setSideMenu(true)}/>
+          </div>
+          <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Coming soon</div>
+        </div>
+      )}
+      {!pageView&&(
       <div className="app">
         <div className="header" style={{position:"relative"}}>
           <button onClick={()=>{setView("log");setActiveDate(today);setPageView(null);}} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
@@ -4523,15 +4512,38 @@ export default function App({ user }) {
               <div className="sec-title">{activeTab==="skin"?"Skin Steps":"Hair Steps"}</div>
               <button className="ghost-btn" onClick={()=>setModal("manageItems")}>✏️ Edit</button>
             </div>
-            <div className="routine-grid">
-              {routines.map(it=>{ const on=checked.includes(it.id); return (
-                <div key={it.id} className={`r-item ${on?"on":""}`} onClick={()=>toggleItem(activeDate,activeTab,it.id)}>
-                  <span className="r-emoji">{it.emoji}</span>
-                  <span className="r-label">{it.label}</span>
-                  <div className="r-check">{on&&<CheckIcon/>}</div>
+            {(()=>{
+              const hasTimeGroups=routines.some(it=>it.time==="day"||it.time==="night");
+              if(!hasTimeGroups) return (
+                <div className="routine-grid">
+                  {routines.map(it=>{ const on=checked.includes(it.id); return (
+                    <div key={it.id} className={`r-item ${on?"on":""}`} onClick={()=>toggleItem(activeDate,activeTab,it.id)}>
+                      <span className="r-emoji">{it.emoji}</span>
+                      <span className="r-label">{it.label}</span>
+                      <div className="r-check">{on&&<CheckIcon/>}</div>
+                    </div>
+                  );})}
                 </div>
-              );})}
-            </div>
+              );
+              return [["day","☀️ Morning"],["night","🌙 Evening"],["both","✦ Any Time"]].map(([t,label])=>{
+                const group=routines.filter(it=>(it.time||"both")===t);
+                if(!group.length) return null;
+                return (
+                  <div key={t}>
+                    <div style={{fontSize:".7rem",letterSpacing:".08em",textTransform:"uppercase",color:"#a08070",marginBottom:6,marginTop:t==="day"?0:12}}>{label}</div>
+                    <div className="routine-grid" style={{marginBottom:0}}>
+                      {group.map(it=>{ const on=checked.includes(it.id); return (
+                        <div key={it.id} className={`r-item ${on?"on":""}`} onClick={()=>toggleItem(activeDate,activeTab,it.id)}>
+                          <span className="r-emoji">{it.emoji}</span>
+                          <span className="r-label">{it.label}</span>
+                          <div className="r-check">{on&&<CheckIcon/>}</div>
+                        </div>
+                      );})}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
             <div className="sec-title" style={{marginBottom:12}}>How's your {activeTab==="skin"?"skin":"hair"} feeling?</div>
             <div className="mood-row">
               {MOODS.map(m=><button key={m} className={`mood-chip ${(activeTab==="skin"?entry.skin_mood:entry.hair_mood)===m?"on":""}`} onClick={()=>setMoodVal(activeDate,activeTab,m)}>{m}</button>)}
@@ -4892,6 +4904,7 @@ export default function App({ user }) {
           </>
         )}
       </div>
+      )}
 
       {modal==="manageItems"&&<ManageItemsModal type={activeTab} items={activeTab==="skin"?skinR:hairR} onAdd={item=>addItem(activeTab,item)} onRemove={id=>removeItem(activeTab,id)} onEdit={(id,changes)=>editItem(activeTab,id,changes)} onClose={()=>setModal(null)}/>}
       {selectedPlan&&<PlanModal allItems={allItems} skinItems={skinR} hairItems={hairR} schedules={schedules} treatments={treatments}
@@ -4906,7 +4919,7 @@ export default function App({ user }) {
         initialPlan={selectedPlan.type==="plan"?selectedPlan.data:null}
         initialTreatment={selectedPlan.type==="treatment"?selectedPlan.data:null}/>}
       {modal==="plan"&&<PlanModal allItems={allItems} skinItems={skinR} hairItems={hairR} schedules={schedules} treatments={treatments} onSave={saveSched} onSaveMany={saveSchedMany} onDelete={deleteSched} onSaveTreatment={saveTreatment} onDeleteTreatment={deleteTreatment} onAddItem={(type,item)=>addItem(type,item)} onClose={()=>setModal(null)}/>}
-      {modal==="freq"&&<FreqModal allItems={allItems} tracked={freqTracked} period={freqPeriod} onToggle={id=>setFreqTracked(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id])} onPeriod={async p=>{ setFreqPeriod(p); await persist({freqPeriod:p}); }} onClose={()=>setModal(null)}/>}
+      {modal==="freq"&&<FreqModal allItems={allItems} tracked={freqTracked} period={freqPeriod} onToggle={async id=>{ const newTracked=freqTracked.includes(id)?freqTracked.filter(x=>x!==id):[...freqTracked,id]; setFreqTracked(newTracked); if(user) await supabase.from('freq_settings').upsert({user_id:user.id,period:freqPeriod,tracked:newTracked,updated_at:new Date().toISOString()},{onConflict:'user_id'}); }} onPeriod={async p=>{ setFreqPeriod(p); await persist({freqPeriod:p}); }} onClose={()=>setModal(null)}/>}
       {modal==="dayEdit"&&selectedDay&&<DayEditModal date={selectedDay} entry={getE(selectedDay)} skinRoutines={skinR} hairRoutines={hairR} onSave={data=>saveDayEdit(selectedDay,data)} onClose={()=>setModal(null)}/>}
       {modal==="rangeApply"&&rangeStart&&rangeEnd&&<RangeApplyModal rangeStart={rangeStart} rangeEnd={rangeEnd} skinRoutines={skinR} hairRoutines={hairR} onApply={applyRange} onClose={()=>{ setModal(null); setRangeStart(null); setRangeEnd(null); setRangeMode(false); }}/>}
 
@@ -4942,6 +4955,7 @@ export default function App({ user }) {
           const key=type==="skin"?"skin_photos":"hair_photos";
           const updated={...e,[key]:(e[key]||[]).filter(p=>p.id!==photoId)};
           saveDayEdit(date,updated);
+          if(date===activeDate&&type===activeTab) setCurPhotos(prev=>prev.filter(p=>p.id!==photoId));
         }}/>}
       {confirmDelete&&<ConfirmDialog message={confirmDelete.message} onConfirm={()=>{confirmDelete.onConfirm();setConfirmDelete(null);}} onCancel={()=>setConfirmDelete(null)}/>}
 
