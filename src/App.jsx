@@ -4523,6 +4523,25 @@ Respond ONLY with valid JSON (no markdown, no explanation):
 
   const goHome = () => { setView("log"); setActiveDate(today); setPageView(null); };
 
+  const sideMenuEl = (
+    <>
+      {sideMenu&&<div className="side-menu-overlay" onClick={()=>setSideMenu(false)}/>}
+      <div className={`side-menu ${sideMenu?"open":""}`}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+          <div className="side-menu-title" style={{marginBottom:0}}>Menu</div>
+          <button onClick={()=>setSideMenu(false)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#3A3830",lineHeight:1,padding:"2px 6px"}}>×</button>
+        </div>
+        <button className="side-menu-item" onClick={()=>{setPageView("account");setSideMenu(false);}}><span>👤</span> My Account</button>
+        <hr style={{border:"none",borderTop:"1px solid #1E1C1A",margin:"8px 0"}}/>
+        <button className="side-menu-item" onClick={()=>{setPageView("products");setSideMenu(false);}}><span>💄</span> My Products</button>
+        <button className="side-menu-item" onClick={()=>{setPageView("wishlist");setSideMenu(false);}}><span>💝</span> Wishlist</button>
+        <button className="side-menu-item" onClick={()=>{setPageView("purchases");setSideMenu(false);}}><span>💳</span> Purchases</button>
+        <hr style={{border:"none",borderTop:"1px solid #1E1C1A",margin:"16px 0"}}/>
+        <button className="side-menu-item" style={{color:"#3A3830"}} onClick={()=>supabase.auth.signOut()}><span>🚪</span> Sign Out</button>
+      </div>
+    </>
+  );
+
   return (
     <div>
       <style>{STYLES}</style>
