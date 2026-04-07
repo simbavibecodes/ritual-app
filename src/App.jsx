@@ -105,25 +105,23 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .cat-pill.active{background:#1E3428;border-color:#1E3428;color:#fff;box-shadow:0 4px 16px rgba(30,52,40,.4)}
 
 /* ── Log view filter — text links ── */
-.log-filter-row{display:flex;gap:20px;padding:10px 18px 0;justify-content:center}
+.log-filter-row{display:flex;gap:20px;padding:10px 18px 14px;justify-content:center}
 .log-fpill{background:none;border:none;border-bottom:1.5px solid transparent;font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.38);cursor:pointer;padding:3px 0 4px;transition:all .18s;font-family:'DM Sans',sans-serif}
 .log-fpill.active{color:rgba(255,255,255,.92);border-bottom-color:rgba(255,255,255,.7)}
 
 /* ── Morning / Night section cards ── */
 .log-section{border-radius:18px;padding:12px 12px 10px;margin:0 14px 12px;position:relative;overflow:hidden}
-.log-section.morning{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.26)}
+.log-section.morning{background:rgba(165,100,20,.2);border:1px solid rgba(180,115,30,.3)}
 .log-section.night{background:rgba(15,27,53,.52);border:1px solid rgba(15,27,53,.4)}
 .log-section.night::before{content:'';position:absolute;inset:0;background:radial-gradient(1px 1px at 12% 18%,rgba(255,255,255,.65),transparent),radial-gradient(1.5px 1.5px at 38% 12%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 68% 22%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 85% 38%,rgba(255,255,255,.45),transparent),radial-gradient(1.5px 1.5px at 22% 55%,rgba(255,255,255,.4),transparent),radial-gradient(1px 1px at 55% 65%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 78% 72%,rgba(255,255,255,.4),transparent),radial-gradient(1.5px 1.5px at 42% 82%,rgba(255,255,255,.35),transparent),radial-gradient(1px 1px at 90% 88%,rgba(255,255,255,.45),transparent);pointer-events:none}
 .log-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;position:relative;z-index:1}
 .log-section-title{font-family:'Cormorant Garamond',serif;font-size:.95rem;font-weight:600;letter-spacing:.04em;display:flex;align-items:center;gap:6px}
-.log-section.morning .log-section-title{color:#5A3A00}
+.log-section.morning .log-section-title{color:rgba(255,255,255,.9)}
 .log-section.night .log-section-title{color:rgba(255,255,255,.85)}
 .log-section-actions{display:flex;align-items:center;gap:8px}
-.log-sec-complete-btn{background:none;border:1px solid rgba(0,0,0,.15);border-radius:12px;padding:3px 9px;font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;transition:all .15s;color:rgba(0,0,0,.38)}
-.log-section.morning .log-sec-complete-btn{color:rgba(80,50,0,.5);border-color:rgba(80,50,0,.18)}
-.log-section.night .log-sec-complete-btn{color:rgba(255,255,255,.45);border-color:rgba(255,255,255,.2)}
-.log-sec-edit-btn{background:none;border:none;cursor:pointer;padding:2px;display:flex;align-items:center;opacity:.4;transition:opacity .15s;color:inherit}
-.log-section.morning .log-sec-edit-btn{color:#5A3A00}
+.log-sec-complete-btn{background:none;border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:3px 9px;font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;transition:all .15s;color:rgba(255,255,255,.6)}
+.log-sec-edit-btn{background:none;border:none;cursor:pointer;padding:2px;display:flex;align-items:center;opacity:.5;transition:opacity .15s;color:rgba(255,255,255,.8)}
+.log-section.morning .log-sec-edit-btn{color:rgba(255,255,255,.8)}
 .log-section.night .log-sec-edit-btn{color:rgba(255,255,255,.8)}
 .log-sec-edit-btn:active{opacity:.8}
 .log-section .pc-card{position:relative;z-index:1}
@@ -5010,7 +5008,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                         <div className="log-section-title"><SunIcon/> Morning</div>
                         <div className="log-section-actions">
                           <button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(morningItems);}}>
-                            {morningItems.every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"Reset":"Complete"}
+                            {morningItems.every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"↩ Undo":"✓ All done"}
                           </button>
                           <button className="log-sec-edit-btn" onClick={e=>{e.stopPropagation();setEditSection("morning");setModal("manageItems");}}><PencilIcon/></button>
                         </div>
@@ -5024,7 +5022,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                         <div className="log-section-title"><MoonIcon/> Evening</div>
                         <div className="log-section-actions">
                           <button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(nightItems);}}>
-                            {nightItems.every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"Reset":"Complete"}
+                            {nightItems.every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"↩ Undo":"✓ All done"}
                           </button>
                           <button className="log-sec-edit-btn" onClick={e=>{e.stopPropagation();setEditSection("night");setModal("manageItems");}}><PencilIcon/></button>
                         </div>
