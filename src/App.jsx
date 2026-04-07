@@ -105,23 +105,25 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .cat-pill.active{background:#1E3428;border-color:#1E3428;color:#fff;box-shadow:0 4px 16px rgba(30,52,40,.4)}
 
 /* ── Log view filter — text links ── */
-.log-filter-row{display:flex;gap:20px;padding:10px 18px 20px;justify-content:flex-start}
+.log-filter-row{display:flex;gap:20px;padding:6px 18px 4px;justify-content:flex-start}
 .log-fpill{background:none;border:none;border-bottom:1.5px solid transparent;font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.38);cursor:pointer;padding:3px 0 4px;transition:all .18s;font-family:'DM Sans',sans-serif}
 .log-fpill.active{color:rgba(255,255,255,.92);border-bottom-color:rgba(255,255,255,.7)}
 
 /* ── Morning / Night section cards ── */
-.log-section{border-radius:18px;padding:12px 12px 10px;margin:0 14px 12px;position:relative;overflow:hidden}
-.log-section.morning{background:rgba(128,72,6,.52);border:1px solid rgba(150,90,15,.55)}
-.log-section.night{background:rgba(15,27,53,.52);border:1px solid rgba(15,27,53,.4)}
-.log-section.night::before{content:'';position:absolute;inset:0;background:radial-gradient(1px 1px at 12% 18%,rgba(255,255,255,.65),transparent),radial-gradient(1.5px 1.5px at 38% 12%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 68% 22%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 85% 38%,rgba(255,255,255,.45),transparent),radial-gradient(1.5px 1.5px at 22% 55%,rgba(255,255,255,.4),transparent),radial-gradient(1px 1px at 55% 65%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 78% 72%,rgba(255,255,255,.4),transparent),radial-gradient(1.5px 1.5px at 42% 82%,rgba(255,255,255,.35),transparent),radial-gradient(1px 1px at 90% 88%,rgba(255,255,255,.45),transparent);pointer-events:none}
+.log-section{border-radius:18px;padding:12px 12px 10px;margin:14px 14px 12px;position:relative;overflow:hidden}
+.log-section.morning{background:rgba(140,185,230,.92);border:1px solid rgba(100,160,220,.45)}
+.log-section.morning::before{content:'';position:absolute;inset:0;background:radial-gradient(55px 30px at 18% 30%,rgba(255,255,255,.38),transparent),radial-gradient(70px 38px at 38% 18%,rgba(255,255,255,.28),transparent),radial-gradient(45px 25px at 72% 22%,rgba(255,255,255,.32),transparent),radial-gradient(60px 32px at 88% 35%,rgba(255,255,255,.22),transparent),radial-gradient(40px 22px at 55% 40%,rgba(255,255,255,.18),transparent);pointer-events:none}
+.log-section.night{background:rgba(12,22,48,.88);border:1px solid rgba(30,50,100,.6)}
+.log-section.night::before{content:'';position:absolute;inset:0;background:radial-gradient(1.5px 1.5px at 10% 12%,rgba(255,255,255,.9),transparent),radial-gradient(2px 2px at 32% 8%,rgba(255,255,255,.8),transparent),radial-gradient(1.5px 1.5px at 65% 14%,rgba(255,255,255,.85),transparent),radial-gradient(1px 1px at 82% 22%,rgba(255,255,255,.65),transparent),radial-gradient(2px 2px at 20% 38%,rgba(255,255,255,.6),transparent),radial-gradient(1px 1px at 50% 32%,rgba(255,255,255,.7),transparent),radial-gradient(1.5px 1.5px at 75% 50%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 40% 62%,rgba(255,255,255,.5),transparent),radial-gradient(2px 2px at 88% 68%,rgba(255,255,255,.65),transparent),radial-gradient(1px 1px at 25% 78%,rgba(255,255,255,.55),transparent),radial-gradient(1.5px 1.5px at 60% 82%,rgba(255,255,255,.45),transparent),radial-gradient(1px 1px at 6% 55%,rgba(255,255,255,.6),transparent),radial-gradient(2px 2px at 95% 42%,rgba(255,255,255,.5),transparent);pointer-events:none}
 .log-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;position:relative;z-index:1}
 .log-section-title{font-family:'Cormorant Garamond',serif;font-size:.95rem;font-weight:600;letter-spacing:.04em;display:flex;align-items:center;gap:6px}
-.log-section.morning .log-section-title{color:rgba(255,255,255,.9)}
-.log-section.night .log-section-title{color:rgba(255,255,255,.85)}
+.log-section.morning .log-section-title{color:rgba(15,40,80,.82)}
+.log-section.night .log-section-title{color:rgba(255,255,255,.88)}
 .log-section-actions{display:flex;align-items:center;gap:8px}
-.log-sec-complete-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.28);border-radius:12px;padding:4px 11px;font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .15s;color:rgba(255,255,255,.85)}
-.log-sec-edit-btn{background:none;border:none;cursor:pointer;padding:2px;display:flex;align-items:center;opacity:.5;transition:opacity .15s;color:rgba(255,255,255,.8)}
-.log-section.morning .log-sec-edit-btn{color:rgba(255,255,255,.8)}
+.log-sec-complete-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:4px 11px;font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .15s;color:rgba(255,255,255,.88)}
+.log-section.morning .log-sec-complete-btn{background:rgba(15,40,80,.1);border-color:rgba(15,40,80,.22);color:rgba(15,40,80,.85)}
+.log-sec-edit-btn{background:none;border:none;cursor:pointer;padding:2px;display:flex;align-items:center;opacity:.55;transition:opacity .15s}
+.log-section.morning .log-sec-edit-btn{color:rgba(15,40,80,.65)}
 .log-section.night .log-sec-edit-btn{color:rgba(255,255,255,.8)}
 .log-sec-edit-btn:active{opacity:.8}
 .log-section .pc-card{position:relative;z-index:1}
@@ -143,7 +145,7 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .lp-track{height:3px;background:rgba(255,255,255,.1);border-radius:2px;margin-top:9px;width:130px;overflow:hidden}
 .lp-fill{height:100%;background:#7EC49A;border-radius:2px;transition:width .4s ease}
 .lp-right{text-align:right}
-.lp-num{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:400;color:#fff;line-height:1;letter-spacing:-.02em}
+.lp-num{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:400;color:#fff;line-height:1.15;letter-spacing:-.02em}
 .lp-total{font-size:10px;color:rgba(194,217,204,.6);margin-top:1px}
 
 /* ── Section label ── */
@@ -4019,6 +4021,8 @@ export default function App({ user }) {
   const [view,        setView]        = useState(() => sessionStorage.getItem('ritual_view') || "log");
   const [activeTab,   setActiveTab]   = useState("skin");
   const [logFilter,   setLogFilter]   = useState("all");
+  const [weekOffset,  setWeekOffset]  = useState(0);
+  const weekTouchRef = useRef(null);
   const [editSection, setEditSection] = useState("morning");
   const [collapsedSections, setCollapsedSections] = useState({morning:false,night:false});
   const toggleSection = key => setCollapsedSections(p=>({...p,[key]:!p[key]}));
@@ -4812,10 +4816,17 @@ Respond ONLY with valid JSON (no markdown, no explanation):
         {view==="log"&&(
           <>
             {(()=>{
-              const weekDates = Array.from({length:7}, (_,i) => shiftD(today, i-3));
+              const weekDates = Array.from({length:7}, (_,i) => shiftD(today, i-3 + weekOffset*7));
               const DOW_SHORT = ["Su","Mo","Tu","We","Th","Fr","Sa"];
               return (
-                <div className="week-strip">
+                <div className="week-strip"
+                  onTouchStart={e=>{weekTouchRef.current=e.touches[0].clientX;}}
+                  onTouchEnd={e=>{
+                    if(weekTouchRef.current===null)return;
+                    const dx=weekTouchRef.current-e.changedTouches[0].clientX;
+                    if(Math.abs(dx)>40){setWeekOffset(o=>dx>0?Math.min(0,o+1):o-1);}
+                    weekTouchRef.current=null;
+                  }}>
                   {weekDates.map((d, i) => {
                     const isToday = d === today;
                     const isFuture = d > today;
@@ -4883,7 +4894,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                 <div className="lux-progress">
                   <div className="lp-left">
                     <div className="lp-title">Today's ritual</div>
-                    <div className="lp-sub">{streak>1?`${streak} day streak · keep it up`:"Start your streak today"}</div>
+                    <div className="lp-sub">{streak>1?`${streak} day streak · keep going`:"Start your streak today"}</div>
                     <div className="lp-track"><div className="lp-fill" style={{width:`${pct}%`}}/></div>
                   </div>
                   <div className="lp-right">
