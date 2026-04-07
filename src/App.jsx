@@ -105,13 +105,13 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .cat-pill.active{background:#1E3428;border-color:#1E3428;color:#fff;box-shadow:0 4px 16px rgba(30,52,40,.4)}
 
 /* ── Log view filter — text links ── */
-.log-filter-row{display:flex;gap:20px;padding:10px 18px 14px;justify-content:center}
+.log-filter-row{display:flex;gap:20px;padding:10px 18px 20px;justify-content:flex-start}
 .log-fpill{background:none;border:none;border-bottom:1.5px solid transparent;font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.38);cursor:pointer;padding:3px 0 4px;transition:all .18s;font-family:'DM Sans',sans-serif}
 .log-fpill.active{color:rgba(255,255,255,.92);border-bottom-color:rgba(255,255,255,.7)}
 
 /* ── Morning / Night section cards ── */
 .log-section{border-radius:18px;padding:12px 12px 10px;margin:0 14px 12px;position:relative;overflow:hidden}
-.log-section.morning{background:rgba(165,100,20,.2);border:1px solid rgba(180,115,30,.3)}
+.log-section.morning{background:rgba(128,72,6,.52);border:1px solid rgba(150,90,15,.55)}
 .log-section.night{background:rgba(15,27,53,.52);border:1px solid rgba(15,27,53,.4)}
 .log-section.night::before{content:'';position:absolute;inset:0;background:radial-gradient(1px 1px at 12% 18%,rgba(255,255,255,.65),transparent),radial-gradient(1.5px 1.5px at 38% 12%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 68% 22%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 85% 38%,rgba(255,255,255,.45),transparent),radial-gradient(1.5px 1.5px at 22% 55%,rgba(255,255,255,.4),transparent),radial-gradient(1px 1px at 55% 65%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 78% 72%,rgba(255,255,255,.4),transparent),radial-gradient(1.5px 1.5px at 42% 82%,rgba(255,255,255,.35),transparent),radial-gradient(1px 1px at 90% 88%,rgba(255,255,255,.45),transparent);pointer-events:none}
 .log-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;position:relative;z-index:1}
@@ -119,7 +119,7 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .log-section.morning .log-section-title{color:rgba(255,255,255,.9)}
 .log-section.night .log-section-title{color:rgba(255,255,255,.85)}
 .log-section-actions{display:flex;align-items:center;gap:8px}
-.log-sec-complete-btn{background:none;border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:3px 9px;font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;transition:all .15s;color:rgba(255,255,255,.6)}
+.log-sec-complete-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.28);border-radius:12px;padding:4px 11px;font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .15s;color:rgba(255,255,255,.85)}
 .log-sec-edit-btn{background:none;border:none;cursor:pointer;padding:2px;display:flex;align-items:center;opacity:.5;transition:opacity .15s;color:rgba(255,255,255,.8)}
 .log-section.morning .log-sec-edit-btn{color:rgba(255,255,255,.8)}
 .log-section.night .log-sec-edit-btn{color:rgba(255,255,255,.8)}
@@ -4020,6 +4020,8 @@ export default function App({ user }) {
   const [activeTab,   setActiveTab]   = useState("skin");
   const [logFilter,   setLogFilter]   = useState("all");
   const [editSection, setEditSection] = useState("morning");
+  const [collapsedSections, setCollapsedSections] = useState({morning:false,night:false});
+  const toggleSection = key => setCollapsedSections(p=>({...p,[key]:!p[key]}));
   const [activeDate,  setActiveDate]  = useState(today);
   const [entries,     setEntries]     = useState({});
   const [skinR,       setSkinR]       = useState(DEFAULT_SKIN);
@@ -4872,30 +4874,16 @@ Respond ONLY with valid JSON (no markdown, no explanation):
               const doneCount = allItems2.filter(it=>[...skinDone,...hairDone].includes(it.id)).length;
               const total = allItems2.length;
               const pct = total > 0 ? (doneCount/total*100).toFixed(0) : 0;
-              const allComplete = total > 0 && doneCount === total;
-              const handleCompleteAll = () => {
-                if (allComplete) {
-                  const updated = {...e2, skin:[], hair:[]};
-                  setEntries(p=>({...p,[activeDate]:updated}));
-                  persistEntry(activeDate, updated);
-                } else {
-                  const newSkin = [...new Set([...skinDone, ...skinR.map(it=>it.id)])];
-                  const newHair = [...new Set([...hairDone, ...hairR.map(it=>it.id)])];
-                  const updated = {...e2, skin:newSkin, hair:newHair};
-                  setEntries(p=>({...p,[activeDate]:updated}));
-                  persistEntry(activeDate, updated);
-                }
-              };
               const streak = (()=>{
                 let c=0, d=today;
                 while(d<=today){const e=getE(d);if(e.skin?.length||e.hair?.length){c++;d=shiftD(d,-1);}else break;}
                 return c;
               })();
               return (
-                <div className="lux-progress" onClick={handleCompleteAll} style={{cursor:"pointer"}}>
+                <div className="lux-progress">
                   <div className="lp-left">
                     <div className="lp-title">Today's ritual</div>
-                    <div className="lp-sub">{allComplete?"Ritual complete · tap to reset":streak>1?`${streak} day streak · tap to complete all`:"Tap to complete all"}</div>
+                    <div className="lp-sub">{streak>1?`${streak} day streak · keep it up`:"Start your streak today"}</div>
                     <div className="lp-track"><div className="lp-fill" style={{width:`${pct}%`}}/></div>
                   </div>
                   <div className="lp-right">
@@ -4970,6 +4958,12 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
               );
+              const ChevronIcon = ({collapsed}) => (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  style={{transform:collapsed?"rotate(-90deg)":"rotate(0deg)",transition:"transform .2s"}}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              );
 
               const renderCard = (it) => {
                 const isDone = it._tab==="skin"?(e2.skin||[]).includes(it.id):(e2.hair||[]).includes(it.id);
@@ -5004,30 +4998,30 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                 <>
                   {morningItems.length > 0 && (
                     <div className="log-section morning">
-                      <div className="log-section-head">
-                        <div className="log-section-title"><SunIcon/> Morning</div>
-                        <div className="log-section-actions">
-                          <button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(morningItems);}}>
+                      <div className="log-section-head" onClick={()=>toggleSection("morning")} style={{cursor:"pointer"}}>
+                        <div className="log-section-title"><SunIcon/> Morning <ChevronIcon collapsed={collapsedSections.morning}/></div>
+                        <div className="log-section-actions" onClick={e=>e.stopPropagation()}>
+                          {!collapsedSections.morning&&<button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(morningItems);}}>
                             {morningItems.every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"↩ Undo":"✓ All done"}
-                          </button>
+                          </button>}
                           <button className="log-sec-edit-btn" onClick={e=>{e.stopPropagation();setEditSection("morning");setModal("manageItems");}}><PencilIcon/></button>
                         </div>
                       </div>
-                      {morningItems.map(renderCard)}
+                      {!collapsedSections.morning && morningItems.map(renderCard)}
                     </div>
                   )}
                   {nightItems.length > 0 && (
                     <div className="log-section night">
-                      <div className="log-section-head">
-                        <div className="log-section-title"><MoonIcon/> Evening</div>
-                        <div className="log-section-actions">
-                          <button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(nightItems);}}>
+                      <div className="log-section-head" onClick={()=>toggleSection("night")} style={{cursor:"pointer"}}>
+                        <div className="log-section-title"><MoonIcon/> Evening <ChevronIcon collapsed={collapsedSections.night}/></div>
+                        <div className="log-section-actions" onClick={e=>e.stopPropagation()}>
+                          {!collapsedSections.night&&<button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(nightItems);}}>
                             {nightItems.every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"↩ Undo":"✓ All done"}
-                          </button>
+                          </button>}
                           <button className="log-sec-edit-btn" onClick={e=>{e.stopPropagation();setEditSection("night");setModal("manageItems");}}><PencilIcon/></button>
                         </div>
                       </div>
-                      {nightItems.map(renderCard)}
+                      {!collapsedSections.night && nightItems.map(renderCard)}
                     </div>
                   )}
                 </>
