@@ -673,15 +673,15 @@ function SpendingSummary({ purchases, period, onGoToPurchases }) {
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <button className="ghost-btn" onClick={onGoToPurchases}>View All</button>
           <button onClick={()=>setCollapsed(p=>!p)}
-            style={{background:"none",border:"none",cursor:"pointer",color:"#3A3830",fontSize:".82rem",padding:"4px 6px",lineHeight:1}}>
+            style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,.5)",fontSize:".82rem",padding:"4px 6px",lineHeight:1}}>
             {collapsed?"▼":"▲"}
           </button>
         </div>
       </div>
       {collapsed ? null : <>
-      <div style={{fontSize:".72rem",color:"#5A5248",marginBottom:12}}>This {period==="week"?"Week":period==="month"?"Month":"Year"}</div>
+      <div style={{fontSize:".72rem",color:"rgba(255,255,255,.55)",marginBottom:12}}>This {period==="week"?"Week":period==="month"?"Month":"Year"}</div>
       {count===0?(
-        <div style={{textAlign:"center",padding:"20px 0",color:"#3A3830",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem"}}>No purchases recorded yet</div>
+        <div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem"}}>No purchases recorded yet</div>
       ):(
         <div className="spend-card">
           <div className="spend-row" style={{fontWeight:600,fontSize:".92rem"}}>
@@ -689,36 +689,36 @@ function SpendingSummary({ purchases, period, onGoToPurchases }) {
             <span className="spend-val">${total.toFixed(2)}</span>
           </div>
           <div className="spend-row">
-            <span className="spend-label">🌿 Skin</span>
+            <span className="spend-label">Skin</span>
             <span style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:".72rem",color:"#5A5248"}}>{skinPct}%</span>
+              <span style={{fontSize:".72rem",color:"#6B8C7A"}}>{skinPct}%</span>
               <span className="spend-val">${skin.toFixed(2)}</span>
             </span>
           </div>
           <div className="spend-row">
-            <span className="spend-label">✨ Hair</span>
+            <span className="spend-label">Hair</span>
             <span style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:".72rem",color:"#5A5248"}}>{hairPct}%</span>
+              <span style={{fontSize:".72rem",color:"#6B8C7A"}}>{hairPct}%</span>
               <span className="spend-val">${hair.toFixed(2)}</span>
             </span>
           </div>
           {treatment>0&&<div className="spend-row">
-            <span className="spend-label">💉 Treatment</span>
+            <span className="spend-label">Treatment</span>
             <span style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:".72rem",color:"#5A5248"}}>{treatmentPct}%</span>
+              <span style={{fontSize:".72rem",color:"#6B8C7A"}}>{treatmentPct}%</span>
               <span className="spend-val">${treatment.toFixed(2)}</span>
             </span>
           </div>}
           <div className="spend-row" style={{borderBottom:"none",paddingBottom:0}}>
-            <span className="spend-label" style={{color:"#5A5248",fontSize:".78rem"}}>{count} purchase{count!==1?"s":""}</span>
+            <span className="spend-label" style={{color:"#6B8C7A",fontSize:".78rem"}}>{count} purchase{count!==1?"s":""}</span>
           </div>
-          {total>0&&<div style={{marginTop:10,height:8,background:"#1E1C1A",borderRadius:8,overflow:"hidden",display:"flex"}}>
-            <div style={{width:`${skinPct}%`,background:"#C8B8A0",transition:"width .4s"}}/>
-            <div style={{width:`${hairPct}%`,background:"#5A6A50",transition:"width .4s"}}/>
+          {total>0&&<div style={{marginTop:10,height:8,background:"rgba(255,255,255,.12)",borderRadius:8,overflow:"hidden",display:"flex"}}>
+            <div style={{width:`${skinPct}%`,background:"#7EC49A",transition:"width .4s"}}/>
+            <div style={{width:`${hairPct}%`,background:"#A0C0D4",transition:"width .4s"}}/>
           </div>}
-          {total>0&&<div style={{display:"flex",gap:12,marginTop:6,fontSize:".7rem",color:"#5A5248"}}>
-            <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"#C8B8A0",display:"inline-block"}}/> Skin</span>
-            <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"#5A6A50",display:"inline-block"}}/> Hair</span>
+          {total>0&&<div style={{display:"flex",gap:12,marginTop:6,fontSize:".7rem",color:"#6B8C7A"}}>
+            <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"#7EC49A",display:"inline-block"}}/> Skin</span>
+            <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"#A0C0D4",display:"inline-block"}}/> Hair</span>
           </div>}
         </div>
       )}
@@ -788,25 +788,25 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
     return (
       <div style={{marginTop:8}}>
         <div style={{display:"flex",height:6,borderRadius:4,overflow:"hidden",marginBottom:6}}>
-          {skin>0&&<div style={{flex:skin/total,background:"#C8B8A0"}}/>}
-          {hair>0&&<div style={{flex:hair/total,background:"#d4a0c0"}}/>}
-          {tx>0&&<div style={{flex:tx/total,background:"#2A1E1C"}}/>}
+          {skin>0&&<div style={{flex:skin/total,background:"#7EC49A"}}/>}
+          {hair>0&&<div style={{flex:hair/total,background:"#A0C0D4"}}/>}
+          {tx>0&&<div style={{flex:tx/total,background:"#1E3428"}}/>}
         </div>
-        <div style={{display:"flex",gap:10,fontSize:".68rem",color:"#5A5248"}}>
-          {skin>0&&<span>🌿 ${skin.toFixed(0)}</span>}
-          {hair>0&&<span>✨ ${hair.toFixed(0)}</span>}
-          {tx>0&&<span>💉 ${tx.toFixed(0)}</span>}
+        <div style={{display:"flex",gap:10,fontSize:".68rem",color:"rgba(255,255,255,.65)"}}>
+          {skin>0&&<span>Skin ${skin.toFixed(0)}</span>}
+          {hair>0&&<span>Hair ${hair.toFixed(0)}</span>}
+          {tx>0&&<span>Tx ${tx.toFixed(0)}</span>}
         </div>
       </div>
     );
   };
 
   const PURCH_STYLES = `
-    .purch-form{background:#1A1917;border:1.5px solid #252320;border-radius:16px;padding:18px;margin-bottom:16px}
-    .purch-month-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#1A1917;border:1.5px solid #252320;border-radius:12px;cursor:pointer;margin-bottom:6px;transition:background .15s}
-    .purch-month-header:hover{background:#1A1917}
-    .year-tile{background:#1A1917;border:1.5px solid #252320;border-radius:16px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:all .15s}
-    .year-tile:hover{background:#1A1917}
+    .purch-form{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:16px;padding:18px;margin-bottom:16px}
+    .purch-month-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:12px;cursor:pointer;margin-bottom:6px;transition:background .15s}
+    .purch-month-header:hover{background:rgba(255,255,255,1)}
+    .year-tile{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:16px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:all .15s}
+    .year-tile:hover{background:rgba(255,255,255,1)}
   `;
 
   // ── Purchase history deep-dive ───────────────────────────────────────────
@@ -823,32 +823,32 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
       <div className="app">
         <style>{PURCH_STYLES}</style>
         <div className="header" style={{position:"relative"}}>
-          <button onClick={()=>setHistoryItem(null)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#C8B8A0",padding:"8px",fontFamily:"'DM Sans',sans-serif",fontSize:".82rem"}}>← Back</button>
+          <button onClick={()=>setHistoryItem(null)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,.7)",padding:"8px",fontFamily:"'DM Sans',sans-serif",fontSize:".82rem"}}>← Back</button>
           <div className="header-title"><span>{historyItem.name}</span></div>
           {onMenuOpen&&<HamburgerBtn onClick={onMenuOpen}/>}
         </div>
-        {historyItem.brand&&<div style={{fontSize:".78rem",color:"#5A5248",marginBottom:16,marginTop:-4}}>{historyItem.brand}</div>}
+        {historyItem.brand&&<div style={{fontSize:".78rem",color:"rgba(255,255,255,.6)",marginBottom:16,marginTop:-4}}>{historyItem.brand}</div>}
         <div style={{display:"flex",gap:10,marginBottom:20}}>
           {[
             [history.length, history.length===1?"purchase":"purchases"],
             ["$"+totalSpent.toFixed(0),"total spent"],
             avgDays?["~"+avgDays+"d","avg. frequency"]:null
           ].filter(Boolean).map(([val,lbl],i)=>(
-            <div key={i} style={{flex:1,background:"#1A1917",border:"1.5px solid #252320",borderRadius:14,padding:"14px 10px",textAlign:"center"}}>
-              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.7rem",color:"#D4C8B8",lineHeight:1}}>{val}</div>
-              <div style={{fontSize:".64rem",color:"#5A5248",marginTop:4,letterSpacing:".08em",textTransform:"uppercase"}}>{lbl}</div>
+            <div key={i} style={{flex:1,background:"rgba(255,255,255,.92)",border:"1px solid rgba(255,255,255,.9)",borderRadius:14,padding:"14px 10px",textAlign:"center"}}>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.7rem",color:"#1A2820",lineHeight:1}}>{val}</div>
+              <div style={{fontSize:".64rem",color:"#6B8C7A",marginTop:4,letterSpacing:".08em",textTransform:"uppercase"}}>{lbl}</div>
             </div>
           ))}
         </div>
-        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",color:"#D4C8B8",marginBottom:10,fontStyle:"italic"}}>Purchase history</div>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",color:"rgba(255,255,255,.8)",marginBottom:10,fontStyle:"italic"}}>Purchase history</div>
         {history.slice().reverse().map(p=>(
-          <div key={p.id} style={{background:"#1A1917",border:"1.5px solid #252320",borderRadius:12,padding:"12px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div key={p.id} style={{background:"rgba(255,255,255,.92)",border:"1px solid rgba(255,255,255,.9)",borderRadius:12,padding:"12px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div>
-              <div style={{fontSize:".86rem",color:"#D4C8B8"}}>{parse(p.date).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
-              {p.quantity>1&&<div style={{fontSize:".72rem",color:"#5A5248",marginTop:1}}>qty {p.quantity}</div>}
-              {p.notes&&<div style={{fontSize:".72rem",color:"#5A5248",fontStyle:"italic",marginTop:1}}>{p.notes}</div>}
+              <div style={{fontSize:".86rem",color:"#1A2820"}}>{parse(p.date).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
+              {p.quantity>1&&<div style={{fontSize:".72rem",color:"#6B8C7A",marginTop:1}}>qty {p.quantity}</div>}
+              {p.notes&&<div style={{fontSize:".72rem",color:"#6B8C7A",fontStyle:"italic",marginTop:1}}>{p.notes}</div>}
             </div>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",color:"#C8B8A0"}}>${((parseFloat(p.price)||0)*(parseInt(p.quantity)||1)).toFixed(2)}</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",color:"#243D30"}}>${((parseFloat(p.price)||0)*(parseInt(p.quantity)||1)).toFixed(2)}</div>
           </div>
         ))}
       </div>
@@ -864,7 +864,7 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
       <div className="purch-info">
         <div className="purch-name">{p.name}</div>
         <div className="purch-meta">{p.brand&&`${p.brand} · `}{p.category==="treatment"&&p.treatment_type?`${p.treatment_type} · `:""}{p.category} · {parse(p.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})}{p.quantity>1&&` · qty ${p.quantity}`}</div>
-        {p.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>{p.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"#222019",border:"1px solid #252320",borderRadius:20,padding:"2px 8px",color:"#7A7060"}}>{t}</span>)}</div>}
+        {p.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>{p.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"rgba(71,102,90,.12)",border:"1px solid rgba(71,102,90,.2)",borderRadius:20,padding:"2px 8px",color:"#4A5E50"}}>{t}</span>)}</div>}
         {p.notes&&<div style={{fontSize:".72rem",color:"#5A5248",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
       </div>
       <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}} onClick={e=>e.stopPropagation()}>
@@ -882,17 +882,17 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
     <div className="app">
       <style>{PURCH_STYLES}</style>
       <div className="header" style={{position:"relative"}}>
-        <button onClick={onHome||onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#C8B8A0",padding:"8px",lineHeight:1}}><HomeIcon/></button>
+        <button onClick={onHome||onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,.7)",padding:"8px",lineHeight:1}}><HomeIcon/></button>
         <div className="header-title">My <span>Purchases</span></div>
         {onMenuOpen&&<HamburgerBtn onClick={onMenuOpen}/>}
       </div>
 
       {grandTotal>0&&(
         <div style={{marginBottom:20}}>
-          <div style={{fontSize:".68rem",letterSpacing:".12em",textTransform:"uppercase",color:"#5A5248",marginBottom:4}}>All Time Spending</div>
+          <div style={{fontSize:".68rem",letterSpacing:".12em",textTransform:"uppercase",color:"rgba(255,255,255,.55)",marginBottom:4}}>All Time Spending</div>
           <div style={{display:"flex",alignItems:"baseline",gap:10}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"2.4rem",color:"#D4C8B8",lineHeight:1}}>${grandTotal.toFixed(2)}</div>
-            <div style={{fontSize:".76rem",color:"#C8B8A0"}}>{filtered.length} purchase{filtered.length!==1?"s":""}</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"2.4rem",color:"#fff",lineHeight:1}}>${grandTotal.toFixed(2)}</div>
+            <div style={{fontSize:".76rem",color:"rgba(255,255,255,.6)"}}>{filtered.length} purchase{filtered.length!==1?"s":""}</div>
           </div>
         </div>
       )}
@@ -913,41 +913,41 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
           setAddMode("form");
         };
         return (
-          <div style={{background:"#1A1917",border:"1.5px solid #252320",borderRadius:16,padding:"18px",marginBottom:16}}>
+          <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:16,padding:"18px",marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#8A8070"}}>What did you purchase?</div>
-              <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#5A5248",lineHeight:1}}>×</button>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"rgba(255,255,255,.85)"}}>What did you purchase?</div>
+              <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"rgba(255,255,255,.5)",lineHeight:1}}>×</button>
             </div>
 
             {/* Products carousel */}
-            <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#5A5248",marginBottom:10}}>Products</div>
+            <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)",marginBottom:10}}>Products</div>
             <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:10,scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch",marginBottom:14}}>
               {featured.map(item=>(
                 <div key={item.id} onClick={()=>pickItem(item)}
                   style={{flexShrink:0,width:84,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
-                  <div style={{width:72,height:72,borderRadius:14,overflow:"hidden",background:"#1E1C1A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.6rem",border:"1.5px solid #252320",flexShrink:0}}>
+                  <div style={{width:72,height:72,borderRadius:14,overflow:"hidden",background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.6rem",border:"1px solid rgba(255,255,255,.25)",flexShrink:0}}>
                     {(item.image||item.media_url)
                       ?<img src={item.image||item.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
                       :<span>{catEmoji(item.category)}</span>}
                   </div>
-                  <div style={{fontSize:".64rem",color:"#D4C8B8",textAlign:"center",lineHeight:1.25,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",width:"100%"}}>{item.name}</div>
+                  <div style={{fontSize:".64rem",color:"rgba(255,255,255,.85)",textAlign:"center",lineHeight:1.25,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",width:"100%"}}>{item.name}</div>
                 </div>
               ))}
               {/* See All card */}
               <div onClick={()=>{setPickerSearch("");setAddMode("allProducts");}}
-                style={{flexShrink:0,width:72,height:72,borderRadius:14,border:"1.5px dashed #c8b0a0",background:"transparent",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,cursor:"pointer",marginTop:0}}>
-                <span style={{fontSize:".7rem",color:"#C8B8A0",fontWeight:500}}>See All</span>
-                <span style={{fontSize:".8rem",color:"#C8B8A0"}}>›</span>
+                style={{flexShrink:0,width:72,height:72,borderRadius:14,border:"1.5px dashed rgba(255,255,255,.3)",background:"transparent",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,cursor:"pointer",marginTop:0}}>
+                <span style={{fontSize:".7rem",color:"rgba(255,255,255,.6)",fontWeight:500}}>See All</span>
+                <span style={{fontSize:".8rem",color:"rgba(255,255,255,.6)"}}>›</span>
               </div>
             </div>
 
             {/* Treatment */}
             <button onClick={()=>{setEditP(blank("treatment"));setAddMode("form");}}
-              style={{display:"flex",alignItems:"center",gap:12,width:"100%",background:"#0F0E0C",border:"1.5px solid #252320",borderRadius:12,padding:"12px 16px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
+              style={{display:"flex",alignItems:"center",gap:12,width:"100%",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:12,padding:"12px 16px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
               <span style={{fontSize:"1.3rem"}}>💉</span>
               <div>
-                <div style={{fontSize:".88rem",color:"#D4C8B8",fontWeight:500}}>Treatment</div>
-                <div style={{fontSize:".72rem",color:"#5A5248",marginTop:1}}>Facial, microneedling, and more</div>
+                <div style={{fontSize:".88rem",color:"rgba(255,255,255,.9)",fontWeight:500}}>Treatment</div>
+                <div style={{fontSize:".72rem",color:"rgba(255,255,255,.5)",marginTop:1}}>Facial, microneedling, and more</div>
               </div>
             </button>
           </div>
@@ -968,31 +968,31 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
           setPickerSearch(""); setAddMode("form");
         };
         return (
-          <div style={{background:"#1A1917",border:"1.5px solid #252320",borderRadius:16,padding:"18px",marginBottom:16}}>
+          <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:16,padding:"18px",marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
               <button className="ghost-btn" style={{fontSize:".75rem",padding:"4px 10px"}} onClick={()=>setAddMode("source")}>← Back</button>
-              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#8A8070"}}>All Products</div>
-              <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#5A5248"}}>×</button>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"rgba(255,255,255,.8)"}}>All Products</div>
+              <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"rgba(255,255,255,.5)"}}>×</button>
             </div>
             <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="Search…" value={pickerSearch} onChange={e=>setPickerSearch(e.target.value)} autoFocus/>
             <div style={{display:"flex",flexWrap:"wrap",gap:10,maxHeight:340,overflowY:"auto"}}>
               {visible.map(item=>(
                 <div key={item.id} onClick={()=>pickItem(item)}
                   style={{width:"calc(33.33% - 7px)",display:"flex",flexDirection:"column",alignItems:"center",gap:5,cursor:"pointer"}}>
-                  <div style={{width:"100%",aspectRatio:"1",borderRadius:12,overflow:"hidden",background:"#1E1C1A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem",border:"1.5px solid #252320"}}>
+                  <div style={{width:"100%",aspectRatio:"1",borderRadius:12,overflow:"hidden",background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem",border:"1px solid rgba(255,255,255,.25)"}}>
                     {(item.image||item.media_url)
                       ?<img src={item.image||item.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
                       :<span>{catEmoji(item.category)}</span>}
                   </div>
-                  <div style={{fontSize:".64rem",color:"#D4C8B8",textAlign:"center",lineHeight:1.2,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",width:"100%"}}>{item.name}</div>
+                  <div style={{fontSize:".64rem",color:"rgba(255,255,255,.85)",textAlign:"center",lineHeight:1.2,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",width:"100%"}}>{item.name}</div>
                 </div>
               ))}
               {/* Add New square */}
               <div onClick={()=>{setPickerSearch("");setEditP(blank("skin"));setAddMode("form");}}
                 style={{width:"calc(33.33% - 7px)",display:"flex",flexDirection:"column",alignItems:"center",gap:5,cursor:"pointer"}}>
-                <div style={{width:"100%",aspectRatio:"1",borderRadius:12,border:"1.5px dashed #c8b0a0",background:"transparent",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>
-                  <span style={{fontSize:"1.2rem",color:"#C8B8A0"}}>+</span>
-                  <span style={{fontSize:".6rem",color:"#C8B8A0",fontWeight:500}}>Add New</span>
+                <div style={{width:"100%",aspectRatio:"1",borderRadius:12,border:"1.5px dashed rgba(255,255,255,.3)",background:"transparent",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>
+                  <span style={{fontSize:"1.2rem",color:"rgba(255,255,255,.6)"}}>+</span>
+                  <span style={{fontSize:".6rem",color:"rgba(255,255,255,.6)",fontWeight:500}}>Add New</span>
                 </div>
               </div>
             </div>
@@ -1004,8 +1004,8 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
       {addMode==="form"&&editP&&(
         <div className="purch-form">
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#8A8070"}}>{purchases.find(p=>p.id===editP.id)?"Edit":"Add"} Purchase</div>
-            <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#5A5248"}}>×</button>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#1A2820"}}>{purchases.find(p=>p.id===editP.id)?"Edit":"Add"} Purchase</div>
+            <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#6B8C7A"}}>×</button>
           </div>
 
           {editP.category==="treatment"?(
@@ -1046,15 +1046,15 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
 
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             <div style={{flex:1}}>
-              <div style={{fontSize:".7rem",color:"#5A5248",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Price ($)</div>
+              <div style={{fontSize:".7rem",color:"#6B8C7A",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Price ($)</div>
               <input className="ifield" style={{width:"100%"}} type="number" placeholder="0.00" value={editP.price} onChange={e=>setEditP(p=>({...p,price:e.target.value}))}/>
             </div>
             {editP.category!=="treatment"&&<div style={{width:70}}>
-              <div style={{fontSize:".7rem",color:"#5A5248",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Qty</div>
+              <div style={{fontSize:".7rem",color:"#6B8C7A",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Qty</div>
               <input className="ifield" style={{width:"100%"}} type="number" min="1" value={editP.quantity} onChange={e=>setEditP(p=>({...p,quantity:e.target.value}))}/>
             </div>}
             <div style={{flex:1}}>
-              <div style={{fontSize:".7rem",color:"#5A5248",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Date</div>
+              <div style={{fontSize:".7rem",color:"#6B8C7A",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Date</div>
               <input className="ifield" style={{width:"100%"}} type="date" value={editP.date} onChange={e=>setEditP(p=>({...p,date:e.target.value}))}/>
             </div>
           </div>
@@ -1065,7 +1065,7 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
 
       {!addMode&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>setAddMode("source")}>+ Add Purchase</button>}
 
-      {filtered.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:"#3A3830",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No purchases yet</div>}
+      {filtered.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No purchases yet</div>}
 
       {currentMonths.map(m=>{
         const ps=monthGroups[m];
@@ -1075,10 +1075,10 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
         return (
           <div key={m} style={{marginBottom:8}}>
             <div className="purch-month-header" onClick={()=>toggleMonth(m)}>
-              <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",fontStyle:"italic",color:"#D4C8B8"}}>{label}</span>
+              <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",fontStyle:"italic",color:"#1A2820"}}>{label}</span>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <span style={{fontSize:"1.1rem",color:"#C8B8A0",fontFamily:"'Cormorant Garamond',serif",fontStyle:"italic"}}>${mTotal.toFixed(2)}</span>
-                <span style={{color:"#C8B8A0",fontSize:".8rem"}}>{isOpen?"▲":"▼"}</span>
+                <span style={{fontSize:"1.1rem",color:"#243D30",fontFamily:"'Cormorant Garamond',serif",fontStyle:"italic"}}>${mTotal.toFixed(2)}</span>
+                <span style={{color:"#6B8C7A",fontSize:".8rem"}}>{isOpen?"▲":"▼"}</span>
               </div>
             </div>
             {isOpen&&<div style={{paddingLeft:4}}>{ps.sort((a,b)=>b.date.localeCompare(a.date)).map(p=><PurchaseCard key={p.id} p={p}/>)}</div>}
@@ -1097,12 +1097,12 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
           <div key={y} className="year-tile" onClick={()=>toggleYear(y)}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
-                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",color:"#D4C8B8"}}>{y}</div>
-                <div style={{fontSize:".72rem",color:"#5A5248",marginTop:2}}>{ps.length} purchase{ps.length!==1?"s":""}</div>
+                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",color:"#1A2820"}}>{y}</div>
+                <div style={{fontSize:".72rem",color:"#6B8C7A",marginTop:2}}>{ps.length} purchase{ps.length!==1?"s":""}</div>
               </div>
               <div style={{textAlign:"right"}}>
-                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",color:"#C8B8A0"}}>${yTotal.toFixed(2)}</div>
-                <div style={{fontSize:".72rem",color:"#C8B8A0",marginTop:2}}>{isOpen?"▲ hide":"▼ show"}</div>
+                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",color:"#243D30"}}>${yTotal.toFixed(2)}</div>
+                <div style={{fontSize:".72rem",color:"#6B8C7A",marginTop:2}}>{isOpen?"▲ hide":"▼ show"}</div>
               </div>
             </div>
             <YearSplit ps={ps}/>
@@ -1115,10 +1115,10 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
                 return (
                   <div key={m} style={{marginBottom:6}}>
                     <div className="purch-month-header" onClick={()=>toggleMonth(m)}>
-                      <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:".9rem",fontStyle:"italic",color:"#8A8070"}}>{label}</span>
+                      <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:".9rem",fontStyle:"italic",color:"#1A2820"}}>{label}</span>
                       <div style={{display:"flex",alignItems:"center",gap:8}}>
-                        <span style={{fontSize:".78rem",color:"#C8B8A0"}}>${mTotal.toFixed(2)}</span>
-                        <span style={{color:"#C8B8A0",fontSize:".75rem"}}>{isMonthOpen?"▲":"▼"}</span>
+                        <span style={{fontSize:".78rem",color:"#243D30"}}>${mTotal.toFixed(2)}</span>
+                        <span style={{color:"#6B8C7A",fontSize:".75rem"}}>{isMonthOpen?"▲":"▼"}</span>
                       </div>
                     </div>
                     {isMonthOpen&&<div style={{paddingLeft:4}}>{mps.sort((a,b)=>b.date.localeCompare(a.date)).map(p=><PurchaseCard key={p.id} p={p}/>)}</div>}
@@ -1172,7 +1172,7 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
     <div className="app">
       <style>{WISH_STYLES}</style>
       <div className="header" style={{position:"relative"}}>
-        <button onClick={onHome||onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#C8B8A0",padding:"8px",lineHeight:1}}><HomeIcon/></button>
+        <button onClick={onHome||onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,.7)",padding:"8px",lineHeight:1}}><HomeIcon/></button>
         <div className="header-title">My <span>Wishlist</span></div>
         {onMenuOpen&&<HamburgerBtn onClick={onMenuOpen}/>}
       </div>
@@ -5017,10 +5017,10 @@ Respond ONLY with valid JSON (no markdown, no explanation):
             <div style={{display:"flex",gap:6,marginBottom:18}}>
               {[["active","Active"],["past","Past"],["all","All"]].map(([v,l])=>(
                 <button key={v} onClick={()=>setPlansFilter(v)}
-                  style={{padding:"5px 14px",borderRadius:20,border:"1.5px solid",fontSize:".74rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",transition:"all .15s",
-                    background:plansFilter===v?"#C8B8A0":"transparent",
-                    color:plansFilter===v?"#fff":"#5A5248",
-                    borderColor:plansFilter===v?"#C8B8A0":"#e0cfc4"}}>
+                  style={{padding:"5px 14px",borderRadius:20,border:"1px solid",fontSize:".74rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",transition:"all .15s",
+                    background:plansFilter===v?"#1E3428":"rgba(255,255,255,.15)",
+                    color:plansFilter===v?"#fff":"rgba(255,255,255,.65)",
+                    borderColor:plansFilter===v?"#1E3428":"rgba(255,255,255,.3)"}}>
                   {l}
                 </button>
               ))}
@@ -5050,15 +5050,15 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                     <div className="sched-top">
                       <span style={{fontSize:"1rem"}}>{it.emoji}</span>
                       <div style={{flex:1}}>
-                        <div className="sched-label">{it.label}{s.ended_at&&<span style={{fontSize:".62rem",background:"#252320",color:"#5A5248",borderRadius:10,padding:"1px 7px",marginLeft:6}}>Ended</span>}</div>
-                        <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
+                        <div className="sched-label">{it.label}{s.ended_at&&<span style={{fontSize:".62rem",background:"rgba(71,102,90,.15)",color:"#4A5E50",borderRadius:10,padding:"1px 7px",marginLeft:6}}>Ended</span>}</div>
+                        <div style={{fontSize:".71rem",color:"#6B8C7A",marginTop:2}}>
                           {(s.days||[]).length===7?<span>Every day</span>:recurDays&&<span>Every {recurDays}</span>}
                           {recurDays&&dateCount>0&&<span> · </span>}
                           {dateCount>0&&<span>{dateCount} date{dateCount!==1?"s":""}</span>}
-                          {s.startDate&&(s.days||[]).length===0&&dateCount===0&&<span style={{color:"#b8a090"}}>from {parse(s.startDate).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
-                          {s.endDate&&!s.ended_at&&<span style={{color:"#b8a090"}}> · until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>}
-                          {s.ended_at&&<span style={{color:"#b8a090"}}> · ended {parse(s.ended_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
-                          {s.location&&<span> · <span style={{cursor:"pointer",color:"#C8B8A0",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(s.location)}`);}}>📍 {s.location}</span></span>}
+                          {s.startDate&&(s.days||[]).length===0&&dateCount===0&&<span style={{color:"#9AB0A4"}}>from {parse(s.startDate).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
+                          {s.endDate&&!s.ended_at&&<span style={{color:"#9AB0A4"}}> · until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>}
+                          {s.ended_at&&<span style={{color:"#9AB0A4"}}> · ended {parse(s.ended_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
+                          {s.location&&<span> · <span style={{cursor:"pointer",color:"#243D30",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(s.location)}`);}}>📍 {s.location}</span></span>}
                         </div>
                       </div>
                     </div>
@@ -5073,23 +5073,23 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                 return (
                   <div style={{flexShrink:0,width:148,position:"relative"}}>
                     <div onClick={()=>setSelectedPlan({type:"plan",data:s})}
-                      style={{background:"#1A1917",border:`1.5px solid ${s.ended_at?"#252320":"#d4c4b4"}`,borderRadius:16,padding:"14px 12px 10px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:s.ended_at?.55:1,height:"100%"}}>
+                      style={{background:"rgba(255,255,255,.92)",border:"1px solid rgba(255,255,255,.9)",borderRadius:16,padding:"14px 12px 10px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:s.ended_at?.55:1,height:"100%"}}>
                       <div style={{fontSize:"1.6rem",textAlign:"center"}}>{it.emoji}</div>
-                      <div style={{fontSize:".82rem",fontWeight:500,color:"#D4C8B8",textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{it.label}</div>
+                      <div style={{fontSize:".82rem",fontWeight:500,color:"#1A2820",textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{it.label}</div>
                       {s.ended_at
-                        ?<div style={{fontSize:".6rem",color:"#5A5248",textAlign:"center",background:"#f0e4d8",borderRadius:10,padding:"2px 6px"}}>Ended</div>
-                        :<div style={{fontSize:".64rem",color:"#9a7050",textAlign:"center"}}>
+                        ?<div style={{fontSize:".6rem",color:"#4A5E50",textAlign:"center",background:"rgba(71,102,90,.12)",borderRadius:10,padding:"2px 6px"}}>Ended</div>
+                        :<div style={{fontSize:".64rem",color:"#6B8C7A",textAlign:"center"}}>
                           {(s.days||[]).length===7?"Every day":recurDays||`${(s.dates||[]).length} date${(s.dates||[]).length!==1?"s":""}`}
                         </div>
                       }
-                      {s.endDate&&!s.ended_at&&<div style={{fontSize:".58rem",color:"#b8a090",textAlign:"center"}}>until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>}
+                      {s.endDate&&!s.ended_at&&<div style={{fontSize:".58rem",color:"#9AB0A4",textAlign:"center"}}>until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>}
                     </div>
                     <button onClick={e=>{e.stopPropagation();setSelectedPlan({type:"plan",data:{...s,_editMode:true}});}}
                       style={{position:"absolute",top:8,right:8,width:26,height:26,borderRadius:"50%",
-                        background:"rgba(253,246,240,.92)",border:"1px solid rgba(232,216,204,.8)",
+                        background:"rgba(255,255,255,.9)",border:"1px solid rgba(255,255,255,.8)",
                         display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",
                         boxShadow:"0 1px 4px rgba(0,0,0,.08)"}}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8A8070" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4A5E50" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                         <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                       </svg>
@@ -5107,14 +5107,14 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                     <div className="sched-top">
                       <span style={{fontSize:"1rem"}}>💉</span>
                       <div style={{flex:1}}>
-                        <div className="sched-label">{tx.name}{isPast&&<span style={{fontSize:".62rem",background:"#252320",color:"#5A5248",borderRadius:10,padding:"1px 7px",marginLeft:6}}>Past</span>}</div>
-                        <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
+                        <div className="sched-label">{tx.name}{isPast&&<span style={{fontSize:".62rem",background:"rgba(71,102,90,.15)",color:"#4A5E50",borderRadius:10,padding:"1px 7px",marginLeft:6}}>Past</span>}</div>
+                        <div style={{fontSize:".71rem",color:"#6B8C7A",marginTop:2}}>
                           {tx.completedDates?.length||0} done
-                          {tx.location?<span> · <span style={{cursor:"pointer",color:"#C8B8A0",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(tx.location)}`);}}>📍 {tx.location}</span></span>:null}
+                          {tx.location?<span> · <span style={{cursor:"pointer",color:"#243D30",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(tx.location)}`);}}>📍 {tx.location}</span></span>:null}
                           {next&&<span> · Next: {parse(next).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
                         </div>
                       </div>
-                      {tx.dates.includes(today)&&<span style={{fontSize:".68rem",background:"#8A5A50",color:"#fff",borderRadius:20,padding:"2px 8px",whiteSpace:"nowrap"}}>Today</span>}
+                      {tx.dates.includes(today)&&<span style={{fontSize:".68rem",background:"#1E3428",color:"#fff",borderRadius:20,padding:"2px 8px",whiteSpace:"nowrap"}}>Today</span>}
                     </div>
                   </div>
                 );
@@ -5126,16 +5126,16 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                 const isPast=!upcoming.length;
                 return (
                   <div onClick={()=>setSelectedPlan({type:"treatment",data:tx})}
-                    style={{flexShrink:0,width:148,background:"#1A1917",border:`1.5px solid ${isPast?"#252320":"#e0c8b8"}`,borderRadius:16,padding:"14px 12px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:isPast?.55:1}}>
+                    style={{flexShrink:0,width:148,background:"rgba(255,255,255,.92)",border:"1px solid rgba(255,255,255,.9)",borderRadius:16,padding:"14px 12px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:isPast?.55:1}}>
                     <div style={{fontSize:"1.6rem",textAlign:"center"}}>💉</div>
-                    <div style={{fontSize:".82rem",fontWeight:500,color:"#D4C8B8",textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{tx.name}</div>
+                    <div style={{fontSize:".82rem",fontWeight:500,color:"#1A2820",textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{tx.name}</div>
                     {isPast
-                      ?<div style={{fontSize:".6rem",color:"#5A5248",textAlign:"center",background:"#f0e4d8",borderRadius:10,padding:"2px 6px"}}>Past</div>
-                      :<div style={{fontSize:".64rem",color:"#9a7050",textAlign:"center"}}>
+                      ?<div style={{fontSize:".6rem",color:"#4A5E50",textAlign:"center",background:"rgba(71,102,90,.12)",borderRadius:10,padding:"2px 6px"}}>Past</div>
+                      :<div style={{fontSize:".64rem",color:"#6B8C7A",textAlign:"center"}}>
                         {next?`Next: ${parse(next).toLocaleDateString("en-US",{month:"short",day:"numeric"})}`:`${tx.completedDates?.length||0} done`}
                       </div>
                     }
-                    {tx.dates.includes(today)&&<div style={{fontSize:".6rem",background:"#8A5A50",color:"#fff",borderRadius:10,padding:"2px 6px",textAlign:"center"}}>Today</div>}
+                    {tx.dates.includes(today)&&<div style={{fontSize:".6rem",background:"#1E3428",color:"#fff",borderRadius:10,padding:"2px 6px",textAlign:"center"}}>Today</div>}
                   </div>
                 );
               };
@@ -5146,9 +5146,9 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                   {[["all","All"],["upcoming","Upcoming"],["past","Past"]].map(([v,l])=>(
                     <button key={v} onClick={()=>setTxFilter(v)}
                       style={{padding:"3px 10px",borderRadius:14,border:"1px solid",fontSize:".68rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",
-                        background:txFilter===v?"#C8B8A0":"transparent",
-                        color:txFilter===v?"#fff":"#5A5248",
-                        borderColor:txFilter===v?"#C8B8A0":"#e0cfc4"}}>
+                        background:txFilter===v?"#1E3428":"rgba(255,255,255,.15)",
+                        color:txFilter===v?"#fff":"rgba(255,255,255,.65)",
+                        borderColor:txFilter===v?"#1E3428":"rgba(255,255,255,.3)"}}>
                       {l}
                     </button>
                   ))}
@@ -5161,9 +5161,9 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                 if(!planItems.length&&!txItems.length) return null;
                 const total=planItems.length+txItems.length;
                 return (
-                  <div style={{marginBottom:16,background:"#1A1917",border:"1.5px solid #252320",borderRadius:18,padding:"14px 14px 10px"}}>
+                  <div style={{marginBottom:16,background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:18,padding:"14px 14px 10px"}}>
                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:allTxForSection.length?6:10}}>
-                      <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#5A5248",fontWeight:600}}>{label}</div>
+                      <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)",fontWeight:600}}>{label}</div>
                     </div>
                     {allTxForSection.length>0&&<TxFilterBar/>}
                     <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:4,scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch"}}>
@@ -5175,25 +5175,25 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                 );
               };
 
-              if(!hasAnything) return <div style={{textAlign:"center",padding:"32px 0",color:"#3A3830",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No plans yet — tap + Add to start</div>;
-              if(!hasVisible) return <div style={{textAlign:"center",padding:"24px 0",color:"#3A3830",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem"}}>No {plansFilter} plans</div>;
+              if(!hasAnything) return <div style={{textAlign:"center",padding:"32px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No plans yet — tap + Add to start</div>;
+              if(!hasVisible) return <div style={{textAlign:"center",padding:"24px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem"}}>No {plansFilter} plans</div>;
 
               const allSkinTx=treatments.filter(t=>t.type==="skin");
               const allHairTx=treatments.filter(t=>t.type==="hair");
 
               if(plansViewMode==="carousel") return (
                 <>
-                  <SectionCarousel label="🌿 Skin" planItems={skinPlans} txItems={skinTreatments} allTxForSection={allSkinTx}/>
-                  <SectionCarousel label="✨ Hair" planItems={hairPlans} txItems={hairTreatments} allTxForSection={allHairTx}/>
+                  <SectionCarousel label="Skin" planItems={skinPlans} txItems={skinTreatments} allTxForSection={allSkinTx}/>
+                  <SectionCarousel label="Hair" planItems={hairPlans} txItems={hairTreatments} allTxForSection={allHairTx}/>
                 </>
               );
 
               return (
                 <>
                   {(skinPlans.length>0||skinTreatments.length>0)&&(
-                    <div style={{marginBottom:16,background:"#1A1917",border:"1.5px solid #252320",borderRadius:18,padding:"14px 14px 6px"}}>
+                    <div style={{marginBottom:16,background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:18,padding:"14px 14px 6px"}}>
                       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#5A5248",fontWeight:600}}>🌿 Skin</div>
+                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)",fontWeight:600}}>Skin</div>
                         {skinTreatments.length>0&&<TxFilterBar/>}
                       </div>
                       {skinPlans.map(s=><PlanCardList key={s.id} s={s}/>)}
@@ -5201,9 +5201,9 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                     </div>
                   )}
                   {(hairPlans.length>0||hairTreatments.length>0)&&(
-                    <div style={{marginBottom:16,background:"#1A1917",border:"1.5px solid #252320",borderRadius:18,padding:"14px 14px 6px"}}>
+                    <div style={{marginBottom:16,background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:18,padding:"14px 14px 6px"}}>
                       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#5A5248",fontWeight:600}}>✨ Hair</div>
+                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)",fontWeight:600}}>Hair</div>
                         {hairTreatments.length>0&&<TxFilterBar/>}
                       </div>
                       {hairPlans.map(s=><PlanCardList key={s.id} s={s}/>)}
@@ -5231,7 +5231,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
               ))}
             </div>
             {!freqTracked.length?(
-              <div style={{textAlign:"center",padding:"32px 0",color:"#3A3830",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No habits tracked — tap Configure</div>
+              <div style={{textAlign:"center",padding:"32px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No habits tracked — tap Configure</div>
             ):freqTracked.map(id=>{
               const it=allItems.find(x=>x.id===id); if(!it) return null;
               const {count,possible}=freqStats(id);
@@ -5260,7 +5260,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
             })}
           </>}
 
-          <hr style={{border:"none",borderTop:"1.5px solid #252320",margin:"28px 0 20px"}}/>
+          <hr style={{border:"none",borderTop:"1px solid rgba(255,255,255,.15)",margin:"28px 0 20px"}}/>
           <SpendingSummary purchases={purchases} period={freqPeriod} onGoToPurchases={()=>setPageView("purchases")}/>
           </>
         )}
