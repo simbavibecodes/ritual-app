@@ -104,6 +104,22 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .cat-pill{flex:1;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);border-radius:24px;padding:9px 0;font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
 .cat-pill.active{background:#1E3428;border-color:#1E3428;color:#fff;box-shadow:0 4px 16px rgba(30,52,40,.4)}
 
+/* ── Log view filter pills ── */
+.log-filter-row{display:flex;gap:8px;padding:12px 18px 0}
+.log-fpill{flex:1;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:24px;padding:8px 0;font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.log-fpill.active{background:#1E3428;border-color:#1E3428;color:#fff;box-shadow:0 4px 16px rgba(30,52,40,.4)}
+
+/* ── Morning / Night section cards ── */
+.log-section{border-radius:18px;padding:14px 12px 10px;margin:0 14px 12px;position:relative;overflow:hidden}
+.log-section.morning{background:rgba(242,196,100,.18);border:1px solid rgba(242,196,100,.28)}
+.log-section.night{background:rgba(15,27,53,.45);border:1px solid rgba(15,27,53,.35)}
+.log-section.night::before{content:'';position:absolute;inset:0;background:radial-gradient(1px 1px at 12% 18%,rgba(255,255,255,.65),transparent),radial-gradient(1.5px 1.5px at 38% 12%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 68% 22%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 85% 38%,rgba(255,255,255,.45),transparent),radial-gradient(1.5px 1.5px at 22% 55%,rgba(255,255,255,.4),transparent),radial-gradient(1px 1px at 55% 65%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 78% 72%,rgba(255,255,255,.4),transparent),radial-gradient(1.5px 1.5px at 42% 82%,rgba(255,255,255,.35),transparent),radial-gradient(1px 1px at 90% 88%,rgba(255,255,255,.45),transparent);pointer-events:none}
+.log-section-title{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:600;margin-bottom:10px;letter-spacing:.04em;position:relative;z-index:1}
+.log-section.morning .log-section-title{color:#7A5200}
+.log-section.night .log-section-title{color:rgba(255,255,255,.85)}
+.log-section .pc-card{position:relative;z-index:1}
+.pc-cat-tag{position:absolute;bottom:8px;right:8px;font-size:.58rem;font-weight:600;letter-spacing:.06em;text-transform:lowercase;color:rgba(80,80,80,.5);background:rgba(0,0,0,.05);border-radius:10px;padding:2px 6px;pointer-events:none}
+
 /* ── Week strip ── */
 .week-strip{display:flex;gap:3px;padding:18px 14px 0}
 .wday{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;position:relative}
@@ -3956,6 +3972,7 @@ export default function App({ user }) {
   const today = fmt(new Date());
   const [view,        setView]        = useState(() => sessionStorage.getItem('ritual_view') || "log");
   const [activeTab,   setActiveTab]   = useState("skin");
+  const [logFilter,   setLogFilter]   = useState("all");
   const [activeDate,  setActiveDate]  = useState(today);
   const [entries,     setEntries]     = useState({});
   const [skinR,       setSkinR]       = useState(DEFAULT_SKIN);
@@ -4723,15 +4740,16 @@ Respond ONLY with valid JSON (no markdown, no explanation):
               <div className="lux-hdr-mid">
                 <div className="lux-greeting">{getGreeting()},</div>
                 <div className="lux-name">{userName || "Friend"}</div>
-                <div className="lux-tagline">Let's take care of your {activeTab==="skin"?"skin":"hair"}</div>
+                <div className="lux-tagline">Your daily ritual</div>
               </div>
               <div className="lux-hdr-bell" onClick={()=>setSideMenu(true)}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
               </div>
             </div>
-            <div className="cat-pills">
-              <button className={`cat-pill ${activeTab==="skin"?"active":""}`} onClick={()=>setActiveTab("skin")}>Skin</button>
-              <button className={`cat-pill ${activeTab==="hair"?"active":""}`} onClick={()=>setActiveTab("hair")}>Hair</button>
+            <div className="log-filter-row">
+              <button className={`log-fpill ${logFilter==="all"?"active":""}`} onClick={()=>setLogFilter("all")}>All</button>
+              <button className={`log-fpill ${logFilter==="skin"?"active":""}`} onClick={()=>setLogFilter("skin")}>Skin</button>
+              <button className={`log-fpill ${logFilter==="hair"?"active":""}`} onClick={()=>setLogFilter("hair")}>Hair</button>
             </div>
           </>
         ) : (
@@ -4800,21 +4818,37 @@ Respond ONLY with valid JSON (no markdown, no explanation):
             })()}
 
             {(()=>{
-              const allDone = [...(getE(activeDate).skin||[]), ...(getE(activeDate).hair||[])];
-              const allItems2 = (activeTab==="skin"?skinR:hairR);
-              const doneCount = allItems2.filter(it=>allDone.includes(it.id)).length;
+              const e2 = getE(activeDate);
+              const skinDone = e2.skin||[];
+              const hairDone = e2.hair||[];
+              const allItems2 = [...skinR, ...hairR];
+              const doneCount = allItems2.filter(it=>[...skinDone,...hairDone].includes(it.id)).length;
               const total = allItems2.length;
               const pct = total > 0 ? (doneCount/total*100).toFixed(0) : 0;
+              const allComplete = total > 0 && doneCount === total;
+              const handleCompleteAll = () => {
+                if (allComplete) {
+                  const updated = {...e2, skin:[], hair:[]};
+                  setEntries(p=>({...p,[activeDate]:updated}));
+                  persistEntry(activeDate, updated);
+                } else {
+                  const newSkin = [...new Set([...skinDone, ...skinR.map(it=>it.id)])];
+                  const newHair = [...new Set([...hairDone, ...hairR.map(it=>it.id)])];
+                  const updated = {...e2, skin:newSkin, hair:newHair};
+                  setEntries(p=>({...p,[activeDate]:updated}));
+                  persistEntry(activeDate, updated);
+                }
+              };
               const streak = (()=>{
                 let c=0, d=today;
                 while(d<=today){const e=getE(d);if(e.skin?.length||e.hair?.length){c++;d=shiftD(d,-1);}else break;}
                 return c;
               })();
               return (
-                <div className="lux-progress">
+                <div className="lux-progress" onClick={handleCompleteAll} style={{cursor:"pointer"}}>
                   <div className="lp-left">
                     <div className="lp-title">Today's ritual</div>
-                    <div className="lp-sub">{streak>1?`${streak} day streak · keep going`:"Start your streak today"}</div>
+                    <div className="lp-sub">{allComplete?"Ritual complete · tap to reset":streak>1?`${streak} day streak · tap to complete all`:"Tap to complete all"}</div>
                     <div className="lp-track"><div className="lp-fill" style={{width:`${pct}%`}}/></div>
                   </div>
                   <div className="lp-right">
@@ -4834,20 +4868,18 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                 <button className="dnb" onClick={()=>setActiveDate(shiftD(activeDate,1))} disabled={activeDate>=today}>›</button>
               </div>
             )}
-            {visibleReminders.filter(s=>{
-                const itemTab=skinR.find(r=>r.id===s.itemId)?"skin":"hair";
-                return itemTab===activeTab;
-              }).map(s=>{ const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
-              const isDone=(activeTab==="skin"?getE(activeDate).skin:getE(activeDate).hair)?.includes(s.itemId);
+            {visibleReminders.map(s=>{ const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
+              const itemTab=skinR.find(r=>r.id===s.itemId)?"skin":"hair";
+              const isDone=getE(activeDate)[itemTab]?.includes(s.itemId);
               return (
                 <div key={s.id} className={`reminder-banner ${isDone?"done":""}`}
-                  onClick={()=>{ if(!isDone) toggleItem(activeDate,activeTab,s.itemId); }}>
+                  onClick={()=>{ if(!isDone) toggleItem(activeDate,itemTab,s.itemId); }}>
                   <div className="rb-dot"/>
                   <div className="rb-text">{isDone?"✓ ":""}{it.emoji} {it.label}{s.reminder&&!isDone?` · ${s.time}`:""}</div>
                 </div>
               );
             })}
-            {treatments.filter(t=>t.dates.includes(activeDate)&&t.type===activeTab).map(tx=>{
+            {treatments.filter(t=>t.dates.includes(activeDate)).map(tx=>{
               const isDone=tx.completedDates.includes(activeDate);
               return (
                 <div key={tx.id} className={`treatment-banner ${isDone?"done":""}`}
@@ -4859,45 +4891,54 @@ Respond ONLY with valid JSON (no markdown, no explanation):
             })}
 
             <div className="sec-head">
-              <div className="sec-title">{activeTab==="skin"?"Skin":"Hair"} ritual</div>
+              <div className="sec-title">Routine</div>
               <button className="ghost-btn" onClick={()=>setModal("manageItems")}>Edit</button>
             </div>
             {(()=>{
-              const renderCard=(it)=>{
-                const isDone=checked.includes(it.id);
-                const {svg, bgClass}=getBottleSvg(it);
-                const timeLabel=it.time==="day"?"Morning":it.time==="night"?"Evening":null;
+              const allRoutines = [
+                ...skinR.map(it=>({...it,_tab:"skin"})),
+                ...hairR.map(it=>({...it,_tab:"hair"}))
+              ];
+              const filterFn = it => logFilter==="all" || it._tab===logFilter;
+              const e2 = getE(activeDate);
+              const renderCard = (it) => {
+                const isDone = it._tab==="skin"?(e2.skin||[]).includes(it.id):(e2.hair||[]).includes(it.id);
+                const {svg, bgClass} = getBottleSvg(it);
                 return (
-                  <div key={it.id} className={`pc-card ${isDone?"done":""}`}
-                    onClick={()=>toggleItem(activeDate,activeTab,it.id)}>
+                  <div key={it._tab+it.id} className={`pc-card ${isDone?"done":""}`}
+                    onClick={()=>toggleItem(activeDate,it._tab,it.id)}>
                     <div className={`pc-img ${bgClass}`}>{svg}</div>
                     <div className="pc-info">
                       <div className="pc-brand">{it.emoji}</div>
                       <div className="pc-name">{it.label}</div>
-                      {timeLabel&&<span className={`pc-time${it.time==="night"?" eve":""}`}>{timeLabel}</span>}
                     </div>
                     <div className="pc-check">
                       {isDone&&<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1.5 4l2.5 2.5 5-5" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                     </div>
+                    <div className="pc-cat-tag">{it._tab}</div>
                   </div>
                 );
               };
-              const groups=[["day","Morning"],["night","Evening"]];
-              const hasTimeGroups=routines.some(it=>it.time==="day"||it.time==="night");
-              if(!hasTimeGroups) return <div style={{marginTop:8}}>{routines.map(renderCard)}</div>;
-              return groups.map(([t,label])=>{
-                const group=routines.filter(it=>(it.time||"both")===t||(t==="day"&&(it.time||"both")==="both"));
-                if(!group.length) return null;
-                return (
-                  <div key={t}>
-                    <div className="sec-label">
-                      <span className="sec-tag">{label}</span>
-                      <div className="sec-line"/>
+              const morningItems = allRoutines.filter(it=>filterFn(it)&&((it.time||"both")==="day"||(it.time||"both")==="both"));
+              const nightItems = allRoutines.filter(it=>filterFn(it)&&((it.time||"both")==="night"||(it.time||"both")==="both"));
+              const hasAny = morningItems.length || nightItems.length;
+              if (!hasAny) return <div style={{padding:"20px 18px",color:"rgba(255,255,255,.45)",fontSize:".85rem",textAlign:"center"}}>No routine items yet · tap Edit to add some</div>;
+              return (
+                <>
+                  {morningItems.length > 0 && (
+                    <div className="log-section morning">
+                      <div className="log-section-title">☀️ Morning</div>
+                      {morningItems.map(renderCard)}
                     </div>
-                    {group.map(renderCard)}
-                  </div>
-                );
-              });
+                  )}
+                  {nightItems.length > 0 && (
+                    <div className="log-section night">
+                      <div className="log-section-title">🌙 Evening</div>
+                      {nightItems.map(renderCard)}
+                    </div>
+                  )}
+                </>
+              );
             })()}
             <div className="sec-label" style={{paddingBottom:8}}>
               <span className="sec-tag">How does your {activeTab==="skin"?"skin":"hair"} feel?</span>
