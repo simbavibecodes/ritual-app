@@ -1155,17 +1155,17 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
   const sortedWish = [...wishlist].sort((a,b)=>(b.priority||0)-(a.priority||0));
 
   const WISH_STYLES = `
-    .wish-card{background:#1A1917;border:1.5px solid #252320;border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
-    .wish-card:hover{background:#1A1917}
-    .wish-name{font-size:.9rem;font-weight:500;color:#D4C8B8;margin-bottom:2px}
-    .wish-meta{font-size:.72rem;color:#5A5248}
+    .wish-card{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
+    .wish-card:hover{background:rgba(255,255,255,1)}
+    .wish-name{font-size:.9rem;font-weight:500;color:#1A2820;margin-bottom:2px}
+    .wish-meta{font-size:.72rem;color:#6B8C7A}
     .plan-carousel{display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none}
     .plan-carousel::-webkit-scrollbar{display:none}
-    .plan-card{background:#1A1917;border:1.5px solid #252320;border-radius:16px;padding:14px 12px;min-width:152px;max-width:152px;display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;position:relative}
-    .staple-card{background:#1A1917;border:1.5px solid #e8c8a0;border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:center}
-    .tab-bar{display:flex;gap:0;background:#f0e4d8;border-radius:12px;padding:3px;margin-bottom:18px}
-    .tab-btn{flex:1;padding:7px 4px;border:none;background:transparent;border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.76rem;color:#5A5248;transition:all .15s;font-weight:400}
-    .tab-btn.on{background:#fff;color:#D4C8B8;font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+    .plan-card{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:16px;padding:14px 12px;min-width:152px;max-width:152px;display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;position:relative}
+    .staple-card{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:center}
+    .tab-bar{display:flex;gap:0;background:rgba(0,0,0,.18);border-radius:12px;padding:3px;margin-bottom:18px}
+    .tab-btn{flex:1;padding:7px 4px;border:none;background:transparent;border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.76rem;color:rgba(255,255,255,.55);transition:all .15s;font-weight:400}
+    .tab-btn.on{background:#1E3428;color:#fff;font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,.15)}
   `;
 
   return (
@@ -1186,26 +1186,26 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
       {/* ── WISHLIST TAB ── */}
       {tab==="wishlist"&&<>
         {chooseCat&&(
-          <div style={{background:"#1A1917",border:"1.5px solid #252320",borderRadius:16,padding:"18px",marginBottom:16}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#8A8070",marginBottom:14}}>What are you wishing for?</div>
+          <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:16,padding:"18px",marginBottom:16}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"rgba(255,255,255,.8)",marginBottom:14}}>What are you wishing for?</div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
                 <button key={cat} onClick={()=>{setEditItem(blankWish(cat));setShowForm(true);setChooseCat(false);}}
-                  style={{display:"flex",alignItems:"center",gap:12,background:"#0F0E0C",border:"1.5px solid #252320",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+                  style={{display:"flex",alignItems:"center",gap:12,background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
                   <span style={{fontSize:"1.3rem"}}>{emoji}</span>
-                  <span style={{fontSize:".88rem",color:"#D4C8B8",fontWeight:500}}>{label} Product</span>
+                  <span style={{fontSize:".88rem",color:"rgba(255,255,255,.85)",fontWeight:500}}>{label} Product</span>
                 </button>
               ))}
-              <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".78rem",color:"#5A5248",cursor:"pointer",marginTop:4}}>Cancel</button>
+              <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".78rem",color:"rgba(255,255,255,.55)",cursor:"pointer",marginTop:4}}>Cancel</button>
             </div>
           </div>
         )}
 
         {showForm&&editItem&&(
-          <div style={{background:"#1A1917",border:"1.5px solid #252320",borderRadius:16,padding:"18px",marginBottom:16}}>
+          <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:16,padding:"18px",marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#8A8070"}}>{wishlist.find(w=>w.id===editItem.id)?"Edit":"Add to"} Wishlist</div>
-              <button onClick={()=>{setShowForm(false);setEditItem(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#5A5248"}}>×</button>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"rgba(255,255,255,.8)"}}>{wishlist.find(w=>w.id===editItem.id)?"Edit":"Add to"} Wishlist</div>
+              <button onClick={()=>{setShowForm(false);setEditItem(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"rgba(255,255,255,.55)"}}>×</button>
             </div>
             <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editItem.name} onChange={e=>setEditItem(p=>({...p,name:e.target.value}))}/>
             <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={editItem.brand||""} onChange={e=>setEditItem(p=>({...p,brand:e.target.value}))}/>
@@ -1240,21 +1240,21 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
         )}
 
         {!showForm&&!chooseCat&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>setChooseCat(true)}>+ Add to Wishlist</button>}
-        {sortedWish.length===0&&!showForm&&<div style={{textAlign:"center",padding:"32px 0",color:"#3A3830",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Your wishlist is empty ✨</div>}
+        {sortedWish.length===0&&!showForm&&<div style={{textAlign:"center",padding:"32px 0",color:"rgba(255,255,255,.55)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Your wishlist is empty ✨</div>}
 
         {sortedWish.map(item=>(
           <div key={item.id} className="wish-card">
             {item.image
               ?<img src={item.image} alt="" style={{width:52,height:52,objectFit:"cover",borderRadius:10,flexShrink:0}}/>
-              :<div style={{width:52,height:52,borderRadius:10,background:"#1E1C1A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{item.category==="skin"?"🌿":item.category==="treatment"?"💉":"✨"}</div>
+              :<div style={{width:52,height:52,borderRadius:10,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{item.category==="skin"?"🌿":item.category==="treatment"?"💉":"✨"}</div>
             }
             <div style={{flex:1,minWidth:0}}>
               <div className="wish-name">{item.name}</div>
-              <div className="wish-meta">{item.brand&&`${item.brand} · `}{item.category}{item.priority>0&&<span style={{color:item.priority===2?"#c06050":"#C8B8A0",marginLeft:4}}>{item.priority===2?"🔥 High":"Medium"}</span>}</div>
-              {item.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>{item.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"#222019",border:"1px solid #252320",borderRadius:20,padding:"2px 8px",color:"#7A7060"}}>{t}</span>)}</div>}
-              {item.notes&&<div style={{fontSize:".72rem",color:"#5A5248",marginTop:4,fontStyle:"italic"}}>{item.notes}</div>}
+              <div className="wish-meta">{item.brand&&`${item.brand} · `}{item.category}{item.priority>0&&<span style={{color:item.priority===2?"#c06050":"#6B8C7A",marginLeft:4}}>{item.priority===2?"🔥 High":"Medium"}</span>}</div>
+              {item.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>{item.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"rgba(255,255,255,.15)",border:"1px solid rgba(255,255,255,.25)",borderRadius:20,padding:"2px 8px",color:"#6B8C7A"}}>{t}</span>)}</div>}
+              {item.notes&&<div style={{fontSize:".72rem",color:"#6B8C7A",marginTop:4,fontStyle:"italic"}}>{item.notes}</div>}
               <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
-                {item.link&&<button onClick={()=>openUrl(item.link)} style={{background:"#C8B8A0",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
+                {item.link&&<button onClick={()=>openUrl(item.link)} style={{background:"#1E3428",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
                 <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>onMoveToCart(item)}>✓ Purchased</button>
                 <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setNewPlanned({...blankPlanned(),name:item.name,brand:item.brand||"",category:item.category||"skin",image:item.image||"",link:item.link||"",notes:item.notes||"",wishlist_id:item.id});setShowPlannedForm(true);setTab("planned");}}>📋 Plan</button>
                 <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setEditItem({...item});setShowForm(true);}}>Edit</button>
@@ -1267,19 +1267,19 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
 
       {/* ── STAPLES TAB ── */}
       {tab==="staples"&&<>
-        {staples.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:"#3A3830",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No staples yet — mark a product as ⭐ Staple in My Products</div>}
+        {staples.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:"rgba(255,255,255,.55)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No staples yet — mark a product as ⭐ Staple in My Products</div>}
         {staples.map(p=>(
           <div key={p.id} className="staple-card">
             {p.image
               ?<img src={p.image} alt="" style={{width:52,height:52,objectFit:"cover",borderRadius:10,flexShrink:0}}/>
-              :<div style={{width:52,height:52,borderRadius:10,background:"#222019",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{p.category==="skin"?"🌿":"✨"}</div>
+              :<div style={{width:52,height:52,borderRadius:10,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{p.category==="skin"?"🌿":"✨"}</div>
             }
             <div style={{flex:1,minWidth:0}}>
               <div className="wish-name">⭐ {p.name}</div>
               <div className="wish-meta">{p.brand&&`${p.brand} · `}{p.category}{p.price&&` · $${p.price}`}</div>
-              {p.notes&&<div style={{fontSize:".72rem",color:"#5A5248",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
+              {p.notes&&<div style={{fontSize:".72rem",color:"#6B8C7A",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
               <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
-                {p.link&&<button onClick={()=>openUrl(p.link)} style={{background:"#C8B8A0",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
+                {p.link&&<button onClick={()=>openUrl(p.link)} style={{background:"#1E3428",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
                 <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setNewPlanned({...blankPlanned(),name:p.name,brand:p.brand||"",category:p.category||"skin",image:p.image||"",link:p.link||"",price:String(p.price||""),product_id:p.id});setShowPlannedForm(true);setTab("planned");}}>📋 Plan to Buy</button>
               </div>
             </div>
@@ -1290,9 +1290,9 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
       {/* ── PLANNED PURCHASES TAB ── */}
       {tab==="planned"&&<>
         {purchasingItem&&(
-          <div style={{background:"#1A1917",border:"1.5px solid #C8B8A0",borderRadius:16,padding:"18px",marginBottom:16}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#D4C8B8",marginBottom:4}}>Mark as purchased?</div>
-            <div style={{fontSize:".8rem",color:"#D4C8B8",fontWeight:500,marginBottom:12}}>{purchasingItem.name}</div>
+          <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:16,padding:"18px",marginBottom:16}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"rgba(255,255,255,.85)",marginBottom:4}}>Mark as purchased?</div>
+            <div style={{fontSize:".8rem",color:"rgba(255,255,255,.85)",fontWeight:500,marginBottom:12}}>{purchasingItem.name}</div>
             <input type="date" className="time-input" style={{width:"100%",marginBottom:14}} value={purchaseDate} onChange={e=>setPurchaseDate(e.target.value)}/>
             <div style={{display:"flex",gap:8}}>
               <button className="save-btn" style={{flex:1}} onClick={()=>{onMovePlannedToPurchase(purchasingItem,purchaseDate);setPurchasingItem(null);setPurchaseDate(today);}}>✓ Confirm</button>
@@ -1302,10 +1302,10 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
         )}
 
         {showPlannedForm&&newPlanned&&(
-          <div style={{background:"#1A1917",border:"1.5px solid #252320",borderRadius:16,padding:"18px",marginBottom:16}}>
+          <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:16,padding:"18px",marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#8A8070"}}>Plan to Buy</div>
-              <button onClick={()=>{setShowPlannedForm(false);setNewPlanned(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#5A5248"}}>×</button>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"rgba(255,255,255,.8)"}}>Plan to Buy</div>
+              <button onClick={()=>{setShowPlannedForm(false);setNewPlanned(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"rgba(255,255,255,.55)"}}>×</button>
             </div>
             <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={newPlanned.name} onChange={e=>setNewPlanned(p=>({...p,name:e.target.value}))} autoFocus/>
             <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={newPlanned.brand||""} onChange={e=>setNewPlanned(p=>({...p,brand:e.target.value}))}/>
@@ -1325,7 +1325,7 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
 
         {!showPlannedForm&&!purchasingItem&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>{setNewPlanned(blankPlanned());setShowPlannedForm(true);}}>+ Plan to Buy</button>}
 
-        {(plannedPurchases||[]).length===0&&!showPlannedForm&&<div style={{textAlign:"center",padding:"32px 0",color:"#3A3830",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Nothing planned yet</div>}
+        {(plannedPurchases||[]).length===0&&!showPlannedForm&&<div style={{textAlign:"center",padding:"32px 0",color:"rgba(255,255,255,.55)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Nothing planned yet</div>}
 
         {(plannedPurchases||[]).length>0&&<div className="plan-carousel">
           {(plannedPurchases||[]).map(item=>(
@@ -1333,12 +1333,12 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
               <button onClick={()=>onDeletePlanned(item.id)} style={{position:"absolute",top:6,right:6,background:"none",border:"none",cursor:"pointer",color:"#c09080",fontSize:".76rem",padding:"2px 5px",lineHeight:1,zIndex:1}}>✕</button>
               {item.image
                 ?<img src={item.image} alt="" style={{width:72,height:72,borderRadius:12,objectFit:"cover"}}/>
-                :<div style={{width:72,height:72,borderRadius:12,background:"#1E1C1A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2rem"}}>{item.category==="skin"?"🌿":item.category==="treatment"?"💉":"✨"}</div>
+                :<div style={{width:72,height:72,borderRadius:12,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2rem"}}>{item.category==="skin"?"🌿":item.category==="treatment"?"💉":"✨"}</div>
               }
               <div style={{textAlign:"center",width:"100%"}}>
-                <div style={{fontSize:".82rem",fontWeight:500,color:"#D4C8B8",lineHeight:1.3,marginBottom:2,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{item.name}</div>
-                {item.brand&&<div style={{fontSize:".68rem",color:"#5A5248",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{item.brand}</div>}
-                {item.price&&<div style={{fontSize:".78rem",color:"#C8B8A0",marginTop:2,fontWeight:500}}>${item.price}</div>}
+                <div style={{fontSize:".82rem",fontWeight:500,color:"#1A2820",lineHeight:1.3,marginBottom:2,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{item.name}</div>
+                {item.brand&&<div style={{fontSize:".68rem",color:"#6B8C7A",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{item.brand}</div>}
+                {item.price&&<div style={{fontSize:".78rem",color:"#243D30",marginTop:2,fontWeight:500}}>${item.price}</div>}
               </div>
               <button className="save-btn" style={{width:"100%",padding:"7px 0",fontSize:".76rem",marginTop:2}} onClick={()=>{if(!purchasingItem){setPurchasingItem(item);setPurchaseDate(today);}}}>✓ Purchased</button>
             </div>
@@ -2487,20 +2487,20 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
       return (
         <div style={{marginBottom:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
-            <div style={{fontSize:".64rem",letterSpacing:".1em",textTransform:"uppercase",color:"#5A5248"}}>{label}</div>
-            <div style={{fontSize:".6rem",color:"#c0b0a8"}}>{catProds.length} product{catProds.length!==1?"s":""}</div>
+            <div style={{fontSize:".64rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)"}}>{label}</div>
+            <div style={{fontSize:".6rem",color:"rgba(255,255,255,.45)"}}>{catProds.length} product{catProds.length!==1?"s":""}</div>
           </div>
           <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,scrollbarWidth:"none",WebkitOverflowScrolling:"touch",paddingRight:4}}>
             {catProds.map(p=>(
-              <div key={p.id} style={{flexShrink:0,width:96,background:"#0F0E0C",border:"1.5px solid #252320",borderRadius:13,overflow:"hidden"}}>
+              <div key={p.id} style={{flexShrink:0,width:96,background:"rgba(255,255,255,.92)",border:"1px solid rgba(255,255,255,.9)",borderRadius:13,overflow:"hidden"}}>
                 {(p.image||p.media_url)
                   ?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:76,objectFit:"cover",display:"block"}}/>
-                  :<div style={{width:"100%",height:76,background:"#1E1C1A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem"}}>{catEmoji(cat)}</div>
+                  :<div style={{width:"100%",height:76,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem"}}>{catEmoji(cat)}</div>
                 }
                 <div style={{padding:"7px 8px 8px"}}>
-                  <div style={{fontSize:".7rem",fontWeight:500,color:"#D4C8B8",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
-                  {p.brand&&<div style={{fontSize:".6rem",color:"#5A5248",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.brand}</div>}
-                  {p.frequency&&<div style={{fontSize:".56rem",background:"#f0e8f4",borderRadius:5,padding:"1px 5px",color:"#7a6a8a",display:"inline-block",marginTop:3}}>{p.frequency}</div>}
+                  <div style={{fontSize:".7rem",fontWeight:500,color:"#1A2820",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
+                  {p.brand&&<div style={{fontSize:".6rem",color:"#6B8C7A",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.brand}</div>}
+                  {p.frequency&&<div style={{fontSize:".56rem",background:"rgba(126,196,154,.15)",borderRadius:5,padding:"1px 5px",color:"#243D30",display:"inline-block",marginTop:3}}>{p.frequency}</div>}
                 </div>
               </div>
             ))}
@@ -2509,20 +2509,20 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
       );
     };
     return (
-      <div style={{background:"#1A1917",border:"1.5px solid #252320",borderRadius:16,padding:"16px 18px",marginBottom:12,cursor:"pointer"}} onClick={()=>setOpen(o=>!o)}>
+      <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:16,padding:"16px 18px",marginBottom:12,cursor:"pointer"}} onClick={()=>setOpen(o=>!o)}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
           <div>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#D4C8B8"}}>{startLabel} — {endLabel}</div>
-            <div style={{fontSize:".72rem",color:"#5A5248",marginTop:3}}>{prods.length} product{prods.length!==1?"s":""}{skinP.length>0?` · ${skinP.length} skin`:""}{ hairP.length>0?` · ${hairP.length} hair`:""}{ txP.length>0?` · ${txP.length} treatment`:""}</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"rgba(255,255,255,.85)"}}>{startLabel} — {endLabel}</div>
+            <div style={{fontSize:".72rem",color:"rgba(255,255,255,.55)",marginTop:3}}>{prods.length} product{prods.length!==1?"s":""}{skinP.length>0?` · ${skinP.length} skin`:""}{ hairP.length>0?` · ${hairP.length} hair`:""}{ txP.length>0?` · ${txP.length} treatment`:""}</div>
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <button onClick={e=>{e.stopPropagation();setSnapAnalysis(v=>!v);}} style={{background:"none",border:"1px solid #252320",borderRadius:8,padding:"4px 10px",color:"#5A5248",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+            <button onClick={e=>{e.stopPropagation();setSnapAnalysis(v=>!v);}} style={{background:"none",border:"1px solid rgba(255,255,255,.25)",borderRadius:8,padding:"4px 10px",color:"rgba(255,255,255,.6)",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
               {snapAnalysis?"Close":"Analyze"}
             </button>
             {open&&<button onClick={e=>{e.stopPropagation();setConfirmDel(true);}} style={{background:"none",border:"1px solid #f0c8c0",borderRadius:8,padding:"4px 10px",color:"#8A5A50",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
               Delete
             </button>}
-            <span style={{color:"#C8B8A0",fontSize:".8rem"}}>{open?"▲":"▼"}</span>
+            <span style={{color:"rgba(255,255,255,.6)",fontSize:".8rem"}}>{open?"▲":"▼"}</span>
           </div>
         </div>
         {snapAnalysis&&<div onClick={e=>e.stopPropagation()}>
@@ -2535,8 +2535,8 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
             onClose={()=>setSnapAnalysis(false)}
             onFetchIngredients={onFetchIngredients}/>
         </div>}
-        {confirmDel&&<div style={{marginTop:12,background:"#1A1917",border:"1.5px solid #f0c8c0",borderRadius:12,padding:"14px"}} onClick={e=>e.stopPropagation()}>
-          <div style={{fontSize:".84rem",color:"#D4C8B8",marginBottom:12,lineHeight:1.5}}>Delete this snapshot? This cannot be undone.</div>
+        {confirmDel&&<div style={{marginTop:12,background:"rgba(200,100,80,.08)",border:"1px solid #f0c8c0",borderRadius:12,padding:"14px"}} onClick={e=>e.stopPropagation()}>
+          <div style={{fontSize:".84rem",color:"rgba(255,255,255,.85)",marginBottom:12,lineHeight:1.5}}>Delete this snapshot? This cannot be undone.</div>
           <div style={{display:"flex",gap:8}}>
             <button onClick={()=>setConfirmDel(false)} className="ghost-btn" style={{flex:1,fontSize:".78rem"}}>Cancel</button>
             <button onClick={()=>onDeleteSnapshot(snap.id)}
@@ -2545,7 +2545,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
             </button>
           </div>
         </div>}
-        {open&&<div style={{marginTop:14,borderTop:"1px solid #1E1C1A",paddingTop:14}} onClick={e=>e.stopPropagation()}>
+        {open&&<div style={{marginTop:14,borderTop:"1px solid rgba(255,255,255,.15)",paddingTop:14}} onClick={e=>e.stopPropagation()}>
           <SnapCatRow cat="skin" label="🌿 Skin" catProds={skinP}/>
           <SnapCatRow cat="hair" label="✨ Hair" catProds={hairP}/>
           <SnapCatRow cat="treatment" label="💉 Treatments" catProds={txP}/>
@@ -2559,13 +2559,13 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   return (
     <div className="app">
       <div className="header" style={{position:"relative"}}>
-        <button onClick={()=>tryNavigateAway(onHome||onBack)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#C8B8A0",padding:"8px",lineHeight:1}}><HomeIcon/></button>
+        <button onClick={()=>tryNavigateAway(onHome||onBack)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,.7)",padding:"8px",lineHeight:1}}><HomeIcon/></button>
         <div className="header-title">My <span>Products</span></div>
         <div className="header-sub">{products.length} in library</div>
         {onMenuOpen&&<HamburgerBtn onClick={onMenuOpen}/>}
       </div>
 
-      <div style={{display:"flex",gap:0,marginBottom:20,borderRadius:12,overflow:"hidden",border:"1.5px solid #252320"}}>
+      <div style={{display:"flex",gap:0,marginBottom:20,borderRadius:12,overflow:"hidden",border:"1px solid rgba(255,255,255,.2)"}}>
         {[["current","Current Routine"],["history","Snapshot History"]].map(([v,l])=>(
           <button key={v}
             onClick={()=>{
@@ -2580,7 +2580,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
               setChooseCat(false);
             }}
             style={{flex:1,padding:"10px",fontSize:".78rem",cursor:"pointer",border:"none",fontFamily:"'DM Sans',sans-serif",
-              background:tab===v?"#C8B8A0":"#1A1917",color:tab===v?"#fff":"#5A5248",transition:"all .15s"}}>
+              background:tab===v?"#1E3428":"rgba(255,255,255,.12)",color:tab===v?"#fff":"rgba(255,255,255,.6)",transition:"all .15s"}}>
             {l}
           </button>
         ))}
@@ -2603,12 +2603,12 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                 {/* Featured header */}
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,padding:"2px 0"}}>
                   <button onClick={()=>setFeaturedView(null)}
-                    style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:"#5A5248",fontFamily:"'DM Sans',sans-serif",fontSize:".76rem",padding:"4px 0",flexShrink:0}}>
+                    style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,.7)",fontFamily:"'DM Sans',sans-serif",fontSize:".76rem",padding:"4px 0",flexShrink:0}}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
                     {catLabel}
                   </button>
-                  <div style={{flex:1,fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#D4C8B8",textAlign:"center"}}>My <em style={{color:"#C8B8A0"}}>{catLabel}</em></div>
-                  <div style={{fontSize:".66rem",color:"#c0b0a8",flexShrink:0}}>{catProds.length} products</div>
+                  <div style={{flex:1,fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"rgba(255,255,255,.85)",textAlign:"center"}}>My <em style={{color:"#7EC49A"}}>{catLabel}</em></div>
+                  <div style={{fontSize:".66rem",color:"rgba(255,255,255,.5)",flexShrink:0}}>{catProds.length} products</div>
                 </div>
 
                 {/* Carousel — unified lookbook cards (image + details in one card) */}
@@ -2624,20 +2624,20 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                   }}>
                   {catProds.map((p,i)=>(
                     <div key={p.id} style={{flexShrink:0,width:260,scrollSnapAlign:"center",
-                      background:"#1A1917",border:"1.5px solid #252320",borderRadius:20,overflow:"hidden",
+                      background:"rgba(255,255,255,.92)",border:"1px solid rgba(255,255,255,.9)",borderRadius:20,overflow:"hidden",
                       opacity:i===idx?1:.45,transform:i===idx?"scale(1)":"scale(0.93)",
                       transition:"opacity .25s,transform .25s",
-                      boxShadow:i===idx?"0 6px 28px rgba(90,50,30,.14)":"none"}}>
+                      boxShadow:i===idx?"0 6px 28px rgba(0,0,0,.18)":"none"}}>
                       {/* Image */}
-                      <div style={{position:"relative",height:220,background:"#1E1C1A",
+                      <div style={{position:"relative",height:220,background:"rgba(255,255,255,.15)",
                         display:"flex",alignItems:"center",justifyContent:"center",fontSize:"4rem",overflow:"hidden"}}>
                         <SwipeableProductImage images={[p.image, p.media_url]} height={220} emoji={catEmoji(featuredView.category)}/>
                         {i===idx&&<button onClick={e=>{e.stopPropagation();openEditForm(p);}}
                           style={{position:"absolute",top:10,right:10,width:30,height:30,borderRadius:"50%",
-                            background:"rgba(253,246,240,.92)",border:"1px solid rgba(232,216,204,.8)",
+                            background:"rgba(255,255,255,.9)",border:"1px solid rgba(255,255,255,.8)",
                             display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",
                             boxShadow:"0 1px 4px rgba(0,0,0,.1)"}}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8A8070" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4A5E50" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                             <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                           </svg>
@@ -2646,26 +2646,26 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                       {/* Details — inside the card */}
                       <div style={{padding:"14px 16px 16px"}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
-                          {p.brand&&<div style={{fontSize:".6rem",color:"#5A5248",letterSpacing:".1em",textTransform:"uppercase"}}>{p.brand}</div>}
-                          {p.price&&<div style={{fontSize:".7rem",fontWeight:500,color:"#D4C8B8"}}>${parseFloat(p.price).toFixed(2)}</div>}
+                          {p.brand&&<div style={{fontSize:".6rem",color:"#6B8C7A",letterSpacing:".1em",textTransform:"uppercase"}}>{p.brand}</div>}
+                          {p.price&&<div style={{fontSize:".7rem",fontWeight:500,color:"#243D30"}}>${parseFloat(p.price).toFixed(2)}</div>}
                         </div>
-                        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.15rem",color:"#D4C8B8",lineHeight:1.3,marginBottom:6}}>{p.name}</div>
-                        {p.frequency&&<div style={{fontSize:".6rem",background:"#f0e8f4",borderRadius:5,padding:"2px 7px",color:"#7a6a8a",display:"inline-block",marginBottom:6}}>{p.frequency}</div>}
-                        {p.notes&&<div style={{fontSize:".7rem",color:"#7A7060",fontStyle:"italic",lineHeight:1.5,marginBottom:10}}>{p.notes}</div>}
+                        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.15rem",color:"#1A2820",lineHeight:1.3,marginBottom:6}}>{p.name}</div>
+                        {p.frequency&&<div style={{fontSize:".6rem",background:"rgba(126,196,154,.15)",borderRadius:5,padding:"2px 7px",color:"#243D30",display:"inline-block",marginBottom:6}}>{p.frequency}</div>}
+                        {p.notes&&<div style={{fontSize:".7rem",color:"#6B8C7A",fontStyle:"italic",lineHeight:1.5,marginBottom:10}}>{p.notes}</div>}
                         {i===idx&&(p.link||isDraft)&&<div style={{marginTop:p.notes?0:8}}>
                           {p.link&&<button onClick={e=>{e.stopPropagation();openUrl(p.link);}}
-                            style={{width:"100%",background:"#C8B8A0",color:"#fff",border:"none",borderRadius:9,padding:"9px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500,marginBottom:isDraft?6:0}}>Buy Now</button>}
+                            style={{width:"100%",background:"#1E3428",color:"#fff",border:"none",borderRadius:9,padding:"9px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500,marginBottom:isDraft?6:0}}>Buy Now</button>}
                           {isDraft&&(
                             removeConfirm===p.snapProdId
-                              ? <div style={{display:"flex",gap:6,alignItems:"center",background:"#fff0ee",borderRadius:9,padding:"8px 10px"}}>
+                              ? <div style={{display:"flex",gap:6,alignItems:"center",background:"rgba(200,100,80,.08)",borderRadius:9,padding:"8px 10px"}}>
                                   <span style={{flex:1,fontSize:".68rem",color:"#8A5A50"}}>Remove from routine?</span>
                                   <button onClick={async e=>{e.stopPropagation();await removeProduct(p.snapProdId,p.name);setFeaturedView(null);setRemoveConfirm(null);}}
                                     style={{background:"#8A5A50",border:"none",borderRadius:7,padding:"5px 10px",color:"#fff",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>Yes</button>
                                   <button onClick={e=>{e.stopPropagation();setRemoveConfirm(null);}}
-                                    style={{background:"none",border:"1px solid #252320",borderRadius:7,padding:"5px 10px",color:"#5A5248",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+                                    style={{background:"none",border:"1px solid rgba(255,255,255,.25)",borderRadius:7,padding:"5px 10px",color:"#6B8C7A",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
                                 </div>
                               : <button onClick={e=>{e.stopPropagation();setRemoveConfirm(p.snapProdId);}}
-                                  style={{width:"100%",background:"none",color:"#8A5A50",border:"1.5px solid #f0c8c0",borderRadius:9,padding:"8px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",textAlign:"center"}}>Remove from routine</button>
+                                  style={{width:"100%",background:"none",color:"#8A5A50",border:"1.5px solid rgba(200,100,80,.3)",borderRadius:9,padding:"8px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",textAlign:"center"}}>Remove from routine</button>
                           )}
                         </div>}
                       </div>
@@ -2682,10 +2682,10 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                         carouselScrollRef.current?.scrollTo({left:i*272,behavior:"smooth"});
                       }}
                       style={{height:6,borderRadius:3,cursor:"pointer",transition:"all .2s",
-                        background:i===idx?"#C8B8A0":"#252320",width:i===idx?18:6}}/>
+                        background:i===idx?"#1E3428":"rgba(255,255,255,.25)",width:i===idx?18:6}}/>
                   ))}
                 </div>
-                <div style={{textAlign:"center",marginTop:5,fontSize:".62rem",color:"#c0b0a8",letterSpacing:".06em"}}>{idx+1} of {catProds.length}</div>
+                <div style={{textAlign:"center",marginTop:5,fontSize:".62rem",color:"rgba(255,255,255,.5)",letterSpacing:".06em"}}>{idx+1} of {catProds.length}</div>
 
                 {/* Edit form rendered as bottom sheet — see below MyProductsPage return */}
               </div>
@@ -2697,38 +2697,38 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
             <>
               {snapProducts.length===0&&!showForm&&!chooseCat&&!isDraft&&(
                 <div style={{textAlign:"center",padding:"52px 16px 44px"}}>
-                  <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.9rem",fontWeight:300,fontStyle:"italic",color:"#C8B8A0",marginBottom:10}}>Your ritual begins here</div>
-                  <div style={{fontSize:".78rem",color:"#5A5248",lineHeight:1.8,marginBottom:28,maxWidth:260,margin:"0 auto 28px"}}>Add your first product to start building a routine you can track, analyze, and look back on.</div>
+                  <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.9rem",fontWeight:300,fontStyle:"italic",color:"rgba(255,255,255,.85)",marginBottom:10}}>Your ritual begins here</div>
+                  <div style={{fontSize:".78rem",color:"rgba(255,255,255,.6)",lineHeight:1.8,marginBottom:28,maxWidth:260,margin:"0 auto 28px"}}>Add your first product to start building a routine you can track, analyze, and look back on.</div>
                   <button onClick={()=>setChooseCat(true)}
-                    style={{background:"#C8B8A0",border:"none",borderRadius:12,padding:"11px 32px",color:"#fff",fontSize:".82rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500,letterSpacing:".04em"}}>
+                    style={{background:"#1E3428",border:"none",borderRadius:12,padding:"11px 32px",color:"#fff",fontSize:".82rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500,letterSpacing:".04em"}}>
                     Begin my routine
                   </button>
                 </div>
               )}
 
               {(snapProducts.length>0||isDraft||chooseCat)&&(
-                <div style={{background:"#1A1917",border:"1.5px solid #252320",borderRadius:20,padding:"18px",marginBottom:16}}>
+                <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:20,padding:"18px",marginBottom:16}}>
 
                   {/* Card header: date + action buttons */}
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
                     <div>
-                      {activeSnap&&<div style={{fontSize:".58rem",letterSpacing:".14em",textTransform:"uppercase",color:"#2A2820",marginBottom:3}}>Current Routine</div>}
-                      {activeSnap&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#D4C8B8"}}>Since {new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>}
-                      {activeSnap&&<div style={{fontSize:".7rem",color:"#5A5248",marginTop:3}}>{snapProducts.length} product{snapProducts.length!==1?"s":""}{skinProds.length>0?` · ${skinProds.length} skin`:""}{ hairProds.length>0?` · ${hairProds.length} hair`:""}{ txProds.length>0?` · ${txProds.length} treatment`:""}</div>}
-                      {isDraft&&draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:500,color:"#c07a28",letterSpacing:".04em"}}>Building your routine</div>}
-                      {isDraft&&!draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:500,color:"#7a8a5a",letterSpacing:".04em"}}>Editing your routine</div>}
+                      {activeSnap&&<div style={{fontSize:".58rem",letterSpacing:".14em",textTransform:"uppercase",color:"rgba(255,255,255,.4)",marginBottom:3}}>Current Routine</div>}
+                      {activeSnap&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"rgba(255,255,255,.85)"}}>Since {new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>}
+                      {activeSnap&&<div style={{fontSize:".7rem",color:"rgba(255,255,255,.55)",marginTop:3}}>{snapProducts.length} product{snapProducts.length!==1?"s":""}{skinProds.length>0?` · ${skinProds.length} skin`:""}{ hairProds.length>0?` · ${hairProds.length} hair`:""}{ txProds.length>0?` · ${txProds.length} treatment`:""}</div>}
+                      {isDraft&&draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:500,color:"#7EC49A",letterSpacing:".04em"}}>Building your routine</div>}
+                      {isDraft&&!draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:500,color:"#243D30",letterSpacing:".04em"}}>Editing your routine</div>}
                     </div>
                     <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0,marginLeft:10}}>
-                      {!isDraft&&<button onClick={()=>setShowAnalysis(v=>!v)} style={{background:"#D4C8B8",border:"none",borderRadius:9,padding:"6px 12px",color:"#222019",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,whiteSpace:"nowrap"}}>{showAnalysis?"Close":"Analyze My Routine"}</button>}
-                      {!isDraft&&<button onClick={enterEditMode} style={{background:"none",border:"1.5px solid #252320",borderRadius:9,padding:"6px 10px",color:"#5A5248",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>Update Routine</button>}
-                      {isDraft&&<button onClick={discardChanges} style={{background:"none",border:"1.5px solid #252320",borderRadius:9,padding:"6px 12px",color:"#5A5248",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>Discard</button>}
-                      {isDraft&&<button onClick={()=>setConfirmFinalize(true)} style={{background:"#C8B8A0",border:"none",borderRadius:9,padding:"6px 14px",color:"#fff",fontSize:".76rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,whiteSpace:"nowrap"}}>Save Routine</button>}
+                      {!isDraft&&<button onClick={()=>setShowAnalysis(v=>!v)} style={{background:"rgba(255,255,255,.2)",border:"none",borderRadius:9,padding:"6px 12px",color:"rgba(255,255,255,.85)",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,whiteSpace:"nowrap"}}>{showAnalysis?"Close":"Analyze My Routine"}</button>}
+                      {!isDraft&&<button onClick={enterEditMode} style={{background:"none",border:"1px solid rgba(255,255,255,.3)",borderRadius:9,padding:"6px 10px",color:"rgba(255,255,255,.65)",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>Update Routine</button>}
+                      {isDraft&&<button onClick={discardChanges} style={{background:"none",border:"1px solid rgba(255,255,255,.3)",borderRadius:9,padding:"6px 12px",color:"rgba(255,255,255,.65)",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>Discard</button>}
+                      {isDraft&&<button onClick={()=>setConfirmFinalize(true)} style={{background:"#1E3428",border:"none",borderRadius:9,padding:"6px 14px",color:"#fff",fontSize:".76rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,whiteSpace:"nowrap"}}>Save Routine</button>}
                     </div>
                   </div>
 
                   {/* Analysis panel */}
                   {showAnalysis&&activeSnap&&!isDraft&&(
-                    <div style={{marginBottom:16,borderBottom:"1px solid #1E1C1A",paddingBottom:16}}>
+                    <div style={{marginBottom:16,borderBottom:"1px solid rgba(255,255,255,.15)",paddingBottom:16}}>
                       <RoutineAnalysis products={products} snapProducts={activeSnap.products} entries={entries} dateRange={{start:activeSnap.started_at,end:null}} isCurrent={true} onClose={()=>setShowAnalysis(false)} onFetchIngredients={onFetchIngredients}/>
                     </div>
                   )}
@@ -2740,24 +2740,24 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                   {/* Add product button */}
                   {!showForm&&isDraft&&!chooseCat&&(
                     <button onClick={()=>setChooseCat(true)}
-                      style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"1.5px dashed #252320",borderRadius:12,padding:"10px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",color:"#5A5248",fontSize:".82rem",width:"100%",marginBottom:14}}>
+                      style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"1.5px dashed rgba(255,255,255,.3)",borderRadius:12,padding:"10px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",color:"rgba(255,255,255,.6)",fontSize:".82rem",width:"100%",marginBottom:14}}>
                       <span style={{fontSize:"1.1rem"}}>+</span> Add a product
                     </button>
                   )}
 
                   {/* Category picker */}
                   {!showForm&&isDraft&&chooseCat&&(
-                    <div style={{background:"#0F0E0C",border:"1.5px solid #252320",borderRadius:14,padding:"16px",marginBottom:14}}>
-                      <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#8A8070",marginBottom:12}}>Add a product</div>
+                    <div style={{background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.2)",borderRadius:14,padding:"16px",marginBottom:14}}>
+                      <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"rgba(255,255,255,.8)",marginBottom:12}}>Add a product</div>
                       <div style={{display:"flex",flexDirection:"column",gap:8}}>
                         {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
                           <button key={cat} onClick={()=>{setEditProd(blank(cat));setIsEditingProd(false);setShowForm(true);setChooseCat(false);}}
-                            style={{display:"flex",alignItems:"center",gap:12,background:"#1A1917",border:"1.5px solid #252320",borderRadius:12,padding:"11px 14px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+                            style={{display:"flex",alignItems:"center",gap:12,background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:12,padding:"11px 14px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
                             <span style={{fontSize:"1.2rem"}}>{emoji}</span>
-                            <span style={{fontSize:".86rem",color:"#D4C8B8",fontWeight:500}}>{label} Product</span>
+                            <span style={{fontSize:".86rem",color:"rgba(255,255,255,.9)",fontWeight:500}}>{label} Product</span>
                           </button>
                         ))}
-                        <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".76rem",color:"#5A5248",cursor:"pointer",marginTop:2,fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+                        <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".76rem",color:"rgba(255,255,255,.5)",cursor:"pointer",marginTop:2,fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
                       </div>
                     </div>
                   )}
@@ -2766,10 +2766,10 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                   {[["skin","🌿 Skin",skinProds],["hair","✨ Hair",hairProds],["treatment","💉 Treatments",txProds]].filter(([,,p])=>p.length>0).map(([cat,label,prods],ri,arr)=>(
                     <div key={cat} style={{marginBottom:ri<arr.length-1?18:0}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:9}}>
-                        <div style={{fontSize:".66rem",letterSpacing:".1em",textTransform:"uppercase",color:"#5A5248"}}>
-                          {label}{isDraft&&<span style={{fontSize:".56rem",color:"#c0b0a8",marginLeft:6,fontStyle:"italic"}}>drag to reorder</span>}
+                        <div style={{fontSize:".66rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)"}}>
+                          {label}{isDraft&&<span style={{fontSize:".56rem",color:"rgba(255,255,255,.4)",marginLeft:6,fontStyle:"italic"}}>drag to reorder</span>}
                         </div>
-                        <div style={{fontSize:".62rem",color:"#c0b0a8"}}>{prods.length} product{prods.length!==1?"s":""}</div>
+                        <div style={{fontSize:".62rem",color:"rgba(255,255,255,.45)"}}>{prods.length} product{prods.length!==1?"s":""}</div>
                       </div>
                       <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,scrollbarWidth:"none",WebkitOverflowScrolling:"touch",paddingRight:18,marginRight:-18}}>
                         {prods.map((p,i)=>{
@@ -2795,21 +2795,21 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                               } : undefined}
                               onClick={()=>{ if(!dragItem.current) setFeaturedView({category:cat,index:i}); }}
                               style={{flexShrink:0,width:96,position:"relative",
-                                background:isDropTarget?"#1A1917":"#1A1917",
-                                border:isDropTarget?"1.5px solid #C8B8A0":"1.5px solid #252320",
+                                background:"rgba(255,255,255,.92)",
+                                border:isDropTarget?"2px solid #1E3428":"1px solid rgba(255,255,255,.9)",
                                 borderRadius:13,overflow:"hidden",
                                 cursor:isDraft?"grab":"pointer",
                                 opacity:isBeingDragged?0.4:1,
                                 transition:"opacity .15s,border-color .15s,background .15s"}}>
-                              {isDraft&&<div style={{position:"absolute",top:4,left:4,fontSize:".65rem",color:"rgba(160,128,112,.6)",pointerEvents:"none",zIndex:1}}>⠿</div>}
+                              {isDraft&&<div style={{position:"absolute",top:4,left:4,fontSize:".65rem",color:"rgba(71,102,90,.4)",pointerEvents:"none",zIndex:1}}>⠿</div>}
                               {(p.image||p.media_url)
                                 ?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:76,objectFit:"cover",display:"block"}}/>
-                                :<div style={{width:"100%",height:76,background:"#1E1C1A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem"}}>{catEmoji(cat)}</div>
+                                :<div style={{width:"100%",height:76,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem"}}>{catEmoji(cat)}</div>
                               }
                               <div style={{padding:"7px 8px 8px"}}>
-                                <div style={{fontSize:".7rem",fontWeight:500,color:"#D4C8B8",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
-                                {p.brand&&<div style={{fontSize:".6rem",color:"#5A5248",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.brand}</div>}
-                                {p.frequency&&<div style={{fontSize:".56rem",background:"#f0e8f4",borderRadius:5,padding:"1px 5px",color:"#7a6a8a",display:"inline-block",marginTop:3}}>{p.frequency}</div>}
+                                <div style={{fontSize:".7rem",fontWeight:500,color:"#1A2820",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
+                                {p.brand&&<div style={{fontSize:".6rem",color:"#6B8C7A",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.brand}</div>}
+                                {p.frequency&&<div style={{fontSize:".56rem",background:"rgba(126,196,154,.15)",borderRadius:5,padding:"1px 5px",color:"#243D30",display:"inline-block",marginTop:3}}>{p.frequency}</div>}
                               </div>
                             </div>
                           );
@@ -2820,11 +2820,11 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
 
                   {/* ── Morning & Night Routines ── */}
                   {!isDraft&&snapProducts.length>0&&(
-                    <div style={{marginTop:20,borderTop:"1.5px solid #252320",paddingTop:16}}>
+                    <div style={{marginTop:20,borderTop:"1px solid rgba(255,255,255,.15)",paddingTop:16}}>
                       <div onClick={()=>setShowAmPm(v=>!v)}
                         style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",marginBottom:showAmPm?16:0}}>
-                        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#D4C8B8"}}>Your Morning & Night Routines</div>
-                        <span style={{color:"#3A3830",fontSize:".78rem",lineHeight:1}}>{showAmPm?"▲":"▼"}</span>
+                        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"rgba(255,255,255,.8)"}}>Your Morning & Night Routines</div>
+                        <span style={{color:"rgba(255,255,255,.5)",fontSize:".78rem",lineHeight:1}}>{showAmPm?"▲":"▼"}</span>
                       </div>
 
                       {showAmPm&&(
@@ -2843,10 +2843,10 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                                 :snapProducts.filter(p=>p.time_of_day==="am").map(p=>(
                                   <div key={p.snapProdId} onClick={()=>{const prod=products.find(x=>x.id===p.id)||{id:p.id,name:p.name,brand:p.brand||"",category:p.category,image:p.image||"",media_url:p.media_url||""};setEditProd({...prod,_origName:prod.name,_origBrand:prod.brand||"",_origCategory:prod.category});setShowForm(true);setIsEditingProd(true);setViewOnlyForm(true);}}
                                     style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,padding:"5px 8px",background:"rgba(255,255,255,.75)",borderRadius:10,border:"1px solid #F0E8C0",cursor:"pointer",minWidth:0}}>
-                                    <div style={{width:22,height:22,borderRadius:5,overflow:"hidden",flexShrink:0,background:"#1E1C1A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".7rem"}}>
+                                    <div style={{width:22,height:22,borderRadius:5,overflow:"hidden",flexShrink:0,background:"rgba(71,102,90,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".7rem"}}>
                                       {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{catEmoji(p.category)}</span>}
                                     </div>
-                                    <span style={{flex:1,fontSize:".7rem",color:"#D4C8B8",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{p.name}</span>
+                                    <span style={{flex:1,fontSize:".7rem",color:"#1A2820",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{p.name}</span>
                                     <button onClick={e=>{e.stopPropagation();onUpdateSnapProductTimeOfDay(p.snapProdId,"all");}} style={{background:"none",border:"none",color:"#C8B060",cursor:"pointer",fontSize:".72rem",padding:"2px 4px",lineHeight:1,flexShrink:0}}>×</button>
                                   </div>
                                 ))
@@ -2867,7 +2867,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                                     <div style={{width:22,height:22,borderRadius:5,overflow:"hidden",flexShrink:0,background:"#e8e4f8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".7rem"}}>
                                       {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{catEmoji(p.category)}</span>}
                                     </div>
-                                    <span style={{flex:1,fontSize:".7rem",color:"#D4C8B8",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{p.name}</span>
+                                    <span style={{flex:1,fontSize:".7rem",color:"#1A2820",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{p.name}</span>
                                     <button onClick={e=>{e.stopPropagation();onUpdateSnapProductTimeOfDay(p.snapProdId,"all");}} style={{background:"none",border:"none",color:"#9888C8",cursor:"pointer",fontSize:".72rem",padding:"2px 4px",lineHeight:1,flexShrink:0}}>×</button>
                                   </div>
                                 ))
