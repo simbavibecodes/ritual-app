@@ -104,21 +104,30 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .cat-pill{flex:1;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);border-radius:24px;padding:9px 0;font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
 .cat-pill.active{background:#1E3428;border-color:#1E3428;color:#fff;box-shadow:0 4px 16px rgba(30,52,40,.4)}
 
-/* ── Log view filter pills ── */
-.log-filter-row{display:flex;gap:8px;padding:12px 18px 0}
-.log-fpill{flex:1;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:24px;padding:8px 0;font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
-.log-fpill.active{background:#1E3428;border-color:#1E3428;color:#fff;box-shadow:0 4px 16px rgba(30,52,40,.4)}
+/* ── Log view filter — text links ── */
+.log-filter-row{display:flex;gap:20px;padding:10px 18px 0;justify-content:center}
+.log-fpill{background:none;border:none;border-bottom:1.5px solid transparent;font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.38);cursor:pointer;padding:3px 0 4px;transition:all .18s;font-family:'DM Sans',sans-serif}
+.log-fpill.active{color:rgba(255,255,255,.92);border-bottom-color:rgba(255,255,255,.7)}
 
 /* ── Morning / Night section cards ── */
-.log-section{border-radius:18px;padding:14px 12px 10px;margin:0 14px 12px;position:relative;overflow:hidden}
-.log-section.morning{background:rgba(242,196,100,.18);border:1px solid rgba(242,196,100,.28)}
-.log-section.night{background:rgba(15,27,53,.45);border:1px solid rgba(15,27,53,.35)}
+.log-section{border-radius:18px;padding:12px 12px 10px;margin:0 14px 12px;position:relative;overflow:hidden}
+.log-section.morning{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.26)}
+.log-section.night{background:rgba(15,27,53,.52);border:1px solid rgba(15,27,53,.4)}
 .log-section.night::before{content:'';position:absolute;inset:0;background:radial-gradient(1px 1px at 12% 18%,rgba(255,255,255,.65),transparent),radial-gradient(1.5px 1.5px at 38% 12%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 68% 22%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 85% 38%,rgba(255,255,255,.45),transparent),radial-gradient(1.5px 1.5px at 22% 55%,rgba(255,255,255,.4),transparent),radial-gradient(1px 1px at 55% 65%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 78% 72%,rgba(255,255,255,.4),transparent),radial-gradient(1.5px 1.5px at 42% 82%,rgba(255,255,255,.35),transparent),radial-gradient(1px 1px at 90% 88%,rgba(255,255,255,.45),transparent);pointer-events:none}
-.log-section-title{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:600;margin-bottom:10px;letter-spacing:.04em;position:relative;z-index:1}
-.log-section.morning .log-section-title{color:#7A5200}
+.log-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;position:relative;z-index:1}
+.log-section-title{font-family:'Cormorant Garamond',serif;font-size:.95rem;font-weight:600;letter-spacing:.04em;display:flex;align-items:center;gap:6px}
+.log-section.morning .log-section-title{color:#5A3A00}
 .log-section.night .log-section-title{color:rgba(255,255,255,.85)}
+.log-section-actions{display:flex;align-items:center;gap:8px}
+.log-sec-complete-btn{background:none;border:1px solid rgba(0,0,0,.15);border-radius:12px;padding:3px 9px;font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;transition:all .15s;color:rgba(0,0,0,.38)}
+.log-section.morning .log-sec-complete-btn{color:rgba(80,50,0,.5);border-color:rgba(80,50,0,.18)}
+.log-section.night .log-sec-complete-btn{color:rgba(255,255,255,.45);border-color:rgba(255,255,255,.2)}
+.log-sec-edit-btn{background:none;border:none;cursor:pointer;padding:2px;display:flex;align-items:center;opacity:.4;transition:opacity .15s;color:inherit}
+.log-section.morning .log-sec-edit-btn{color:#5A3A00}
+.log-section.night .log-sec-edit-btn{color:rgba(255,255,255,.8)}
+.log-sec-edit-btn:active{opacity:.8}
 .log-section .pc-card{position:relative;z-index:1}
-.pc-cat-tag{position:absolute;bottom:8px;right:8px;font-size:.58rem;font-weight:600;letter-spacing:.06em;text-transform:lowercase;color:rgba(80,80,80,.5);background:rgba(0,0,0,.05);border-radius:10px;padding:2px 6px;pointer-events:none}
+.pc-cat-tag{display:inline-block;font-size:.58rem;font-weight:600;letter-spacing:.05em;text-transform:lowercase;color:rgba(80,80,80,.48);background:rgba(0,0,0,.05);border-radius:8px;padding:1px 5px;margin-top:2px;line-height:1.4}
 
 /* ── Week strip ── */
 .week-strip{display:flex;gap:3px;padding:18px 14px 0}
@@ -511,46 +520,78 @@ function PhotoNotes({ notes, photos, onNotesChange, onPhotosChange, hidePhotos }
   );
 }
 
-function ManageItemsModal({ type, items, onAdd, onRemove, onEdit, onClose }) {
-  const [label,    setLabel]    = useState("");
-  const [emoji,    setEmoji]    = useState("🌿");
-  const [time,     setTime]     = useState("both");
-  const [showPick, setShowPick] = useState(false);
-  const [editingId,setEditingId]= useState(null); // id of item being edited
-  const [editLabel,setEditLabel]= useState("");
-  const [editEmoji,setEditEmoji]= useState("🌿");
-  const [editTime, setEditTime] = useState("both");
-  const [showEditPick,setShowEditPick]=useState(false);
+function ManageItemsModal({ type, section, items, products, onAdd, onRemove, onEdit, onClose }) {
+  const [label,      setLabel]      = useState("");
+  const [emoji,      setEmoji]      = useState("🌿");
+  const [time,       setTime]       = useState(section==="morning"?"day":section==="night"?"night":"both");
+  const [productId,  setProductId]  = useState(null);
+  const [showPick,   setShowPick]   = useState(false);
+  const [showProdPick, setShowProdPick] = useState(false);
+  const [editingId,  setEditingId]  = useState(null);
+  const [editLabel,  setEditLabel]  = useState("");
+  const [editEmoji,  setEditEmoji]  = useState("🌿");
+  const [editTime,   setEditTime]   = useState("both");
+  const [editProdId, setEditProdId] = useState(null);
+  const [showEditPick, setShowEditPick] = useState(false);
+  const [showEditProdPick, setShowEditProdPick] = useState(false);
   const ref = useRef();
   useEffect(()=>{ setTimeout(()=>ref.current?.focus(),80); },[]);
 
+  const titleMap = { morning:"Edit morning routine", night:"Edit evening routine" };
+  const modalTitle = titleMap[section] || `Manage ${type==="skin"?"Skin":"Hair"} steps`;
+
   const doAdd = () => {
     if (!label.trim()) return;
-    onAdd({ id:uid(), label:label.trim(), emoji, time });
-    setLabel(""); setEmoji("🌿"); setTime("both"); setShowPick(false);
+    onAdd({ id:uid(), label:label.trim(), emoji, time, productId:productId||null });
+    setLabel(""); setEmoji("🌿"); setTime(section==="morning"?"day":section==="night"?"night":"both");
+    setProductId(null); setShowPick(false); setShowProdPick(false);
     ref.current?.focus();
   };
 
   const startEdit = (it) => {
-    setEditingId(it.id); setEditLabel(it.label); setEditEmoji(it.emoji); setEditTime(it.time||"both"); setShowEditPick(false);
+    setEditingId(it.id); setEditLabel(it.label); setEditEmoji(it.emoji||"🌿");
+    setEditTime(it.time||"both"); setEditProdId(it.productId||null);
+    setShowEditPick(false); setShowEditProdPick(false);
   };
   const saveEdit = () => {
     if (!editLabel.trim()) return;
-    onEdit(editingId, { label: editLabel.trim(), emoji: editEmoji, time: editTime });
-    setEditingId(null); setShowEditPick(false);
+    onEdit(editingId, { label:editLabel.trim(), emoji:editEmoji, time:editTime, productId:editProdId||null });
+    setEditingId(null); setShowEditPick(false); setShowEditProdPick(false);
   };
-  const cancelEdit = () => { setEditingId(null); setShowEditPick(false); };
+  const cancelEdit = () => { setEditingId(null); setShowEditPick(false); setShowEditProdPick(false); };
+
+  const ProductPicker = ({ value, onChange, show, onToggle }) => (
+    <div>
+      <button onClick={onToggle} style={{width:"100%",background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.14)",borderRadius:10,padding:"8px 12px",color:value?undefined:"rgba(255,255,255,.35)",fontSize:".76rem",cursor:"pointer",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span>{value ? (products||[]).find(p=>p.id===value)?.name||"Unknown product" : "Link to a product (optional)"}</span>
+        {value && <span onClick={e=>{e.stopPropagation();onChange(null);}} style={{fontSize:".9rem",opacity:.5,padding:"0 4px"}}>×</span>}
+      </button>
+      {show&&<div style={{maxHeight:160,overflowY:"auto",background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)",borderRadius:10,marginTop:4}}>
+        {!(products||[]).length&&<div style={{padding:"10px 12px",fontSize:".75rem",color:"rgba(255,255,255,.35)",textAlign:"center"}}>No products yet</div>}
+        {(products||[]).map(p=>(
+          <div key={p.id} onClick={()=>{onChange(p.id);onToggle();}}
+            style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",cursor:"pointer",borderBottom:"1px solid rgba(255,255,255,.06)",background:value===p.id?"rgba(255,255,255,.1)":undefined}}>
+            {p.image?<img src={p.image} alt={p.name} style={{width:28,height:28,borderRadius:6,objectFit:"cover",flexShrink:0}}/>:<div style={{width:28,height:28,borderRadius:6,background:"rgba(255,255,255,.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem",flexShrink:0}}>🧴</div>}
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:".75rem",color:"rgba(255,255,255,.85)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
+              {p.brand&&<div style={{fontSize:".62rem",color:"rgba(255,255,255,.4)"}}>{p.brand}</div>}
+            </div>
+          </div>
+        ))}
+      </div>}
+    </div>
+  );
 
   return (
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal">
         <div className="modal-top">
-          <div className="modal-title">Manage {type==="skin"?"Skin":"Hair"} Steps</div>
+          <div className="modal-title">{modalTitle}</div>
           <button className="modal-x" onClick={onClose}>×</button>
         </div>
 
-        <div className="modal-sub">Add a new step</div>
-        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
+        <div className="modal-sub">Add a step</div>
+        <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:18}}>
           <div className="row">
             <button className="epick-btn" onClick={()=>setShowPick(p=>!p)}>{emoji}</button>
             <input ref={ref} className="ifield" placeholder="e.g. Vitamin C Serum" value={label}
@@ -558,11 +599,12 @@ function ManageItemsModal({ type, items, onAdd, onRemove, onEdit, onClose }) {
             <button className="confirm-btn" onClick={doAdd} disabled={!label.trim()}>+ Add</button>
           </div>
           <div style={{display:"flex",gap:6}}>
-            {[["day","☀️ AM"],["night","🌙 PM"],["both","✦ Both"]].map(([v,l])=>(
+            {[["day","AM"],["night","PM"],["both","Both"]].map(([v,l])=>(
               <button key={v} className={`dow-chip ${time===v?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".74rem"}}
                 onClick={()=>setTime(v)}>{l}</button>
             ))}
           </div>
+          <ProductPicker value={productId} onChange={setProductId} show={showProdPick} onToggle={()=>setShowProdPick(p=>!p)}/>
           {showPick&&<div className="egrid">{EMOJI_OPTIONS.flat().map(em=>(
             <span key={em} className={`eopt ${emoji===em?"on":""}`}
               onClick={()=>{setEmoji(em);setShowPick(false)}}>{em}</span>
@@ -575,17 +617,20 @@ function ManageItemsModal({ type, items, onAdd, onRemove, onEdit, onClose }) {
         {items.map(it=>(
           <div key={it.id}>
             {editingId===it.id ? (
-              <div style={{background:"#1A1917",border:"1.5px solid #C8B8A0",borderRadius:12,padding:"10px 13px",marginBottom:8}}>
+              <div style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.14)",borderRadius:12,padding:"10px 13px",marginBottom:8}}>
                 <div className="row" style={{marginBottom:8}}>
                   <button className="epick-btn" onClick={()=>setShowEditPick(p=>!p)}>{editEmoji}</button>
                   <input className="ifield" value={editLabel} onChange={e=>setEditLabel(e.target.value)}
                     onKeyDown={e=>e.key==="Enter"&&saveEdit()} autoFocus/>
                 </div>
                 <div style={{display:"flex",gap:6,marginBottom:8}}>
-                  {[["day","☀️ AM"],["night","🌙 PM"],["both","✦ Both"]].map(([v,l])=>(
+                  {[["day","AM"],["night","PM"],["both","Both"]].map(([v,l])=>(
                     <button key={v} className={`dow-chip ${editTime===v?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".74rem"}}
                       onClick={()=>setEditTime(v)}>{l}</button>
                   ))}
+                </div>
+                <div style={{marginBottom:8}}>
+                  <ProductPicker value={editProdId} onChange={setEditProdId} show={showEditProdPick} onToggle={()=>setShowEditProdPick(p=>!p)}/>
                 </div>
                 {showEditPick&&<div className="egrid" style={{marginBottom:8}}>{EMOJI_OPTIONS.flat().map(em=>(
                   <span key={em} className={`eopt ${editEmoji===em?"on":""}`}
@@ -593,13 +638,16 @@ function ManageItemsModal({ type, items, onAdd, onRemove, onEdit, onClose }) {
                 ))}</div>}
                 <div style={{display:"flex",gap:8}}>
                   <button className="confirm-btn" onClick={saveEdit} disabled={!editLabel.trim()} style={{flex:1}}>Save</button>
-                  <button onClick={cancelEdit} style={{background:"none",border:"1.5px solid #252320",borderRadius:10,padding:"9px 16px",fontSize:".78rem",color:"#5A5248",cursor:"pointer",flex:1}}>Cancel</button>
+                  <button onClick={cancelEdit} style={{background:"none",border:"1px solid rgba(255,255,255,.14)",borderRadius:10,padding:"9px 16px",fontSize:".78rem",color:"rgba(255,255,255,.5)",cursor:"pointer",flex:1}}>Cancel</button>
                 </div>
               </div>
             ) : (
               <div className="m-item" style={{marginBottom:8}}>
-                <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-                <span className="m-item-lbl">{it.label}</span>
+                {it.productId&&(products||[]).find(p=>p.id===it.productId)?.image
+                  ? <img src={(products||[]).find(p=>p.id===it.productId).image} alt="" style={{width:28,height:28,borderRadius:6,objectFit:"cover",flexShrink:0}}/>
+                  : <span style={{fontSize:"1rem"}}>{it.emoji}</span>
+                }
+                <span className="m-item-lbl">{it.productId?(products||[]).find(p=>p.id===it.productId)?.name||it.label:it.label}</span>
                 <button className="ghost-btn" style={{fontSize:".7rem",padding:"3px 9px"}} onClick={()=>startEdit(it)}>Edit</button>
                 <button className="m-rem-btn" onClick={()=>onRemove(it.id)}>Remove</button>
               </div>
@@ -3973,6 +4021,7 @@ export default function App({ user }) {
   const [view,        setView]        = useState(() => sessionStorage.getItem('ritual_view') || "log");
   const [activeTab,   setActiveTab]   = useState("skin");
   const [logFilter,   setLogFilter]   = useState("all");
+  const [editSection, setEditSection] = useState("morning");
   const [activeDate,  setActiveDate]  = useState(today);
   const [entries,     setEntries]     = useState({});
   const [skinR,       setSkinR]       = useState(DEFAULT_SKIN);
@@ -4868,32 +4917,6 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                 <button className="dnb" onClick={()=>setActiveDate(shiftD(activeDate,1))} disabled={activeDate>=today}>›</button>
               </div>
             )}
-            {visibleReminders.map(s=>{ const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
-              const itemTab=skinR.find(r=>r.id===s.itemId)?"skin":"hair";
-              const isDone=getE(activeDate)[itemTab]?.includes(s.itemId);
-              return (
-                <div key={s.id} className={`reminder-banner ${isDone?"done":""}`}
-                  onClick={()=>{ if(!isDone) toggleItem(activeDate,itemTab,s.itemId); }}>
-                  <div className="rb-dot"/>
-                  <div className="rb-text">{isDone?"✓ ":""}{it.emoji} {it.label}{s.reminder&&!isDone?` · ${s.time}`:""}</div>
-                </div>
-              );
-            })}
-            {treatments.filter(t=>t.dates.includes(activeDate)).map(tx=>{
-              const isDone=tx.completedDates.includes(activeDate);
-              return (
-                <div key={tx.id} className={`treatment-banner ${isDone?"done":""}`}
-                  onClick={()=>completeTreatment(tx.id,activeDate)}>
-                  <div className="tb-dot"/>
-                  <div className="tb-text">{isDone?"✓ ":""}💉 {tx.name}{isDone?"":" · tap to complete"}</div>
-                </div>
-              );
-            })}
-
-            <div className="sec-head">
-              <div className="sec-title">Routine</div>
-              <button className="ghost-btn" onClick={()=>setModal("manageItems")}>Edit</button>
-            </div>
             {(()=>{
               const allRoutines = [
                 ...skinR.map(it=>({...it,_tab:"skin"})),
@@ -4901,39 +4924,111 @@ Respond ONLY with valid JSON (no markdown, no explanation):
               ];
               const filterFn = it => logFilter==="all" || it._tab===logFilter;
               const e2 = getE(activeDate);
+
+              const getLinkedProduct = (itemId) => products.find(p=>p.id===(
+                [...skinR,...hairR].find(r=>r.id===itemId)?.productId
+              ));
+
+              const completeSectionItems = (sectionItems) => {
+                const skinItems = sectionItems.filter(it=>it._tab==="skin");
+                const hairItems = sectionItems.filter(it=>it._tab==="hair");
+                const skinDone = e2.skin||[];
+                const hairDone = e2.hair||[];
+                const allDone = skinItems.every(it=>skinDone.includes(it.id)) && hairItems.every(it=>hairDone.includes(it.id));
+                if (allDone) {
+                  const updated = {...e2,
+                    skin: skinDone.filter(id=>!skinItems.find(it=>it.id===id)),
+                    hair: hairDone.filter(id=>!hairItems.find(it=>it.id===id))
+                  };
+                  setEntries(p=>({...p,[activeDate]:updated}));
+                  persistEntry(activeDate, updated);
+                } else {
+                  const updated = {...e2,
+                    skin:[...new Set([...skinDone,...skinItems.map(it=>it.id)])],
+                    hair:[...new Set([...hairDone,...hairItems.map(it=>it.id)])]
+                  };
+                  setEntries(p=>({...p,[activeDate]:updated}));
+                  persistEntry(activeDate, updated);
+                }
+              };
+
+              const SunIcon = () => (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <circle cx="12" cy="12" r="4"/>
+                  <line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/>
+                  <line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>
+                  <line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/>
+                  <line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/>
+                </svg>
+              );
+              const MoonIcon = () => (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+              );
+              const PencilIcon = () => (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              );
+
               const renderCard = (it) => {
                 const isDone = it._tab==="skin"?(e2.skin||[]).includes(it.id):(e2.hair||[]).includes(it.id);
+                const linkedProd = getLinkedProduct(it.id);
                 const {svg, bgClass} = getBottleSvg(it);
                 return (
                   <div key={it._tab+it.id} className={`pc-card ${isDone?"done":""}`}
                     onClick={()=>toggleItem(activeDate,it._tab,it.id)}>
-                    <div className={`pc-img ${bgClass}`}>{svg}</div>
+                    {linkedProd?.image
+                      ? <div className="pc-img" style={{background:"rgba(255,255,255,.15)",overflow:"hidden"}}>
+                          <img src={linkedProd.image} alt={linkedProd.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                        </div>
+                      : <div className={`pc-img ${bgClass}`}>{svg}</div>
+                    }
                     <div className="pc-info">
-                      <div className="pc-brand">{it.emoji}</div>
-                      <div className="pc-name">{it.label}</div>
+                      <div className="pc-brand" style={{fontSize:".62rem",opacity:.55,lineHeight:1.3}}>{linkedProd?.brand||it.emoji}</div>
+                      <div className="pc-name">{linkedProd?.name||it.label}</div>
+                      <div className="pc-cat-tag">{it._tab}</div>
                     </div>
                     <div className="pc-check">
                       {isDone&&<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1.5 4l2.5 2.5 5-5" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                     </div>
-                    <div className="pc-cat-tag">{it._tab}</div>
                   </div>
                 );
               };
+
               const morningItems = allRoutines.filter(it=>filterFn(it)&&((it.time||"both")==="day"||(it.time||"both")==="both"));
               const nightItems = allRoutines.filter(it=>filterFn(it)&&((it.time||"both")==="night"||(it.time||"both")==="both"));
               const hasAny = morningItems.length || nightItems.length;
-              if (!hasAny) return <div style={{padding:"20px 18px",color:"rgba(255,255,255,.45)",fontSize:".85rem",textAlign:"center"}}>No routine items yet · tap Edit to add some</div>;
+              if (!hasAny) return <div style={{padding:"20px 18px",color:"rgba(255,255,255,.45)",fontSize:".85rem",textAlign:"center"}}>No routine items · tap + to add</div>;
               return (
                 <>
                   {morningItems.length > 0 && (
                     <div className="log-section morning">
-                      <div className="log-section-title">☀️ Morning</div>
+                      <div className="log-section-head">
+                        <div className="log-section-title"><SunIcon/> Morning</div>
+                        <div className="log-section-actions">
+                          <button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(morningItems);}}>
+                            {morningItems.every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"Reset":"Complete"}
+                          </button>
+                          <button className="log-sec-edit-btn" onClick={e=>{e.stopPropagation();setEditSection("morning");setModal("manageItems");}}><PencilIcon/></button>
+                        </div>
+                      </div>
                       {morningItems.map(renderCard)}
                     </div>
                   )}
                   {nightItems.length > 0 && (
                     <div className="log-section night">
-                      <div className="log-section-title">🌙 Evening</div>
+                      <div className="log-section-head">
+                        <div className="log-section-title"><MoonIcon/> Evening</div>
+                        <div className="log-section-actions">
+                          <button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(nightItems);}}>
+                            {nightItems.every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"Reset":"Complete"}
+                          </button>
+                          <button className="log-sec-edit-btn" onClick={e=>{e.stopPropagation();setEditSection("night");setModal("manageItems");}}><PencilIcon/></button>
+                        </div>
+                      </div>
                       {nightItems.map(renderCard)}
                     </div>
                   )}
@@ -5317,7 +5412,19 @@ Respond ONLY with valid JSON (no markdown, no explanation):
       </div>
       )}
 
-      {modal==="manageItems"&&<ManageItemsModal type={activeTab} items={activeTab==="skin"?skinR:hairR} onAdd={item=>addItem(activeTab,item)} onRemove={id=>removeItem(activeTab,id)} onEdit={(id,changes)=>editItem(activeTab,id,changes)} onClose={()=>setModal(null)}/>}
+      {modal==="manageItems"&&<ManageItemsModal
+        type={activeTab}
+        section={editSection}
+        items={[...skinR.map(it=>({...it,_tab:"skin"})),...hairR.map(it=>({...it,_tab:"hair"}))].filter(it=>{
+          if(editSection==="morning") return (it.time||"both")==="day"||(it.time||"both")==="both";
+          if(editSection==="night") return (it.time||"both")==="night"||(it.time||"both")==="both";
+          return true;
+        })}
+        products={products}
+        onAdd={item=>addItem(item._tab||activeTab,item)}
+        onRemove={id=>{ const tab=skinR.find(r=>r.id===id)?"skin":"hair"; removeItem(tab,id); }}
+        onEdit={(id,changes)=>{ const tab=skinR.find(r=>r.id===id)?"skin":"hair"; editItem(tab,id,changes); }}
+        onClose={()=>setModal(null)}/>}
       {selectedPlan&&<PlanModal allItems={allItems} skinItems={skinR} hairItems={hairR} schedules={schedules} treatments={treatments}
         entries={entries} products={products} wishlist={wishlist} today={today}
         onSave={async s=>{ await saveSched(s); setSelectedPlan(null); }}
