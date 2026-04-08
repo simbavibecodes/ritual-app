@@ -105,7 +105,7 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .cat-pill.active{background:#1E3428;border-color:#1E3428;color:#fff;box-shadow:0 4px 16px rgba(30,52,40,.4)}
 
 /* ── Log view filter — text links ── */
-.log-filter-row{display:flex;gap:20px;padding:6px 18px 4px;justify-content:flex-start}
+.log-filter-row{display:flex;gap:20px;padding:18px 18px 4px;justify-content:flex-start}
 .log-fpill{background:none;border:none;border-bottom:1.5px solid transparent;font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.38);cursor:pointer;padding:3px 0 4px;transition:all .18s;font-family:'DM Sans',sans-serif}
 .log-fpill.active{color:rgba(255,255,255,.92);border-bottom-color:rgba(255,255,255,.7)}
 
