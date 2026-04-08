@@ -76,226 +76,360 @@ function dateRange(start, end) {
 const STYLES = `
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:#fdf6f0;min-height:100vh;color:#3a2e27}
-.app{max-width:680px;margin:0 auto;padding:0 16px max(100px,calc(68px + env(safe-area-inset-bottom)))}
-.header{text-align:center;padding:calc(36px + env(safe-area-inset-top)) 0 28px;border-bottom:1px solid #e8d8cc;margin-bottom:24px}
-.header-title{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:300;letter-spacing:.04em;color:#3a2e27;line-height:1.1}
-.header-title span{font-style:italic;color:#b07a5e}
-.header-sub{font-size:.78rem;letter-spacing:.15em;text-transform:uppercase;color:#a08070;margin-top:7px}
-.top-tabs{display:flex;gap:0;margin-bottom:24px;background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:30px;padding:4px}
-.top-tab{flex:1;background:none;border:none;border-radius:26px;padding:9px 4px;font-family:'DM Sans',sans-serif;font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;color:#a08070;cursor:pointer;transition:all .2s;white-space:nowrap;text-align:center}
-.top-tab.active{background:#b07a5e;color:#fff;box-shadow:0 1px 6px rgba(176,122,94,.3)}
-.top-tab:hover:not(.active){color:#7a5c48}
-.sub-tabs{display:flex;gap:8px;margin-bottom:20px}
-.sub-tab{flex:1;background:none;border:1.5px solid #e8d8cc;border-radius:30px;padding:8px 0;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:#a08070;cursor:pointer;transition:all .2s}
-.sub-tab.active{background:#7a9e7a;border-color:#7a9e7a;color:#fff}
-.sub-tab:hover:not(.active){background:#f0f5f0}
-.date-nav{display:flex;align-items:center;justify-content:space-between;background:#fff8f3;border:1px solid #e8d8cc;border-radius:14px;padding:13px 16px;margin-bottom:20px}
-.dnb{background:none;border:none;cursor:pointer;font-size:1.2rem;color:#b07a5e;padding:4px 10px;border-radius:8px;transition:background .15s;line-height:1}
-.dnb:hover{background:#f0e0d4}
-.dnb:disabled{opacity:.3;cursor:default}
-.date-label{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:400;color:#3a2e27;text-align:center}
-.date-label.is-today{color:#b07a5e;font-style:italic}
-.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.sec-title{font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:300;font-style:italic;color:#7a5c48}
-.ghost-btn{background:none;border:1.5px solid #e8d8cc;border-radius:20px;padding:5px 13px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:#a08070;cursor:pointer;transition:all .18s}
-.ghost-btn:hover{background:#f7ece4;border-color:#c89a7e;color:#7a5c48}
-.routine-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:24px}
-.r-item{display:flex;align-items:center;gap:9px;background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:12px;padding:11px 13px;cursor:pointer;transition:all .28s;user-select:none;overflow:hidden}
-.r-item:hover:not(.on){border-color:#c89a7e;background:#fef2ea}
-.r-item.on{background:#eef4ee;border-color:#6a9e6a;padding:7px 12px;border-radius:20px;gap:6px;opacity:.78}
-.r-emoji{font-size:1rem;flex-shrink:0;transition:all .28s}
-.r-item.on .r-emoji{font-size:.78rem;opacity:.6}
-.r-label{font-size:.8rem;color:#8a6858;flex:1;line-height:1.3;transition:all .28s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.r-item.on .r-label{font-size:.72rem;color:#3a5a3a;text-decoration:line-through;text-decoration-color:#3a5a3a;text-decoration-thickness:1.5px}
-.r-check{width:17px;height:17px;border-radius:50%;border:1.5px solid #d0b0a0;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .28s}
-.r-item.on .r-check{width:15px;height:15px;background:#2d4a2d;border-color:#2d4a2d}
+body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
+  background:
+    radial-gradient(ellipse at 22% 10%, rgba(175,200,158,.55) 0%, transparent 48%),
+    radial-gradient(ellipse at 80% 90%, rgba(55,85,70,.5) 0%, transparent 50%),
+    linear-gradient(162deg,#A6BA96 0%,#84A076 22%,#6C9272 50%,#577A68 78%,#47665A 100%);
+  background-attachment:fixed}
+.app{max-width:680px;margin:0 auto;padding:0 0 max(88px,calc(72px + env(safe-area-inset-bottom)))}
+
+/* ── Header (non-log views) ── */
+.header{text-align:center;padding:calc(32px + env(safe-area-inset-top)) 16px 24px;margin-bottom:20px;position:relative}
+.header-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;letter-spacing:.04em;color:#fff;line-height:1.1}
+.header-title span{font-style:italic;color:rgba(255,255,255,.75)}
+.header-sub{font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-top:6px}
+
+/* ── Luxury greeting header (log view) ── */
+.lux-hdr{display:flex;justify-content:space-between;align-items:flex-start;padding:calc(20px + env(safe-area-inset-top)) 18px 0}
+.lux-hdr-avatar{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.lux-hdr-mid{flex:1;padding:0 12px}
+.lux-greeting{font-size:12px;color:rgba(255,255,255,.65);font-weight:400;margin-bottom:1px}
+.lux-name{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:400;font-style:italic;color:#fff;letter-spacing:-.01em;line-height:1.1}
+.lux-tagline{font-size:11px;color:rgba(255,255,255,.55);margin-top:3px;font-weight:300}
+.lux-hdr-bell{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+
+/* ── Skin / Hair pill selector ── */
+.cat-pills{display:flex;gap:8px;padding:14px 18px 0}
+.cat-pill{flex:1;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);border-radius:24px;padding:9px 0;font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.cat-pill.active{background:#1E3428;border-color:#1E3428;color:#fff;box-shadow:0 4px 16px rgba(30,52,40,.4)}
+
+/* ── Log view filter — text links ── */
+.log-filter-row{display:flex;gap:20px;padding:6px 18px 4px;justify-content:flex-start}
+.log-fpill{background:none;border:none;border-bottom:1.5px solid transparent;font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.38);cursor:pointer;padding:3px 0 4px;transition:all .18s;font-family:'DM Sans',sans-serif}
+.log-fpill.active{color:rgba(255,255,255,.92);border-bottom-color:rgba(255,255,255,.7)}
+
+/* ── Morning / Night section cards ── */
+.log-section{border-radius:18px;padding:12px 12px 10px;margin:14px 14px 12px;position:relative;overflow:hidden}
+.log-section.morning{background:rgba(238,248,242,.88);border:1px solid rgba(200,235,215,.7)}
+.log-section.night{background:rgba(15,27,53,.52);border:1px solid rgba(15,27,53,.4)}
+.log-section.night::before{content:'';position:absolute;inset:0;background:radial-gradient(1.5px 1.5px at 10% 12%,rgba(255,255,255,.9),transparent),radial-gradient(2px 2px at 32% 8%,rgba(255,255,255,.8),transparent),radial-gradient(1.5px 1.5px at 65% 14%,rgba(255,255,255,.85),transparent),radial-gradient(1px 1px at 82% 22%,rgba(255,255,255,.65),transparent),radial-gradient(2px 2px at 20% 38%,rgba(255,255,255,.6),transparent),radial-gradient(1px 1px at 50% 32%,rgba(255,255,255,.7),transparent),radial-gradient(1.5px 1.5px at 75% 50%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 40% 62%,rgba(255,255,255,.5),transparent),radial-gradient(2px 2px at 88% 68%,rgba(255,255,255,.65),transparent),radial-gradient(1px 1px at 25% 78%,rgba(255,255,255,.55),transparent),radial-gradient(1.5px 1.5px at 60% 82%,rgba(255,255,255,.45),transparent),radial-gradient(1px 1px at 6% 55%,rgba(255,255,255,.6),transparent),radial-gradient(2px 2px at 95% 42%,rgba(255,255,255,.5),transparent);pointer-events:none}
+.log-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;position:relative;z-index:1}
+.log-section-title{font-family:'Cormorant Garamond',serif;font-size:.95rem;font-weight:600;letter-spacing:.04em;display:flex;align-items:center;gap:6px}
+.log-section.morning .log-section-title{color:rgba(30,52,40,.82)}
+.log-section.night .log-section-title{color:rgba(255,255,255,.88)}
+.log-section-actions{display:flex;align-items:center;gap:8px}
+.log-sec-complete-btn{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.32);border-radius:12px;padding:4px 11px;font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .15s;color:rgba(255,255,255,.9)}
+.log-section.morning .log-sec-complete-btn{background:rgba(30,52,40,.08);border-color:rgba(30,52,40,.2);color:rgba(30,52,40,.78)}
+.log-sec-edit-btn{background:none;border:none;cursor:pointer;padding:2px;display:flex;align-items:center;opacity:.6;transition:opacity .15s;color:rgba(255,255,255,.85)}
+.log-section.morning .log-sec-edit-btn{color:rgba(30,52,40,.58)}
+.log-sec-edit-btn:active{opacity:.8}
+.log-section .pc-card{position:relative;z-index:1}
+.pc-cat-tag{display:inline-block;font-size:.58rem;font-weight:600;letter-spacing:.05em;text-transform:lowercase;color:rgba(80,80,80,.48);background:rgba(0,0,0,.05);border-radius:8px;padding:1px 5px;margin-top:2px;line-height:1.4}
+
+/* ── Week strip ── */
+.week-strip{display:flex;gap:2px;padding:18px 14px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.week-strip::-webkit-scrollbar{display:none}
+.wday{flex-shrink:0;width:46px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;position:relative}
+.wday-lbl{font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);font-weight:600}
+.wday-lbl.active-lbl{color:rgba(255,255,255,.95);font-weight:700}
+.wday-ring{position:relative;display:flex;align-items:center;justify-content:center}
+.wday-heart{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);font-size:7px;color:rgba(255,255,255,.75);line-height:1}
+.wday-today-dot{position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.55)}
+
+/* ── Progress banner ── */
+.lux-progress{margin:14px 14px 0;background:#1E3428;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:15px 18px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 8px 32px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.05)}
+.lp-left{}
+.lp-title{font-size:13px;font-weight:500;color:#fff;margin-bottom:1px}
+.lp-sub{font-size:11px;color:rgba(194,217,204,.7)}
+.lp-track{height:3px;background:rgba(255,255,255,.1);border-radius:2px;margin-top:9px;width:130px;overflow:hidden}
+.lp-fill{height:100%;background:#7EC49A;border-radius:2px;transition:width .4s ease}
+.lp-right{text-align:right}
+.lp-num{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:400;color:#fff;line-height:1.15;letter-spacing:-.02em}
+.lp-total{font-size:10px;color:rgba(194,217,204,.6);margin-top:1px}
+
+/* ── Section label ── */
+.sec-label{display:flex;align-items:center;gap:10px;padding:20px 18px 8px}
+.sec-tag{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.5);white-space:nowrap;font-weight:600}
+.sec-line{flex:1;height:1px;background:rgba(255,255,255,.12)}
+
+/* ── Product card ── */
+.pc-card{display:flex;align-items:center;gap:12px;margin:0 14px 8px;padding:11px 13px;background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:18px;cursor:pointer;transition:all .22s;user-select:none;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.pc-card:active{transform:scale(.98)}
+.pc-card.done{background:rgba(200,225,210,.75);border-color:rgba(160,205,180,.7)}
+.pc-card.done .pc-name{text-decoration:line-through;text-decoration-color:rgba(40,90,60,.35);color:rgba(80,130,100,.75)}
+.log-section.morning .pc-card.done{background:rgba(155,205,175,.45);border-color:rgba(120,180,150,.5)}
+.log-section.morning .pc-card.done .pc-name{color:rgba(40,90,60,.55);text-decoration-color:rgba(40,90,60,.4)}
+.pc-img{width:48px;height:48px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.placeholder-svg{width:32px;height:32px;opacity:.55}
+.pc-img.g{background:#D8EBE0}
+.pc-img.br{background:#F2EAE2}
+.pc-img.bl{background:#DCE9F2}
+.pc-info{flex:1;min-width:0}
+.pc-brand{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#9AB0A4;margin-bottom:2px;font-weight:500}
+.pc-name{font-size:13px;font-weight:400;color:#1A2820;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all .22s}
+.pc-time{display:inline-block;margin-top:3px;font-size:8px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:#3D6B52;background:#D8EBE0;padding:2px 7px;border-radius:20px}
+.pc-time.eve{color:#4A7A9B;background:#DCE9F2}
+.pc-time.br-tag{color:#7A5840;background:#F2EAE2}
+.pc-check{width:24px;height:24px;border-radius:50%;border:1.5px solid #DDE8E2;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .22s;background:rgba(255,255,255,.6)}
+.pc-card.done .pc-check{background:#243D30;border-color:#243D30}
+
+/* ── Mood ── */
+.mood-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:0;padding:0 14px}
+.mood-chip{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.24);border-radius:20px;padding:6px 14px;font-size:.76rem;cursor:pointer;transition:all .18s;color:rgba(255,255,255,.75);font-family:'DM Sans',sans-serif}
+.mood-chip.on{background:#1E3428;border-color:#1E3428;color:#fff}
+.mood-chip:hover:not(.on){background:rgba(255,255,255,.22)}
+
+/* ── Notes ── */
+.notes-wrap{margin-bottom:0;padding:0 14px}
+.notes-area{width:100%;min-height:72px;background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.9);border-radius:14px;padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:.86rem;color:#1A2820;resize:vertical;outline:none;transition:border .18s;line-height:1.6}
+.notes-area:focus{border-color:rgba(255,255,255,1)}
+.notes-area::placeholder{color:#9AB0A4;font-style:italic}
+.notes-toolbar{display:none}
+
+/* ── Save ── */
+.save-btn{width:calc(100% - 28px);margin:14px 14px 0;display:block;background:#243D30;color:#fff;border:none;border-radius:18px;padding:17px;font-family:'DM Sans',sans-serif;font-size:.76rem;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:background .2s;box-shadow:0 8px 28px rgba(36,61,48,.32)}
+.save-btn:hover{background:#3D6B52}
+.save-btn:disabled{opacity:.35;cursor:not-allowed}
+
+/* ── Bottom nav ── */
+.bottom-nav{position:fixed;bottom:0;left:max(0px,calc(50% - 340px));right:max(0px,calc(50% - 340px));z-index:100;display:flex;justify-content:space-around;align-items:center;padding:10px 0 max(20px,calc(10px + env(safe-area-inset-bottom)));background:rgba(50,75,58,.5);backdrop-filter:blur(28px) saturate(1.4);border-top:1px solid rgba(255,255,255,.14)}
+.bnav{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;background:none;border:none;padding:4px 18px}
+.bnav-icon{font-size:18px;color:rgba(255,255,255,.38);transition:color .15s;line-height:1}
+.bnav.active .bnav-icon{color:#fff}
+.bnav-dot{width:3px;height:3px;border-radius:50%;background:#fff;opacity:0;transition:opacity .15s}
+.bnav.active .bnav-dot{opacity:.8}
+.bnav-lbl{font-size:8px;letter-spacing:.05em;color:rgba(255,255,255,.38);font-family:'DM Sans',sans-serif;transition:color .15s}
+.bnav.active .bnav-lbl{color:rgba(255,255,255,.9)}
+
+/* ── top-tabs (hidden — replaced by bottom nav) ── */
+.top-tabs{display:none}
+
+/* ── Date nav (log view, non-today) ── */
+.date-nav{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:11px 16px;margin:14px 14px 0;backdrop-filter:blur(8px)}
+.dnb{background:none;border:none;cursor:pointer;font-size:1.2rem;color:rgba(255,255,255,.8);padding:4px 10px;line-height:1}
+.dnb:disabled{opacity:.2;cursor:default}
+.date-label{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:400;color:#fff;text-align:center}
+.date-label.is-today{font-style:italic}
+
+/* ── Sub-tabs (skin/hair inside non-today date nav) ── */
+.sub-tabs{display:flex;gap:8px;margin:10px 14px 0}
+.sub-tab{flex:1;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);border-radius:24px;padding:8px 0;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.sub-tab.active{background:#1E3428;border-color:#1E3428;color:#fff}
+
+/* ── Section head (edit button row) ── */
+.sec-head{display:flex;align-items:center;justify-content:space-between;padding:4px 18px 0}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:300;font-style:italic;color:rgba(255,255,255,.7)}
+.ghost-btn{background:none;border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:5px 13px;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.55);cursor:pointer;transition:all .18s}
+.ghost-btn:hover{border-color:rgba(255,255,255,.5);color:#fff}
+
+/* ── Old routine grid (kept for compatibility) ── */
+.routine-grid{display:flex;flex-direction:column;gap:8px;margin:0 14px 0}
+.r-item{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.9);border-radius:14px;padding:11px 13px;cursor:pointer;transition:all .22s;user-select:none}
+.r-item:hover:not(.on){background:rgba(255,255,255,.96)}
+.r-item.on{background:rgba(220,235,224,.8);border-color:rgba(194,217,204,.8);opacity:.75}
+.r-emoji{font-size:1rem;flex-shrink:0}
+.r-label{font-size:.82rem;color:#1A2820;flex:1;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-item.on .r-label{color:#8AA290;text-decoration:line-through;text-decoration-color:rgba(61,107,82,.4)}
+.r-check{width:20px;height:20px;border-radius:50%;border:1.5px solid #DDE8E2;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .22s;background:rgba(255,255,255,.6)}
+.r-item.on .r-check{background:#243D30;border-color:#243D30}
 .r-check svg{display:none}
 .r-item.on .r-check svg{display:block}
-.add-card{background:#fff8f3;border:1.5px dashed #d0b8aa;border-radius:12px;padding:11px 13px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;transition:all .18s;color:#b07a5e;font-size:.8rem}
-.add-card:hover{background:#fef2ea;border-color:#b07a5e}
-.mood-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:24px}
-.mood-chip{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:30px;padding:6px 13px;font-size:.78rem;cursor:pointer;transition:all .18s;color:#8a6858}
-.mood-chip.on{background:#f7e8de;border-color:#b07a5e;color:#3a2e27;font-weight:500}
-.mood-chip:hover:not(.on){background:#fef2ea;border-color:#c89a7e}
-.notes-wrap{margin-bottom:24px}
-.notes-area{width:100%;min-height:80px;background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:12px 12px 0 0;padding:13px;font-family:'DM Sans',sans-serif;font-size:.86rem;color:#3a2e27;resize:vertical;outline:none;transition:border .18s;line-height:1.6;border-bottom:none}
-.notes-area:focus{border-color:#b07a5e}
-.notes-area::placeholder{color:#c0a898;font-style:italic}
-.notes-toolbar{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:0 0 12px 12px;border-top:1px solid #f0e0d4;padding:8px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.photo-upload-btn{display:flex;align-items:center;gap:6px;background:none;border:1px solid #e8d8cc;border-radius:16px;padding:5px 12px;font-size:.74rem;color:#a08070;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
-.photo-upload-btn:hover{background:#f0e0d4;border-color:#c89a7e;color:#7a5c48}
-.photo-input{display:none}
-.photo-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.photo-thumb{position:relative;width:72px;height:72px;border-radius:10px;overflow:hidden;border:1.5px solid #e8d8cc;flex-shrink:0}
-.photo-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.photo-remove{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(58,46,39,.75);border:none;color:#fff;font-size:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
-.photo-full{width:100%;border-radius:12px;overflow:hidden;margin-bottom:10px;border:1.5px solid #e8d8cc}
-.photo-full img{width:100%;display:block;max-height:280px;object-fit:cover}
-.prog-wrap{background:#eedad2;border-radius:10px;height:5px;overflow:hidden}
-.prog-bar{height:100%;background:#b07a5e;border-radius:10px;transition:width .3s ease}
-.save-btn{width:100%;background:#b07a5e;color:#fff;border:none;border-radius:12px;padding:14px;font-family:'DM Sans',sans-serif;font-size:.83rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:background .2s;margin-top:4px}
-.save-btn:hover{background:#9a6248}
-.save-btn:disabled{opacity:.4;cursor:not-allowed}
-.cal-wrap{background:#fff8f3;border:1px solid #e8d8cc;border-radius:16px;overflow:hidden;margin-bottom:16px}
-.cal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #eedad2}
-.cal-month{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:400;color:#3a2e27}
-.cal-nav{background:none;border:none;cursor:pointer;font-size:1.1rem;color:#b07a5e;padding:4px 10px;border-radius:8px;transition:background .15s;line-height:1}
-.cal-nav:hover{background:#f0e0d4}
+.add-card{background:rgba(255,255,255,.14);border:1px dashed rgba(255,255,255,.3);border-radius:14px;padding:11px 13px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;transition:all .18s;color:rgba(255,255,255,.55);font-size:.8rem;margin:0 14px}
+.add-card:hover{background:rgba(255,255,255,.2);color:rgba(255,255,255,.85)}
+
+/* ── Progress wrap (old) ── */
+.prog-wrap{background:rgba(255,255,255,.15);border-radius:2px;height:2px;overflow:hidden}
+.prog-bar{height:100%;background:#7EC49A;border-radius:2px;transition:width .3s ease}
+
+/* ── Calendar ── */
+.cal-wrap{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:16px;overflow:hidden;margin:0 14px 16px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.cal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #EEF4F0}
+.cal-month{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:400;color:#1A2820}
+.cal-nav{background:none;border:none;cursor:pointer;font-size:1.1rem;color:#243D30;padding:4px 10px;line-height:1}
 .cal-dow{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;padding:8px 10px 4px}
-.cal-dow-cell{font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:#b09080;font-weight:500}
+.cal-dow-cell{font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:#9AB0A4;font-weight:600}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:4px 10px 12px;gap:2px}
-.cal-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:.82rem;cursor:pointer;transition:all .12s;position:relative;color:#3a2e27}
-.cal-cell:hover:not(.empty){background:#f0e0d4}
+.cal-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:.82rem;cursor:pointer;transition:all .12s;position:relative;color:#1A2820}
+.cal-cell:hover:not(.empty){background:#EBF2EC}
 .cal-cell.empty{cursor:default}
 .cal-cell.has-entry{font-weight:600}
-.cal-cell.today-cell{color:#b07a5e;font-weight:600}
-.cal-cell.selected-cell{background:#b07a5e !important;color:#fff !important}
-.cal-cell.range-mode-cell{background:#b07a5e !important;color:#fff !important;box-shadow:0 0 0 2px #fff,0 0 0 4px #b07a5e;border-radius:50%}
-.cal-cell.future-cell{color:#c8b0a0}
-.cal-cell.in-range{background:#f7e8de;border-radius:0}
-.cal-cell.range-start{background:#b07a5e !important;color:#fff !important;border-radius:50% 0 0 50%}
-.cal-cell.range-end{background:#b07a5e !important;color:#fff !important;border-radius:0 50% 50% 0}
+.cal-cell.today-cell{color:#243D30;font-weight:600}
+.cal-cell.selected-cell{background:#243D30 !important;color:#fff !important;border-radius:50%}
+.cal-cell.range-mode-cell{background:#243D30 !important;color:#fff !important;border-radius:50%}
+.cal-cell.future-cell{color:#B0C4B8}
+.cal-cell.in-range{background:#E8F2EC;border-radius:0}
+.cal-cell.range-start{background:#243D30 !important;color:#fff !important;border-radius:50% 0 0 50%}
+.cal-cell.range-end{background:#243D30 !important;color:#fff !important;border-radius:0 50% 50% 0}
 .cal-cell.range-start.range-end{border-radius:50%}
-.cal-dot{width:4px;height:4px;border-radius:50%;background:#b07a5e;position:absolute;bottom:3px}
+.cal-dot{width:3px;height:3px;border-radius:50%;background:#243D30;position:absolute;bottom:3px}
 .cal-cell.selected-cell .cal-dot,.cal-cell.range-start .cal-dot,.cal-cell.range-end .cal-dot{background:#fff}
-.range-toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#fff8f3;border:1px solid #e8d8cc;border-radius:12px;margin-bottom:14px}
-.range-toggle-lbl{font-size:.8rem;color:#7a5c48;font-weight:500}
-.range-hint{font-size:.71rem;color:#a08070;margin-top:2px}
-.day-panel{background:#fff8f3;border:1px solid #e8d8cc;border-radius:16px;padding:18px;margin-bottom:24px}
+.range-toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.9);border-radius:12px;margin:0 14px 14px}
+.range-toggle-lbl{font-size:.8rem;color:#1A2820}
+.range-hint{font-size:.71rem;color:#9AB0A4;margin-top:2px}
+.day-panel{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:16px;padding:18px;margin:0 14px 16px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
 .day-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px}
-.day-panel-date{font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:#3a2e27;font-style:italic;flex:1}
-.day-edit-btn{background:#b07a5e;color:#fff;border:none;border-radius:20px;padding:6px 14px;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .18s;white-space:nowrap}
-.day-edit-btn:hover{background:#9a6248}
+.day-panel-date{font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:#1A2820;font-style:italic;flex:1}
+.day-edit-btn{background:#243D30;color:#fff;border:none;border-radius:10px;padding:6px 14px;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:background .18s;white-space:nowrap}
+.day-edit-btn:hover{background:#3D6B52}
 .dp-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-.dp-pill{background:#f7e8de;border-radius:20px;padding:4px 10px;font-size:.74rem;color:#7a5c48}
-.dp-pill.h{background:#e8f0e8;color:#4a6848}
-.dp-note{font-size:.82rem;color:#6a5848;font-style:italic;line-height:1.5;margin-top:6px}
-.dp-mood{font-size:.76rem;color:#a08070;margin-top:5px}
-.dp-empty{font-size:.86rem;color:#b09080;font-style:italic;text-align:center;padding:12px 0}
-.dp-scheduled{font-size:.78rem;color:#7a9e7a;font-weight:500;margin-bottom:8px}
-.freq-card{background:#fff8f3;border:1px solid #e8d8cc;border-radius:14px;padding:16px;margin-bottom:10px}
+.dp-pill{background:#D8EBE0;border-radius:20px;padding:4px 10px;font-size:.74rem;color:#3D6B52}
+.dp-pill.h{background:#F2EAE2;color:#7A5840}
+.dp-note{font-size:.82rem;color:#5A7060;font-style:italic;line-height:1.5;margin-top:6px}
+.dp-mood{font-size:.76rem;color:#9AB0A4;margin-top:5px}
+.dp-empty{font-size:.86rem;color:#9AB0A4;font-style:italic;text-align:center;padding:12px 0}
+.dp-scheduled{font-size:.78rem;color:#3D6B52;font-weight:400;margin-bottom:8px}
+
+/* ── Frequency / stats ── */
+.freq-card{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:14px;padding:16px;margin:0 14px 10px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
 .freq-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .freq-emoji{font-size:1.2rem}
-.freq-label{flex:1;font-size:.9rem;color:#3a2e27;font-weight:500}
-.freq-count{font-size:.78rem;color:#b07a5e;font-weight:500;white-space:nowrap}
-.freq-bar-bg{background:#eedad2;border-radius:8px;height:7px;overflow:hidden}
-.freq-bar-fill{height:100%;background:linear-gradient(90deg,#c89a7e,#b07a5e);border-radius:8px;transition:width .4s ease}
-.freq-sub{font-size:.72rem;color:#a08070;margin-top:5px}
-.period-row{display:flex;gap:8px;margin-bottom:18px}
-.period-chip{flex:1;background:none;border:1.5px solid #e8d8cc;border-radius:20px;padding:7px 0;font-size:.76rem;text-align:center;color:#a08070;cursor:pointer;transition:all .15s}
-.period-chip.on{background:#b07a5e;border-color:#b07a5e;color:#fff}
-.sched-card{background:linear-gradient(135deg,#f7ece4 0%,#fdf0e8 100%);border:1.5px solid #d4a888;border-radius:14px;padding:14px;margin-bottom:10px}
-.sched-card.treatment-card{background:linear-gradient(135deg,#fde8e0 0%,#fdf4f0 100%);border-color:#e8a898}
+.freq-label{flex:1;font-size:.9rem;color:#1A2820;font-weight:400}
+.freq-count{font-size:.78rem;color:#243D30;font-weight:500;white-space:nowrap}
+.freq-bar-bg{background:#E8F2EC;border-radius:2px;height:3px;overflow:hidden}
+.freq-bar-fill{height:100%;background:#243D30;border-radius:2px;transition:width .4s ease}
+.freq-sub{font-size:.72rem;color:#9AB0A4;margin-top:5px}
+.period-row{display:flex;gap:8px;margin:0 14px 18px}
+.period-chip{flex:1;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.7);border-radius:20px;padding:7px 0;font-size:.72rem;text-align:center;color:rgba(255,255,255,.65);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.period-chip.on{background:#243D30;border-color:#243D30;color:#fff}
+
+/* ── Plans / schedule cards ── */
+.sched-card{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:14px;padding:14px;margin:0 14px 10px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.sched-card.treatment-card{border-color:#F2EAE2}
 .sched-top{display:flex;align-items:center;gap:10px}
-.sched-label{flex:1;font-size:.84rem;color:#5a3a27;font-weight:500}
-.sched-reminder{font-size:.7rem;color:#9a7a5a;margin-top:3px;padding-left:28px}
-.add-sched-btn{width:100%;background:none;border:1.5px dashed #d0b8aa;border-radius:12px;padding:12px;font-size:.82rem;color:#b07a5e;cursor:pointer;transition:all .18s;margin-top:4px;font-family:'DM Sans',sans-serif}
-.add-sched-btn:hover{background:#fef2ea;border-color:#b07a5e}
-.treatment-banner{background:#fde8e0;border:1.5px solid #e8a898;border-radius:12px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .25s}
-.treatment-banner:hover{background:#fad8cc}
-.treatment-banner.done{background:#eef4ee;border-color:#6a9e6a;opacity:.75}
-.treatment-banner.done .tb-text{color:#2d4a2d;text-decoration:line-through;text-decoration-color:#2d4a2d}
-.tb-text{flex:1;font-size:.82rem;color:#c05040;font-weight:500;line-height:1.4}
-.tb-dot{width:8px;height:8px;border-radius:50%;background:#e06050;flex-shrink:0;transition:background .25s}
-.treatment-banner.done .tb-dot{background:#2d4a2d}
-.overlay{position:fixed;inset:0;background:rgba(58,46,39,.42);display:flex;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(2px);padding:16px}
-.modal{background:#fdf6f0;border-radius:24px;padding:26px 22px 36px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto}
+.sched-label{flex:1;font-size:.84rem;color:#1A2820}
+.sched-reminder{font-size:.7rem;color:#9AB0A4;margin-top:3px;padding-left:28px}
+.add-sched-btn{width:calc(100% - 28px);margin:0 14px;background:none;border:1px dashed rgba(255,255,255,.35);border-radius:14px;padding:12px;font-size:.8rem;color:rgba(255,255,255,.55);cursor:pointer;transition:all .18s;font-family:'DM Sans',sans-serif}
+.add-sched-btn:hover{border-color:rgba(255,255,255,.55);color:rgba(255,255,255,.85)}
+.treatment-banner{background:rgba(242,234,226,.9);border:1px solid #F2EAE2;border-radius:14px;padding:10px 14px;margin:0 14px 10px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .25s}
+.treatment-banner:hover{background:rgba(242,234,226,1)}
+.treatment-banner.done{background:rgba(220,235,224,.8);border-color:rgba(194,217,204,.8);opacity:.75}
+.treatment-banner.done .tb-text{color:#8AA290;text-decoration:line-through;text-decoration-color:rgba(61,107,82,.4)}
+.tb-text{flex:1;font-size:.82rem;color:#7A5840;line-height:1.4}
+.tb-dot{width:6px;height:6px;border-radius:50%;background:#7A5840;flex-shrink:0;transition:background .25s}
+.treatment-banner.done .tb-dot{background:#5A7060}
+.reminder-banner{background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.9);border-radius:14px;padding:10px 14px;margin:0 14px 8px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .25s}
+.reminder-banner.done{background:rgba(220,235,224,.75);border-color:rgba(194,217,204,.7);opacity:.75}
+.rb-text{flex:1;font-size:.82rem;color:#1A2820;line-height:1.5}
+.reminder-banner.done .rb-text{color:#8AA290;text-decoration:line-through;text-decoration-color:rgba(61,107,82,.4)}
+.rb-dot{width:6px;height:6px;border-radius:50%;background:#243D30;flex-shrink:0}
+.reminder-banner.done .rb-dot{background:#8AA290}
+
+/* ── Overlay / modal ── */
+.overlay{position:fixed;inset:0;background:rgba(20,34,26,.75);display:flex;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(10px);padding:16px}
+.modal{background:#fff;border-radius:20px;padding:26px 22px 36px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.24)}
 .modal-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px}
-.modal-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:300;font-style:italic;color:#3a2e27}
-.modal-x{background:none;border:none;font-size:1.5rem;cursor:pointer;color:#a08070;line-height:1;padding:0}
-.modal-x:hover{color:#3a2e27}
-.modal-sub{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:#a08070;margin-bottom:10px}
-.modal-hr{border:none;border-top:1px solid #e8d8cc;margin:18px 0}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:300;font-style:italic;color:#1A2820}
+.modal-x{background:none;border:none;font-size:1.5rem;cursor:pointer;color:#9AB0A4;line-height:1;padding:0}
+.modal-x:hover{color:#1A2820}
+.modal-sub{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:#9AB0A4;margin-bottom:10px}
+.modal-hr{border:none;border-top:1px solid #EEF4F0;margin:18px 0}
 .row{display:flex;gap:9px;align-items:stretch}
-.ifield{flex:1;background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:10px;padding:9px 13px;font-family:'DM Sans',sans-serif;font-size:.86rem;color:#3a2e27;outline:none;transition:border .18s}
-.ifield::placeholder{color:#c0a898;font-style:italic}
-.ifield:focus{border-color:#b07a5e}
-.epick-btn{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:10px;width:46px;flex-shrink:0;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border .18s}
-.epick-btn:hover{border-color:#b07a5e}
-.confirm-btn{background:#b07a5e;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:background .2s;white-space:nowrap;flex-shrink:0}
-.confirm-btn:hover{background:#9a6248}
-.confirm-btn:disabled{opacity:.35;cursor:not-allowed}
-.egrid{display:flex;flex-wrap:wrap;gap:5px;background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:10px;padding:10px}
+.ifield{flex:1;background:#F8FAF8;border:1px solid #DDE8E2;border-radius:10px;padding:9px 13px;font-family:'DM Sans',sans-serif;font-size:.86rem;color:#1A2820;outline:none;transition:border .18s}
+.ifield::placeholder{color:#9AB0A4;font-style:italic}
+.ifield:focus{border-color:#3D6B52}
+.epick-btn{background:#F8FAF8;border:1px solid #DDE8E2;border-radius:10px;width:46px;flex-shrink:0;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.confirm-btn{background:#243D30;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:background .2s;white-space:nowrap;flex-shrink:0}
+.confirm-btn:hover{background:#3D6B52}
+.confirm-btn:disabled{opacity:.25;cursor:not-allowed}
+.egrid{display:flex;flex-wrap:wrap;gap:5px;background:#F8FAF8;border:1px solid #DDE8E2;border-radius:10px;padding:10px}
 .eopt{font-size:1.2rem;cursor:pointer;padding:4px 6px;border-radius:6px;transition:background .12s}
-.eopt:hover{background:#f0e0d4}
-.eopt.on{background:#f7e8de;outline:2px solid #b07a5e}
-.m-item{display:flex;align-items:center;gap:11px;background:#fff8f3;border:1px solid #e8d8cc;border-radius:10px;padding:9px 13px;margin-bottom:7px}
-.m-item-lbl{flex:1;font-size:.83rem;color:#3a2e27}
-.m-rem-btn{background:none;border:1px solid #e8c0b0;border-radius:6px;padding:3px 9px;font-size:.72rem;color:#c07060;cursor:pointer;transition:all .15s}
-.m-rem-btn:hover{background:#fde8e0;border-color:#c07060}
+.eopt:hover{background:#E8F2EC}
+.eopt.on{background:#D8EBE0;outline:1px solid #3D6B52}
+.m-item{display:flex;align-items:center;gap:11px;background:#F8FAF8;border:1px solid #EEF4F0;border-radius:10px;padding:9px 13px;margin-bottom:7px}
+.m-item-lbl{flex:1;font-size:.83rem;color:#1A2820}
+.m-rem-btn{background:none;border:1px solid #F2EAE2;border-radius:8px;padding:3px 9px;font-size:.72rem;color:#7A5840;cursor:pointer;transition:all .15s}
+.m-rem-btn:hover{background:#F2EAE2}
 .dow-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.dow-chip{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:20px;padding:5px 11px;font-size:.76rem;color:#8a6858;cursor:pointer;transition:all .15s}
-.dow-chip.on{background:#7a9e7a;border-color:#7a9e7a;color:#fff}
-.toggle-row{display:flex;align-items:center;justify-content:space-between;background:#fff8f3;border:1px solid #e8d8cc;border-radius:10px;padding:10px 14px;margin-bottom:10px}
-.toggle-lbl{font-size:.84rem;color:#3a2e27}
-.toggle-sub{font-size:.72rem;color:#a08070;margin-top:2px}
+.dow-chip{background:#F8FAF8;border:1px solid #DDE8E2;border-radius:20px;padding:5px 11px;font-size:.76rem;color:#5A7060;cursor:pointer;transition:all .15s}
+.dow-chip.on{background:#243D30;border-color:#243D30;color:#fff}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;background:#F8FAF8;border:1px solid #EEF4F0;border-radius:10px;padding:10px 14px;margin-bottom:10px}
+.toggle-lbl{font-size:.84rem;color:#1A2820}
+.toggle-sub{font-size:.72rem;color:#9AB0A4;margin-top:2px}
 .toggle-switch{width:40px;height:22px;border-radius:11px;border:none;cursor:pointer;transition:background .2s;position:relative;flex-shrink:0}
-.toggle-switch.on{background:#7a9e7a}
-.toggle-switch.off{background:#d0b8aa}
-.toggle-knob{position:absolute;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.toggle-switch.on{background:#3D6B52}
+.toggle-switch.off{background:#DDE8E2}
+.toggle-knob{position:absolute;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .toggle-switch.on .toggle-knob{left:21px}
 .toggle-switch.off .toggle-knob{left:3px}
-.time-input{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:10px;padding:8px 13px;font-family:'DM Sans',sans-serif;font-size:.86rem;color:#3a2e27;outline:none;transition:border .18s;width:130px}
-.time-input:focus{border-color:#7a9e7a}
-.del-btn{background:none;border:1px solid #e8c0b0;border-radius:6px;padding:3px 9px;font-size:.72rem;color:#c07060;cursor:pointer;transition:all .15s}
-.del-btn:hover{background:#fde8e0;border-color:#c07060}
-.freq-toggle-item{display:flex;align-items:center;gap:11px;background:#fff8f3;border:1px solid #e8d8cc;border-radius:10px;padding:9px 13px;margin-bottom:7px;cursor:pointer;transition:all .15s}
-.freq-toggle-item.on{border-color:#b07a5e;background:#fef2ea}
-.fti-check{width:18px;height:18px;border-radius:4px;border:1.5px solid #d0b0a0;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s}
-.freq-toggle-item.on .fti-check{background:#b07a5e;border-color:#b07a5e}
-.reminder-banner{background:#fde8e0;border:1.5px solid #e8b0a0;border-radius:12px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .25s;user-select:none}
-.reminder-banner:hover{background:#fad8cc}
-.reminder-banner.done{background:#eef4ee;border-color:#6a9e6a;opacity:.7;padding:7px 14px}
-.rb-text{flex:1;font-size:.82rem;color:#c05040;line-height:1.5;font-weight:500;transition:color .25s}
-.reminder-banner.done .rb-text{color:#2d4a2d;text-decoration:line-through;text-decoration-color:#2d4a2d;font-weight:400}
-.rb-dot{width:8px;height:8px;border-radius:50%;background:#e06050;flex-shrink:0;transition:background .25s}
-.reminder-banner.done .rb-dot{background:#2d4a2d}
-.name-prompt-overlay{position:fixed;inset:0;background:rgba(58,46,39,.5);display:flex;align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(3px);padding:24px}
-.name-prompt{background:#fdf6f0;border-radius:24px;padding:36px 28px;width:100%;max-width:360px;text-align:center}
-.name-prompt-title{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;color:#3a2e27;margin-bottom:6px}
-.name-prompt-title span{font-style:italic;color:#b07a5e}
-.name-prompt-sub{font-size:.8rem;color:#a08070;margin-bottom:24px;line-height:1.5}
-.hair-length-card{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:14px;padding:16px 18px;margin-bottom:20px}
-.hair-length-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-style:italic;color:#7a5c48;margin-bottom:4px}
-.hair-length-sub{font-size:.74rem;color:#a08070;margin-bottom:14px}
+.time-input{background:#F8FAF8;border:1px solid #DDE8E2;border-radius:10px;padding:8px 13px;font-family:'DM Sans',sans-serif;font-size:.86rem;color:#1A2820;outline:none;width:130px}
+.del-btn{background:none;border:1px solid #F2EAE2;border-radius:8px;padding:3px 9px;font-size:.72rem;color:#7A5840;cursor:pointer}
+.del-btn:hover{background:#F2EAE2}
+.freq-toggle-item{display:flex;align-items:center;gap:11px;background:#F8FAF8;border:1px solid #EEF4F0;border-radius:10px;padding:9px 13px;margin-bottom:7px;cursor:pointer;transition:all .15s}
+.freq-toggle-item.on{border-color:#D8EBE0;background:#EBF6F0}
+.fti-check{width:18px;height:18px;border-radius:6px;border:1px solid #DDE8E2;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18px}
+.freq-toggle-item.on .fti-check{background:#243D30;border-color:#243D30}
+.name-prompt-overlay{position:fixed;inset:0;background:rgba(20,34,26,.8);display:flex;align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(12px);padding:24px}
+.name-prompt{background:#fff;border-radius:20px;padding:36px 28px;width:100%;max-width:360px;text-align:center}
+.name-prompt-title{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;color:#1A2820;margin-bottom:6px}
+.name-prompt-title span{font-style:italic;color:#243D30}
+.name-prompt-sub{font-size:.8rem;color:#9AB0A4;margin-bottom:24px;line-height:1.5}
+.hair-length-card{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:16px;padding:16px 18px;margin:0 14px 20px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.hair-length-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-style:italic;color:#243D30;margin-bottom:4px}
+.hair-length-sub{font-size:.74rem;color:#9AB0A4;margin-bottom:14px}
 .hair-length-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.hair-length-month{font-size:.8rem;color:#7a5c48;font-weight:500;min-width:80px}
-.hair-length-input{flex:1;background:#fdf6f0;border:1.5px solid #e8d8cc;border-radius:10px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:.86rem;color:#3a2e27;outline:none;transition:border .18s}
-.hair-length-input:focus{border-color:#7a9e7a}
-.hair-length-input::placeholder{color:#c0a898;font-style:italic}
-.hair-length-save{background:#7a9e7a;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .18s;font-family:'DM Sans',sans-serif;white-space:nowrap}
-.hair-length-save:hover{background:#5a7e5a}
-.hair-history-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0e0d4}
+.hair-length-month{font-size:.8rem;color:#5A7060;font-weight:400;min-width:80px}
+.hair-length-input{flex:1;background:#F8FAF8;border:1px solid #DDE8E2;border-radius:10px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:.86rem;color:#1A2820;outline:none}
+.hair-length-input::placeholder{color:#9AB0A4;font-style:italic}
+.hair-length-save{background:#7A5840;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.hair-history-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #EEF4F0}
 .hair-history-row:last-child{border-bottom:none}
-.hair-history-month{font-size:.8rem;color:#7a5c48}
-.hair-history-val{font-size:.9rem;color:#3a2e27;font-weight:500}
-.hair-growth-badge{font-size:.72rem;color:#7a9e7a;margin-left:8px}
-.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#3a2e27;color:#fff;padding:11px 22px;border-radius:30px;font-size:.8rem;letter-spacing:.08em;animation:fiu .3s ease,fout .3s ease 1.7s forwards;z-index:300;white-space:nowrap}
-.hamburger-btn{position:absolute;top:36px;right:16px;background:none;border:none;cursor:pointer;padding:6px;display:flex;flex-direction:column;gap:5px;z-index:10}
-.hamburger-btn span{display:block;width:22px;height:2px;background:#b07a5e;border-radius:2px;transition:all .2s}
-.side-menu{position:fixed;top:0;right:0;bottom:0;width:260px;background:#fdf6f0;border-left:1.5px solid #e8d8cc;z-index:400;padding:calc(48px + env(safe-area-inset-top)) 24px max(32px,calc(16px + env(safe-area-inset-bottom)));display:flex;flex-direction:column;gap:0;box-shadow:-4px 0 20px rgba(58,46,39,.1);transform:translateX(100%);transition:transform .28s ease}
+.hair-history-month{font-size:.8rem;color:#5A7060}
+.hair-history-val{font-size:.9rem;color:#1A2820}
+.hair-growth-badge{font-size:.72rem;color:#3D6B52;margin-left:8px}
+.toast{position:fixed;bottom:max(96px,calc(88px + env(safe-area-inset-bottom)));left:50%;transform:translateX(-50%);background:#243D30;color:#fff;padding:11px 22px;border-radius:20px;font-size:.74rem;letter-spacing:.08em;animation:fiu .3s ease,fout .3s ease 1.7s forwards;z-index:300;white-space:nowrap;box-shadow:0 4px 20px rgba(36,61,48,.3)}
+.hamburger-btn{position:absolute;top:50%;right:16px;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:6px;display:flex;flex-direction:column;gap:5px;z-index:10}
+.hamburger-btn span{display:block;width:22px;height:1.5px;background:rgba(255,255,255,.7);border-radius:1px;transition:all .2s}
+.side-menu{position:fixed;top:0;right:0;bottom:0;width:270px;background:#fff;z-index:400;padding:calc(52px + env(safe-area-inset-top)) 0 max(32px,calc(16px + env(safe-area-inset-bottom)));display:flex;flex-direction:column;box-shadow:-8px 0 48px rgba(0,0,0,.2);transform:translateX(100%);transition:transform .28s ease}
 .side-menu.open{transform:translateX(0)}
-.side-menu-overlay{position:fixed;inset:0;z-index:399;background:rgba(58,46,39,.25)}
-.side-menu-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:300;font-style:italic;color:#3a2e27;margin-bottom:28px}
-.side-menu-item{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #f0e0d4;font-size:.88rem;color:#5a3a27;cursor:pointer;transition:color .15s;background:none;border-left:none;border-right:none;border-top:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif}
-.side-menu-item:hover{color:#b07a5e}
+.side-menu-overlay{position:fixed;inset:0;z-index:399;background:rgba(20,34,26,.35);backdrop-filter:blur(2px)}
+.side-menu-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:300;font-style:italic;color:#1A2820;padding:0 24px;margin-bottom:24px}
+.side-menu-item{display:flex;align-items:center;gap:12px;padding:14px 24px;border-bottom:1px solid #EEF4F0;font-size:.84rem;color:#5A7060;cursor:pointer;transition:color .15s;background:none;border-left:none;border-right:none;border-top:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif}
+.side-menu-item:hover{color:#1A2820;background:#F8FAF8}
 .side-menu-item:last-child{border-bottom:none}
-.purch-card{background:linear-gradient(135deg,#fff8f3 0%,#fdf2ec 100%);border:1.5px solid #e8d8cc;border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
-.purch-info{flex:1}
-.purch-name{font-size:.88rem;color:#3a2e27;font-weight:500}
-.purch-meta{font-size:.72rem;color:#a08070;margin-top:2px}
-.purch-price{font-size:1rem;color:#b07a5e;font-weight:600;white-space:nowrap}
-.spend-card{background:linear-gradient(135deg,#f7ece4 0%,#fdf0e8 100%);border:1.5px solid #d4a888;border-radius:14px;padding:16px;margin-bottom:10px}
-.spend-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0e0d4;font-size:.84rem}
-.spend-row:last-child{border-bottom:none}
-.spend-label{color:#7a5c48}
-.spend-val{color:#b07a5e;font-weight:600}
-@keyframes fiu{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-.bottom-sheet-overlay{position:fixed;inset:0;background:rgba(58,46,39,.38);z-index:250;backdrop-filter:blur(2px)}
-.bottom-sheet{position:fixed;left:max(0px,calc(50% - 340px));right:max(0px,calc(50% - 340px));bottom:0;z-index:251;background:#fdf6f0;border-radius:22px 22px 0 0;padding:22px 20px max(28px,calc(16px + env(safe-area-inset-bottom)));box-shadow:0 -6px 32px rgba(58,46,39,.14);max-height:88vh;overflow-y:auto;animation:sheetUp .26s cubic-bezier(.4,0,.2,1)}
+.bottom-sheet-overlay{position:fixed;inset:0;background:rgba(20,34,26,.65);z-index:250;backdrop-filter:blur(8px)}
+.bottom-sheet{position:fixed;left:max(0px,calc(50% - 340px));right:max(0px,calc(50% - 340px));bottom:0;z-index:251;background:#fff;border-radius:20px 20px 0 0;padding:20px 20px max(28px,calc(16px + env(safe-area-inset-bottom)));box-shadow:0 -12px 60px rgba(0,0,0,.18);max-height:88vh;overflow-y:auto;animation:sheetUp .26s cubic-bezier(.4,0,.2,1)}
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fiu{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 @keyframes fout{to{opacity:0}}
+/* ── lx styles (kept for compat, visually replaced) ── */
+.lx-section{margin-bottom:0}
+.lx-rule{display:none}
+.lx-done-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.1)}
+.lx-done-bar{width:2px;height:16px;background:rgba(255,255,255,.25);border-radius:1px;flex-shrink:0}
+.lx-done-name{font-size:.8rem;color:rgba(255,255,255,.4);flex:1;text-decoration:line-through;text-decoration-color:rgba(255,255,255,.2)}
+.lx-done-badge{font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.3)}
+.lx-q-card{background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.9);border-radius:16px;padding:16px;margin:0 0 8px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.lx-q-ask{font-family:'Cormorant Garamond',serif;font-size:1rem;font-style:italic;font-weight:300;color:#1A2820;line-height:1.5;margin-bottom:4px}
+.lx-q-prod{font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:#9AB0A4;margin-bottom:12px}
+.lx-q-btns{display:flex;gap:8px}
+.lx-q-yes{flex:1;background:#243D30;color:#fff;border:none;border-radius:10px;padding:9px;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;font-family:'DM Sans',sans-serif}
+.lx-q-skip{flex:1;background:none;border:1px solid #DDE8E2;border-radius:10px;padding:9px;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:#9AB0A4;cursor:pointer;font-family:'DM Sans',sans-serif}
+/* ── Debrief ── */
+.debrief-overlay{position:fixed;inset:0;background:rgba(20,34,26,.85);z-index:500;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(20px);padding:0}
+.debrief-inner{background:#fff;border-top:1px solid #EEF4F0;border-radius:20px 20px 0 0;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;padding:28px 22px max(36px,calc(20px + env(safe-area-inset-bottom)));animation:sheetUp .32s cubic-bezier(.4,0,.2,1)}
+.debrief-eyebrow{font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:#9AB0A4;margin-bottom:12px}
+.debrief-heading{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;color:#1A2820;line-height:1.3;margin-bottom:24px}
+.debrief-section-label{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:#9AB0A4;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #EEF4F0}
+.debrief-item{padding:12px 0;border-bottom:1px solid #F5F8F6}
+.debrief-item:last-child{border-bottom:none}
+.debrief-item-name{font-size:.76rem;color:#243D30;margin-bottom:4px;letter-spacing:.04em;font-weight:600}
+.debrief-item-insight{font-size:.86rem;color:#5A7060;line-height:1.65;font-style:italic;font-family:'Cormorant Garamond',serif}
+.debrief-skip-name{font-size:.76rem;color:#9AB0A4;margin-bottom:4px;letter-spacing:.04em;font-weight:500}
+.debrief-close{width:100%;background:none;border:1px solid #DDE8E2;border-radius:12px;padding:13px;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:#9AB0A4;cursor:pointer;margin-top:28px;font-family:'DM Sans',sans-serif}
+.debrief-close:hover{border-color:#243D30;color:#243D30}
+.debrief-loading{text-align:center;padding:40px 0;color:#9AB0A4;font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-style:italic}
+/* ── Purchases / products / wishlist pages ── */
+.purch-card{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:14px;padding:14px 16px;margin:0 14px 10px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.purch-info{flex:1}
+.purch-name{font-size:.88rem;color:#1A2820}
+.purch-meta{font-size:.72rem;color:#9AB0A4;margin-top:2px}
+.purch-price{font-size:1rem;color:#243D30;font-weight:500;white-space:nowrap}
+.spend-card{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:14px;padding:16px;margin:0 14px 10px}
+.spend-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #EEF4F0;font-size:.84rem}
+.spend-row:last-child{border-bottom:none}
+.spend-label{color:#5A7060}
+.spend-val{color:#243D30;font-weight:500}
 `;
 
 function CheckIcon() {
@@ -327,11 +461,11 @@ function Lightbox({ photo, onClose, onDelete }) {
         <img src={photo.src} alt={photo.name} style={{width:"100%",maxHeight:"70vh",objectFit:"contain",borderRadius:14}}/>
         <div style={{display:"flex",gap:10}}>
           <button onClick={download}
-            style={{flex:1,background:"#b07a5e",border:"none",borderRadius:12,padding:"13px",color:"#fff",fontSize:".86rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".04em"}}>
+            style={{flex:1,background:"#C8B8A0",border:"none",borderRadius:12,padding:"13px",color:"#fff",fontSize:".86rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".04em"}}>
             ↓ Download
           </button>
           <button onClick={()=>{onDelete(photo.id);onClose();}}
-            style={{flex:1,background:"#c07060",border:"none",borderRadius:12,padding:"13px",color:"#fff",fontSize:".86rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".04em"}}>
+            style={{flex:1,background:"#8A5A50",border:"none",borderRadius:12,padding:"13px",color:"#fff",fontSize:".86rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".04em"}}>
             Delete
           </button>
           <button onClick={onClose}
@@ -367,7 +501,7 @@ function PhotoNotes({ notes, photos, onNotesChange, onPhotosChange, hidePhotos }
         </button>
         <input ref={fileRef} type="file" accept="image/*" multiple className="photo-input"
           onChange={e=>handleFiles(e.target.files)}/>
-        {photos.length>0&&<span style={{fontSize:".72rem",color:"#a08070"}}>{photos.length} photo{photos.length!==1?"s":""}</span>}
+        {photos.length>0&&<span style={{fontSize:".72rem",color:"#5A5248"}}>{photos.length} photo{photos.length!==1?"s":""}</span>}
       </div>
       {photos.length>0&&!hidePhotos&&(
         <div className="photo-thumbs">
@@ -380,7 +514,7 @@ function PhotoNotes({ notes, photos, onNotesChange, onPhotosChange, hidePhotos }
         </div>
       )}
       {photos.length>0&&hidePhotos&&(
-        <div style={{fontSize:".72rem",color:"#a08070",marginTop:6,fontStyle:"italic"}}>
+        <div style={{fontSize:".72rem",color:"#5A5248",marginTop:6,fontStyle:"italic"}}>
           📎 {photos.length} photo{photos.length!==1?"s":""} attached — visible in history
         </div>
       )}
@@ -388,46 +522,78 @@ function PhotoNotes({ notes, photos, onNotesChange, onPhotosChange, hidePhotos }
   );
 }
 
-function ManageItemsModal({ type, items, onAdd, onRemove, onEdit, onClose }) {
-  const [label,    setLabel]    = useState("");
-  const [emoji,    setEmoji]    = useState("🌿");
-  const [time,     setTime]     = useState("both");
-  const [showPick, setShowPick] = useState(false);
-  const [editingId,setEditingId]= useState(null); // id of item being edited
-  const [editLabel,setEditLabel]= useState("");
-  const [editEmoji,setEditEmoji]= useState("🌿");
-  const [editTime, setEditTime] = useState("both");
-  const [showEditPick,setShowEditPick]=useState(false);
+function ManageItemsModal({ type, section, items, products, onAdd, onRemove, onEdit, onClose }) {
+  const [label,      setLabel]      = useState("");
+  const [emoji,      setEmoji]      = useState("🌿");
+  const [time,       setTime]       = useState(section==="morning"?"day":section==="night"?"night":"both");
+  const [productId,  setProductId]  = useState(null);
+  const [showPick,   setShowPick]   = useState(false);
+  const [showProdPick, setShowProdPick] = useState(false);
+  const [editingId,  setEditingId]  = useState(null);
+  const [editLabel,  setEditLabel]  = useState("");
+  const [editEmoji,  setEditEmoji]  = useState("🌿");
+  const [editTime,   setEditTime]   = useState("both");
+  const [editProdId, setEditProdId] = useState(null);
+  const [showEditPick, setShowEditPick] = useState(false);
+  const [showEditProdPick, setShowEditProdPick] = useState(false);
   const ref = useRef();
   useEffect(()=>{ setTimeout(()=>ref.current?.focus(),80); },[]);
 
+  const titleMap = { morning:"Edit morning routine", night:"Edit evening routine" };
+  const modalTitle = titleMap[section] || `Manage ${type==="skin"?"Skin":"Hair"} steps`;
+
   const doAdd = () => {
     if (!label.trim()) return;
-    onAdd({ id:uid(), label:label.trim(), emoji, time });
-    setLabel(""); setEmoji("🌿"); setTime("both"); setShowPick(false);
+    onAdd({ id:uid(), label:label.trim(), emoji, time, productId:productId||null });
+    setLabel(""); setEmoji("🌿"); setTime(section==="morning"?"day":section==="night"?"night":"both");
+    setProductId(null); setShowPick(false); setShowProdPick(false);
     ref.current?.focus();
   };
 
   const startEdit = (it) => {
-    setEditingId(it.id); setEditLabel(it.label); setEditEmoji(it.emoji); setEditTime(it.time||"both"); setShowEditPick(false);
+    setEditingId(it.id); setEditLabel(it.label); setEditEmoji(it.emoji||"🌿");
+    setEditTime(it.time||"both"); setEditProdId(it.productId||null);
+    setShowEditPick(false); setShowEditProdPick(false);
   };
   const saveEdit = () => {
     if (!editLabel.trim()) return;
-    onEdit(editingId, { label: editLabel.trim(), emoji: editEmoji, time: editTime });
-    setEditingId(null); setShowEditPick(false);
+    onEdit(editingId, { label:editLabel.trim(), emoji:editEmoji, time:editTime, productId:editProdId||null });
+    setEditingId(null); setShowEditPick(false); setShowEditProdPick(false);
   };
-  const cancelEdit = () => { setEditingId(null); setShowEditPick(false); };
+  const cancelEdit = () => { setEditingId(null); setShowEditPick(false); setShowEditProdPick(false); };
+
+  const ProductPicker = ({ value, onChange, show, onToggle }) => (
+    <div>
+      <button onClick={onToggle} style={{width:"100%",background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.14)",borderRadius:10,padding:"8px 12px",color:value?undefined:"rgba(255,255,255,.35)",fontSize:".76rem",cursor:"pointer",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span>{value ? (products||[]).find(p=>p.id===value)?.name||"Unknown product" : "Link to a product (optional)"}</span>
+        {value && <span onClick={e=>{e.stopPropagation();onChange(null);}} style={{fontSize:".9rem",opacity:.5,padding:"0 4px"}}>×</span>}
+      </button>
+      {show&&<div style={{maxHeight:160,overflowY:"auto",background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)",borderRadius:10,marginTop:4}}>
+        {!(products||[]).length&&<div style={{padding:"10px 12px",fontSize:".75rem",color:"rgba(255,255,255,.35)",textAlign:"center"}}>No products yet</div>}
+        {(products||[]).map(p=>(
+          <div key={p.id} onClick={()=>{onChange(p.id);onToggle();}}
+            style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",cursor:"pointer",borderBottom:"1px solid rgba(255,255,255,.06)",background:value===p.id?"rgba(255,255,255,.1)":undefined}}>
+            {p.image?<img src={p.image} alt={p.name} style={{width:28,height:28,borderRadius:6,objectFit:"cover",flexShrink:0}}/>:<div style={{width:28,height:28,borderRadius:6,background:"rgba(255,255,255,.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem",flexShrink:0}}>🧴</div>}
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:".75rem",color:"rgba(255,255,255,.85)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
+              {p.brand&&<div style={{fontSize:".62rem",color:"rgba(255,255,255,.4)"}}>{p.brand}</div>}
+            </div>
+          </div>
+        ))}
+      </div>}
+    </div>
+  );
 
   return (
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal">
         <div className="modal-top">
-          <div className="modal-title">Manage {type==="skin"?"Skin":"Hair"} Steps</div>
+          <div className="modal-title">{modalTitle}</div>
           <button className="modal-x" onClick={onClose}>×</button>
         </div>
 
-        <div className="modal-sub">Add a new step</div>
-        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
+        <div className="modal-sub">Add a step</div>
+        <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:18}}>
           <div className="row">
             <button className="epick-btn" onClick={()=>setShowPick(p=>!p)}>{emoji}</button>
             <input ref={ref} className="ifield" placeholder="e.g. Vitamin C Serum" value={label}
@@ -435,11 +601,12 @@ function ManageItemsModal({ type, items, onAdd, onRemove, onEdit, onClose }) {
             <button className="confirm-btn" onClick={doAdd} disabled={!label.trim()}>+ Add</button>
           </div>
           <div style={{display:"flex",gap:6}}>
-            {[["day","☀️ AM"],["night","🌙 PM"],["both","✦ Both"]].map(([v,l])=>(
+            {[["day","AM"],["night","PM"],["both","Both"]].map(([v,l])=>(
               <button key={v} className={`dow-chip ${time===v?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".74rem"}}
                 onClick={()=>setTime(v)}>{l}</button>
             ))}
           </div>
+          <ProductPicker value={productId} onChange={setProductId} show={showProdPick} onToggle={()=>setShowProdPick(p=>!p)}/>
           {showPick&&<div className="egrid">{EMOJI_OPTIONS.flat().map(em=>(
             <span key={em} className={`eopt ${emoji===em?"on":""}`}
               onClick={()=>{setEmoji(em);setShowPick(false)}}>{em}</span>
@@ -448,21 +615,24 @@ function ManageItemsModal({ type, items, onAdd, onRemove, onEdit, onClose }) {
 
         <hr className="modal-hr"/>
         <div className="modal-sub">Current steps ({items.length})</div>
-        {!items.length&&<div style={{textAlign:"center",color:"#b09080",fontStyle:"italic",padding:"12px 0",fontSize:".86rem"}}>None yet</div>}
+        {!items.length&&<div style={{textAlign:"center",color:"#3A3830",fontStyle:"italic",padding:"12px 0",fontSize:".86rem"}}>None yet</div>}
         {items.map(it=>(
           <div key={it.id}>
             {editingId===it.id ? (
-              <div style={{background:"#fff8f3",border:"1.5px solid #b07a5e",borderRadius:12,padding:"10px 13px",marginBottom:8}}>
+              <div style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.14)",borderRadius:12,padding:"10px 13px",marginBottom:8}}>
                 <div className="row" style={{marginBottom:8}}>
                   <button className="epick-btn" onClick={()=>setShowEditPick(p=>!p)}>{editEmoji}</button>
                   <input className="ifield" value={editLabel} onChange={e=>setEditLabel(e.target.value)}
                     onKeyDown={e=>e.key==="Enter"&&saveEdit()} autoFocus/>
                 </div>
                 <div style={{display:"flex",gap:6,marginBottom:8}}>
-                  {[["day","☀️ AM"],["night","🌙 PM"],["both","✦ Both"]].map(([v,l])=>(
+                  {[["day","AM"],["night","PM"],["both","Both"]].map(([v,l])=>(
                     <button key={v} className={`dow-chip ${editTime===v?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".74rem"}}
                       onClick={()=>setEditTime(v)}>{l}</button>
                   ))}
+                </div>
+                <div style={{marginBottom:8}}>
+                  <ProductPicker value={editProdId} onChange={setEditProdId} show={showEditProdPick} onToggle={()=>setShowEditProdPick(p=>!p)}/>
                 </div>
                 {showEditPick&&<div className="egrid" style={{marginBottom:8}}>{EMOJI_OPTIONS.flat().map(em=>(
                   <span key={em} className={`eopt ${editEmoji===em?"on":""}`}
@@ -470,13 +640,16 @@ function ManageItemsModal({ type, items, onAdd, onRemove, onEdit, onClose }) {
                 ))}</div>}
                 <div style={{display:"flex",gap:8}}>
                   <button className="confirm-btn" onClick={saveEdit} disabled={!editLabel.trim()} style={{flex:1}}>Save</button>
-                  <button onClick={cancelEdit} style={{background:"none",border:"1.5px solid #e8d8cc",borderRadius:10,padding:"9px 16px",fontSize:".78rem",color:"#a08070",cursor:"pointer",flex:1}}>Cancel</button>
+                  <button onClick={cancelEdit} style={{background:"none",border:"1px solid rgba(255,255,255,.14)",borderRadius:10,padding:"9px 16px",fontSize:".78rem",color:"rgba(255,255,255,.5)",cursor:"pointer",flex:1}}>Cancel</button>
                 </div>
               </div>
             ) : (
               <div className="m-item" style={{marginBottom:8}}>
-                <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-                <span className="m-item-lbl">{it.label}</span>
+                {it.productId&&(products||[]).find(p=>p.id===it.productId)?.image
+                  ? <img src={(products||[]).find(p=>p.id===it.productId).image} alt="" style={{width:28,height:28,borderRadius:6,objectFit:"cover",flexShrink:0}}/>
+                  : <span style={{fontSize:"1rem"}}>{it.emoji}</span>
+                }
+                <span className="m-item-lbl">{it.productId?(products||[]).find(p=>p.id===it.productId)?.name||it.label:it.label}</span>
                 <button className="ghost-btn" style={{fontSize:".7rem",padding:"3px 9px"}} onClick={()=>startEdit(it)}>Edit</button>
                 <button className="m-rem-btn" onClick={()=>onRemove(it.id)}>Remove</button>
               </div>
@@ -507,11 +680,11 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
     <div className="overlay" onClick={onCancel}>
       <div className="modal" style={{maxWidth:320,textAlign:"center",padding:"32px 24px"}} onClick={e=>e.stopPropagation()}>
         <div style={{fontSize:"1.5rem",marginBottom:12}}>🗑️</div>
-        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",color:"#3a2e27",marginBottom:8}}>Are you sure?</div>
-        <div style={{fontSize:".84rem",color:"#a08070",marginBottom:24,lineHeight:1.5}}>{message}</div>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",color:"#D4C8B8",marginBottom:8}}>Are you sure?</div>
+        <div style={{fontSize:".84rem",color:"#5A5248",marginBottom:24,lineHeight:1.5}}>{message}</div>
         <div style={{display:"flex",gap:10}}>
-          <button onClick={onCancel} style={{flex:1,background:"none",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"11px",fontSize:".82rem",color:"#a08070",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
-          <button onClick={onConfirm} style={{flex:1,background:"#c07060",border:"none",borderRadius:12,padding:"11px",fontSize:".82rem",color:"#fff",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".06em"}}>Delete</button>
+          <button onClick={onCancel} style={{flex:1,background:"none",border:"1.5px solid #252320",borderRadius:12,padding:"11px",fontSize:".82rem",color:"#5A5248",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+          <button onClick={onConfirm} style={{flex:1,background:"#8A5A50",border:"none",borderRadius:12,padding:"11px",fontSize:".82rem",color:"#fff",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".06em"}}>Delete</button>
         </div>
       </div>
     </div>
@@ -566,15 +739,15 @@ function SpendingSummary({ purchases, period, onGoToPurchases }) {
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <button className="ghost-btn" onClick={onGoToPurchases}>View All</button>
           <button onClick={()=>setCollapsed(p=>!p)}
-            style={{background:"none",border:"none",cursor:"pointer",color:"#b09080",fontSize:".82rem",padding:"4px 6px",lineHeight:1}}>
+            style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,.5)",fontSize:".82rem",padding:"4px 6px",lineHeight:1}}>
             {collapsed?"▼":"▲"}
           </button>
         </div>
       </div>
       {collapsed ? null : <>
-      <div style={{fontSize:".72rem",color:"#a08070",marginBottom:12}}>This {period==="week"?"Week":period==="month"?"Month":"Year"}</div>
+      <div style={{fontSize:".72rem",color:"rgba(255,255,255,.55)",marginBottom:12}}>This {period==="week"?"Week":period==="month"?"Month":"Year"}</div>
       {count===0?(
-        <div style={{textAlign:"center",padding:"20px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem"}}>No purchases recorded yet</div>
+        <div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem"}}>No purchases recorded yet</div>
       ):(
         <div className="spend-card">
           <div className="spend-row" style={{fontWeight:600,fontSize:".92rem"}}>
@@ -582,36 +755,36 @@ function SpendingSummary({ purchases, period, onGoToPurchases }) {
             <span className="spend-val">${total.toFixed(2)}</span>
           </div>
           <div className="spend-row">
-            <span className="spend-label">🌿 Skin</span>
+            <span className="spend-label">Skin</span>
             <span style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:".72rem",color:"#a08070"}}>{skinPct}%</span>
+              <span style={{fontSize:".72rem",color:"#6B8C7A"}}>{skinPct}%</span>
               <span className="spend-val">${skin.toFixed(2)}</span>
             </span>
           </div>
           <div className="spend-row">
-            <span className="spend-label">✨ Hair</span>
+            <span className="spend-label">Hair</span>
             <span style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:".72rem",color:"#a08070"}}>{hairPct}%</span>
+              <span style={{fontSize:".72rem",color:"#6B8C7A"}}>{hairPct}%</span>
               <span className="spend-val">${hair.toFixed(2)}</span>
             </span>
           </div>
           {treatment>0&&<div className="spend-row">
-            <span className="spend-label">💉 Treatment</span>
+            <span className="spend-label">Treatment</span>
             <span style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:".72rem",color:"#a08070"}}>{treatmentPct}%</span>
+              <span style={{fontSize:".72rem",color:"#6B8C7A"}}>{treatmentPct}%</span>
               <span className="spend-val">${treatment.toFixed(2)}</span>
             </span>
           </div>}
           <div className="spend-row" style={{borderBottom:"none",paddingBottom:0}}>
-            <span className="spend-label" style={{color:"#a08070",fontSize:".78rem"}}>{count} purchase{count!==1?"s":""}</span>
+            <span className="spend-label" style={{color:"#6B8C7A",fontSize:".78rem"}}>{count} purchase{count!==1?"s":""}</span>
           </div>
-          {total>0&&<div style={{marginTop:10,height:8,background:"#f0e0d4",borderRadius:8,overflow:"hidden",display:"flex"}}>
-            <div style={{width:`${skinPct}%`,background:"#b07a5e",transition:"width .4s"}}/>
-            <div style={{width:`${hairPct}%`,background:"#7a9e7a",transition:"width .4s"}}/>
+          {total>0&&<div style={{marginTop:10,height:8,background:"rgba(255,255,255,.12)",borderRadius:8,overflow:"hidden",display:"flex"}}>
+            <div style={{width:`${skinPct}%`,background:"#7EC49A",transition:"width .4s"}}/>
+            <div style={{width:`${hairPct}%`,background:"#A0C0D4",transition:"width .4s"}}/>
           </div>}
-          {total>0&&<div style={{display:"flex",gap:12,marginTop:6,fontSize:".7rem",color:"#a08070"}}>
-            <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"#b07a5e",display:"inline-block"}}/> Skin</span>
-            <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"#7a9e7a",display:"inline-block"}}/> Hair</span>
+          {total>0&&<div style={{display:"flex",gap:12,marginTop:6,fontSize:".7rem",color:"#6B8C7A"}}>
+            <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"#7EC49A",display:"inline-block"}}/> Skin</span>
+            <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"#A0C0D4",display:"inline-block"}}/> Hair</span>
           </div>}
         </div>
       )}
@@ -681,25 +854,25 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
     return (
       <div style={{marginTop:8}}>
         <div style={{display:"flex",height:6,borderRadius:4,overflow:"hidden",marginBottom:6}}>
-          {skin>0&&<div style={{flex:skin/total,background:"#b07a5e"}}/>}
-          {hair>0&&<div style={{flex:hair/total,background:"#d4a0c0"}}/>}
-          {tx>0&&<div style={{flex:tx/total,background:"#e8a898"}}/>}
+          {skin>0&&<div style={{flex:skin/total,background:"#7EC49A"}}/>}
+          {hair>0&&<div style={{flex:hair/total,background:"#A0C0D4"}}/>}
+          {tx>0&&<div style={{flex:tx/total,background:"#1E3428"}}/>}
         </div>
-        <div style={{display:"flex",gap:10,fontSize:".68rem",color:"#a08070"}}>
-          {skin>0&&<span>🌿 ${skin.toFixed(0)}</span>}
-          {hair>0&&<span>✨ ${hair.toFixed(0)}</span>}
-          {tx>0&&<span>💉 ${tx.toFixed(0)}</span>}
+        <div style={{display:"flex",gap:10,fontSize:".68rem",color:"rgba(255,255,255,.65)"}}>
+          {skin>0&&<span>Skin ${skin.toFixed(0)}</span>}
+          {hair>0&&<span>Hair ${hair.toFixed(0)}</span>}
+          {tx>0&&<span>Tx ${tx.toFixed(0)}</span>}
         </div>
       </div>
     );
   };
 
   const PURCH_STYLES = `
-    .purch-form{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:16px;padding:18px;margin-bottom:16px}
-    .purch-month-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:12px;cursor:pointer;margin-bottom:6px;transition:background .15s}
-    .purch-month-header:hover{background:#fdf0e8}
-    .year-tile{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:16px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:all .15s}
-    .year-tile:hover{background:#fdf0e8}
+    .purch-form{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:16px;padding:18px;margin-bottom:16px}
+    .purch-month-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:12px;cursor:pointer;margin-bottom:6px;transition:background .15s}
+    .purch-month-header:hover{background:rgba(255,255,255,1)}
+    .year-tile{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:16px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:all .15s}
+    .year-tile:hover{background:rgba(255,255,255,1)}
   `;
 
   // ── Purchase history deep-dive ───────────────────────────────────────────
@@ -716,32 +889,32 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
       <div className="app">
         <style>{PURCH_STYLES}</style>
         <div className="header" style={{position:"relative"}}>
-          <button onClick={()=>setHistoryItem(null)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",fontFamily:"'DM Sans',sans-serif",fontSize:".82rem"}}>← Back</button>
+          <button onClick={()=>setHistoryItem(null)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,.7)",padding:"8px",fontFamily:"'DM Sans',sans-serif",fontSize:".82rem"}}>← Back</button>
           <div className="header-title"><span>{historyItem.name}</span></div>
           {onMenuOpen&&<HamburgerBtn onClick={onMenuOpen}/>}
         </div>
-        {historyItem.brand&&<div style={{fontSize:".78rem",color:"#a08070",marginBottom:16,marginTop:-4}}>{historyItem.brand}</div>}
+        {historyItem.brand&&<div style={{fontSize:".78rem",color:"rgba(255,255,255,.6)",marginBottom:16,marginTop:-4}}>{historyItem.brand}</div>}
         <div style={{display:"flex",gap:10,marginBottom:20}}>
           {[
             [history.length, history.length===1?"purchase":"purchases"],
             ["$"+totalSpent.toFixed(0),"total spent"],
             avgDays?["~"+avgDays+"d","avg. frequency"]:null
           ].filter(Boolean).map(([val,lbl],i)=>(
-            <div key={i} style={{flex:1,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"14px 10px",textAlign:"center"}}>
-              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.7rem",color:"#3a2e27",lineHeight:1}}>{val}</div>
-              <div style={{fontSize:".64rem",color:"#a08070",marginTop:4,letterSpacing:".08em",textTransform:"uppercase"}}>{lbl}</div>
+            <div key={i} style={{flex:1,background:"rgba(255,255,255,.92)",border:"1px solid rgba(255,255,255,.9)",borderRadius:14,padding:"14px 10px",textAlign:"center"}}>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.7rem",color:"#1A2820",lineHeight:1}}>{val}</div>
+              <div style={{fontSize:".64rem",color:"#6B8C7A",marginTop:4,letterSpacing:".08em",textTransform:"uppercase"}}>{lbl}</div>
             </div>
           ))}
         </div>
-        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",color:"#5a3a27",marginBottom:10,fontStyle:"italic"}}>Purchase history</div>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",color:"rgba(255,255,255,.8)",marginBottom:10,fontStyle:"italic"}}>Purchase history</div>
         {history.slice().reverse().map(p=>(
-          <div key={p.id} style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div key={p.id} style={{background:"rgba(255,255,255,.92)",border:"1px solid rgba(255,255,255,.9)",borderRadius:12,padding:"12px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div>
-              <div style={{fontSize:".86rem",color:"#3a2e27"}}>{parse(p.date).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
-              {p.quantity>1&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:1}}>qty {p.quantity}</div>}
-              {p.notes&&<div style={{fontSize:".72rem",color:"#a08070",fontStyle:"italic",marginTop:1}}>{p.notes}</div>}
+              <div style={{fontSize:".86rem",color:"#1A2820"}}>{parse(p.date).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
+              {p.quantity>1&&<div style={{fontSize:".72rem",color:"#6B8C7A",marginTop:1}}>qty {p.quantity}</div>}
+              {p.notes&&<div style={{fontSize:".72rem",color:"#6B8C7A",fontStyle:"italic",marginTop:1}}>{p.notes}</div>}
             </div>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",color:"#b07a5e"}}>${((parseFloat(p.price)||0)*(parseInt(p.quantity)||1)).toFixed(2)}</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",color:"#243D30"}}>${((parseFloat(p.price)||0)*(parseInt(p.quantity)||1)).toFixed(2)}</div>
           </div>
         ))}
       </div>
@@ -757,13 +930,13 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
       <div className="purch-info">
         <div className="purch-name">{p.name}</div>
         <div className="purch-meta">{p.brand&&`${p.brand} · `}{p.category==="treatment"&&p.treatment_type?`${p.treatment_type} · `:""}{p.category} · {parse(p.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})}{p.quantity>1&&` · qty ${p.quantity}`}</div>
-        {p.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>{p.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 8px",color:"#8a6858"}}>{t}</span>)}</div>}
-        {p.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
+        {p.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>{p.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"rgba(71,102,90,.12)",border:"1px solid rgba(71,102,90,.2)",borderRadius:20,padding:"2px 8px",color:"#4A5E50"}}>{t}</span>)}</div>}
+        {p.notes&&<div style={{fontSize:".72rem",color:"#5A5248",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
       </div>
       <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}} onClick={e=>e.stopPropagation()}>
         <div className="purch-price">${((parseFloat(p.price)||0)*(parseInt(p.quantity)||1)).toFixed(2)}</div>
         <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
-          {p.link&&<button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px",color:"#b07a5e"}} onClick={()=>openUrl(p.link)}>Buy Now</button>}
+          {p.link&&<button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px",color:"#C8B8A0"}} onClick={()=>openUrl(p.link)}>Buy Now</button>}
           <button className="ghost-btn" style={{fontSize:".68rem",padding:"2px 7px"}} onClick={()=>startEdit(p)}>Edit</button>
           <button className="del-btn" style={{fontSize:".68rem"}} onClick={()=>onDelete(p.id)}>✕</button>
         </div>
@@ -775,17 +948,17 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
     <div className="app">
       <style>{PURCH_STYLES}</style>
       <div className="header" style={{position:"relative"}}>
-        <button onClick={onHome||onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
+        <button onClick={onHome||onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,.7)",padding:"8px",lineHeight:1}}><HomeIcon/></button>
         <div className="header-title">My <span>Purchases</span></div>
         {onMenuOpen&&<HamburgerBtn onClick={onMenuOpen}/>}
       </div>
 
       {grandTotal>0&&(
         <div style={{marginBottom:20}}>
-          <div style={{fontSize:".68rem",letterSpacing:".12em",textTransform:"uppercase",color:"#a08070",marginBottom:4}}>All Time Spending</div>
+          <div style={{fontSize:".68rem",letterSpacing:".12em",textTransform:"uppercase",color:"rgba(255,255,255,.55)",marginBottom:4}}>All Time Spending</div>
           <div style={{display:"flex",alignItems:"baseline",gap:10}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"2.4rem",color:"#3a2e27",lineHeight:1}}>${grandTotal.toFixed(2)}</div>
-            <div style={{fontSize:".76rem",color:"#b07a5e"}}>{filtered.length} purchase{filtered.length!==1?"s":""}</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"2.4rem",color:"#fff",lineHeight:1}}>${grandTotal.toFixed(2)}</div>
+            <div style={{fontSize:".76rem",color:"rgba(255,255,255,.6)"}}>{filtered.length} purchase{filtered.length!==1?"s":""}</div>
           </div>
         </div>
       )}
@@ -806,41 +979,41 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
           setAddMode("form");
         };
         return (
-          <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+          <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:16,padding:"18px",marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>What did you purchase?</div>
-              <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070",lineHeight:1}}>×</button>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"rgba(255,255,255,.85)"}}>What did you purchase?</div>
+              <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"rgba(255,255,255,.5)",lineHeight:1}}>×</button>
             </div>
 
             {/* Products carousel */}
-            <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:10}}>Products</div>
+            <div style={{fontSize:".62rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)",marginBottom:10}}>Products</div>
             <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:10,scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch",marginBottom:14}}>
               {featured.map(item=>(
                 <div key={item.id} onClick={()=>pickItem(item)}
                   style={{flexShrink:0,width:84,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
-                  <div style={{width:72,height:72,borderRadius:14,overflow:"hidden",background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.6rem",border:"1.5px solid #e8d8cc",flexShrink:0}}>
+                  <div style={{width:72,height:72,borderRadius:14,overflow:"hidden",background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.6rem",border:"1px solid rgba(255,255,255,.25)",flexShrink:0}}>
                     {(item.image||item.media_url)
                       ?<img src={item.image||item.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
                       :<span>{catEmoji(item.category)}</span>}
                   </div>
-                  <div style={{fontSize:".64rem",color:"#3a2e27",textAlign:"center",lineHeight:1.25,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",width:"100%"}}>{item.name}</div>
+                  <div style={{fontSize:".64rem",color:"rgba(255,255,255,.85)",textAlign:"center",lineHeight:1.25,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",width:"100%"}}>{item.name}</div>
                 </div>
               ))}
               {/* See All card */}
               <div onClick={()=>{setPickerSearch("");setAddMode("allProducts");}}
-                style={{flexShrink:0,width:72,height:72,borderRadius:14,border:"1.5px dashed #c8b0a0",background:"transparent",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,cursor:"pointer",marginTop:0}}>
-                <span style={{fontSize:".7rem",color:"#b07a5e",fontWeight:500}}>See All</span>
-                <span style={{fontSize:".8rem",color:"#b07a5e"}}>›</span>
+                style={{flexShrink:0,width:72,height:72,borderRadius:14,border:"1.5px dashed rgba(255,255,255,.3)",background:"transparent",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,cursor:"pointer",marginTop:0}}>
+                <span style={{fontSize:".7rem",color:"rgba(255,255,255,.6)",fontWeight:500}}>See All</span>
+                <span style={{fontSize:".8rem",color:"rgba(255,255,255,.6)"}}>›</span>
               </div>
             </div>
 
             {/* Treatment */}
             <button onClick={()=>{setEditP(blank("treatment"));setAddMode("form");}}
-              style={{display:"flex",alignItems:"center",gap:12,width:"100%",background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
+              style={{display:"flex",alignItems:"center",gap:12,width:"100%",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:12,padding:"12px 16px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
               <span style={{fontSize:"1.3rem"}}>💉</span>
               <div>
-                <div style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>Treatment</div>
-                <div style={{fontSize:".72rem",color:"#a08070",marginTop:1}}>Facial, microneedling, and more</div>
+                <div style={{fontSize:".88rem",color:"rgba(255,255,255,.9)",fontWeight:500}}>Treatment</div>
+                <div style={{fontSize:".72rem",color:"rgba(255,255,255,.5)",marginTop:1}}>Facial, microneedling, and more</div>
               </div>
             </button>
           </div>
@@ -861,31 +1034,31 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
           setPickerSearch(""); setAddMode("form");
         };
         return (
-          <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+          <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:16,padding:"18px",marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
               <button className="ghost-btn" style={{fontSize:".75rem",padding:"4px 10px"}} onClick={()=>setAddMode("source")}>← Back</button>
-              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#7a5c48"}}>All Products</div>
-              <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#a08070"}}>×</button>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"rgba(255,255,255,.8)"}}>All Products</div>
+              <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"rgba(255,255,255,.5)"}}>×</button>
             </div>
             <input className="ifield" style={{width:"100%",marginBottom:14}} placeholder="Search…" value={pickerSearch} onChange={e=>setPickerSearch(e.target.value)} autoFocus/>
             <div style={{display:"flex",flexWrap:"wrap",gap:10,maxHeight:340,overflowY:"auto"}}>
               {visible.map(item=>(
                 <div key={item.id} onClick={()=>pickItem(item)}
                   style={{width:"calc(33.33% - 7px)",display:"flex",flexDirection:"column",alignItems:"center",gap:5,cursor:"pointer"}}>
-                  <div style={{width:"100%",aspectRatio:"1",borderRadius:12,overflow:"hidden",background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem",border:"1.5px solid #e8d8cc"}}>
+                  <div style={{width:"100%",aspectRatio:"1",borderRadius:12,overflow:"hidden",background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem",border:"1px solid rgba(255,255,255,.25)"}}>
                     {(item.image||item.media_url)
                       ?<img src={item.image||item.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
                       :<span>{catEmoji(item.category)}</span>}
                   </div>
-                  <div style={{fontSize:".64rem",color:"#3a2e27",textAlign:"center",lineHeight:1.2,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",width:"100%"}}>{item.name}</div>
+                  <div style={{fontSize:".64rem",color:"rgba(255,255,255,.85)",textAlign:"center",lineHeight:1.2,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",width:"100%"}}>{item.name}</div>
                 </div>
               ))}
               {/* Add New square */}
               <div onClick={()=>{setPickerSearch("");setEditP(blank("skin"));setAddMode("form");}}
                 style={{width:"calc(33.33% - 7px)",display:"flex",flexDirection:"column",alignItems:"center",gap:5,cursor:"pointer"}}>
-                <div style={{width:"100%",aspectRatio:"1",borderRadius:12,border:"1.5px dashed #c8b0a0",background:"transparent",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>
-                  <span style={{fontSize:"1.2rem",color:"#b07a5e"}}>+</span>
-                  <span style={{fontSize:".6rem",color:"#b07a5e",fontWeight:500}}>Add New</span>
+                <div style={{width:"100%",aspectRatio:"1",borderRadius:12,border:"1.5px dashed rgba(255,255,255,.3)",background:"transparent",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>
+                  <span style={{fontSize:"1.2rem",color:"rgba(255,255,255,.6)"}}>+</span>
+                  <span style={{fontSize:".6rem",color:"rgba(255,255,255,.6)",fontWeight:500}}>Add New</span>
                 </div>
               </div>
             </div>
@@ -897,8 +1070,8 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
       {addMode==="form"&&editP&&(
         <div className="purch-form">
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{purchases.find(p=>p.id===editP.id)?"Edit":"Add"} Purchase</div>
-            <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#1A2820"}}>{purchases.find(p=>p.id===editP.id)?"Edit":"Add"} Purchase</div>
+            <button onClick={cancelForm} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#6B8C7A"}}>×</button>
           </div>
 
           {editP.category==="treatment"?(
@@ -939,15 +1112,15 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
 
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             <div style={{flex:1}}>
-              <div style={{fontSize:".7rem",color:"#a08070",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Price ($)</div>
+              <div style={{fontSize:".7rem",color:"#6B8C7A",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Price ($)</div>
               <input className="ifield" style={{width:"100%"}} type="number" placeholder="0.00" value={editP.price} onChange={e=>setEditP(p=>({...p,price:e.target.value}))}/>
             </div>
             {editP.category!=="treatment"&&<div style={{width:70}}>
-              <div style={{fontSize:".7rem",color:"#a08070",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Qty</div>
+              <div style={{fontSize:".7rem",color:"#6B8C7A",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Qty</div>
               <input className="ifield" style={{width:"100%"}} type="number" min="1" value={editP.quantity} onChange={e=>setEditP(p=>({...p,quantity:e.target.value}))}/>
             </div>}
             <div style={{flex:1}}>
-              <div style={{fontSize:".7rem",color:"#a08070",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Date</div>
+              <div style={{fontSize:".7rem",color:"#6B8C7A",marginBottom:4,letterSpacing:".08em",textTransform:"uppercase"}}>Date</div>
               <input className="ifield" style={{width:"100%"}} type="date" value={editP.date} onChange={e=>setEditP(p=>({...p,date:e.target.value}))}/>
             </div>
           </div>
@@ -958,7 +1131,7 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
 
       {!addMode&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>setAddMode("source")}>+ Add Purchase</button>}
 
-      {filtered.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No purchases yet</div>}
+      {filtered.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No purchases yet</div>}
 
       {currentMonths.map(m=>{
         const ps=monthGroups[m];
@@ -968,10 +1141,10 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
         return (
           <div key={m} style={{marginBottom:8}}>
             <div className="purch-month-header" onClick={()=>toggleMonth(m)}>
-              <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",fontStyle:"italic",color:"#5a3a27"}}>{label}</span>
+              <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",fontStyle:"italic",color:"#1A2820"}}>{label}</span>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <span style={{fontSize:"1.1rem",color:"#b07a5e",fontFamily:"'Cormorant Garamond',serif",fontStyle:"italic"}}>${mTotal.toFixed(2)}</span>
-                <span style={{color:"#b07a5e",fontSize:".8rem"}}>{isOpen?"▲":"▼"}</span>
+                <span style={{fontSize:"1.1rem",color:"#243D30",fontFamily:"'Cormorant Garamond',serif",fontStyle:"italic"}}>${mTotal.toFixed(2)}</span>
+                <span style={{color:"#6B8C7A",fontSize:".8rem"}}>{isOpen?"▲":"▼"}</span>
               </div>
             </div>
             {isOpen&&<div style={{paddingLeft:4}}>{ps.sort((a,b)=>b.date.localeCompare(a.date)).map(p=><PurchaseCard key={p.id} p={p}/>)}</div>}
@@ -990,12 +1163,12 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
           <div key={y} className="year-tile" onClick={()=>toggleYear(y)}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
-                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",color:"#3a2e27"}}>{y}</div>
-                <div style={{fontSize:".72rem",color:"#a08070",marginTop:2}}>{ps.length} purchase{ps.length!==1?"s":""}</div>
+                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",color:"#1A2820"}}>{y}</div>
+                <div style={{fontSize:".72rem",color:"#6B8C7A",marginTop:2}}>{ps.length} purchase{ps.length!==1?"s":""}</div>
               </div>
               <div style={{textAlign:"right"}}>
-                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",color:"#b07a5e"}}>${yTotal.toFixed(2)}</div>
-                <div style={{fontSize:".72rem",color:"#b07a5e",marginTop:2}}>{isOpen?"▲ hide":"▼ show"}</div>
+                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",color:"#243D30"}}>${yTotal.toFixed(2)}</div>
+                <div style={{fontSize:".72rem",color:"#6B8C7A",marginTop:2}}>{isOpen?"▲ hide":"▼ show"}</div>
               </div>
             </div>
             <YearSplit ps={ps}/>
@@ -1008,10 +1181,10 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
                 return (
                   <div key={m} style={{marginBottom:6}}>
                     <div className="purch-month-header" onClick={()=>toggleMonth(m)}>
-                      <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:".9rem",fontStyle:"italic",color:"#7a5c48"}}>{label}</span>
+                      <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:".9rem",fontStyle:"italic",color:"#1A2820"}}>{label}</span>
                       <div style={{display:"flex",alignItems:"center",gap:8}}>
-                        <span style={{fontSize:".78rem",color:"#b07a5e"}}>${mTotal.toFixed(2)}</span>
-                        <span style={{color:"#b07a5e",fontSize:".75rem"}}>{isMonthOpen?"▲":"▼"}</span>
+                        <span style={{fontSize:".78rem",color:"#243D30"}}>${mTotal.toFixed(2)}</span>
+                        <span style={{color:"#6B8C7A",fontSize:".75rem"}}>{isMonthOpen?"▲":"▼"}</span>
                       </div>
                     </div>
                     {isMonthOpen&&<div style={{paddingLeft:4}}>{mps.sort((a,b)=>b.date.localeCompare(a.date)).map(p=><PurchaseCard key={p.id} p={p}/>)}</div>}
@@ -1048,24 +1221,24 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
   const sortedWish = [...wishlist].sort((a,b)=>(b.priority||0)-(a.priority||0));
 
   const WISH_STYLES = `
-    .wish-card{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
-    .wish-card:hover{background:#fdf0e8}
-    .wish-name{font-size:.9rem;font-weight:500;color:#3a2e27;margin-bottom:2px}
-    .wish-meta{font-size:.72rem;color:#a08070}
+    .wish-card{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
+    .wish-card:hover{background:rgba(255,255,255,1)}
+    .wish-name{font-size:.9rem;font-weight:500;color:#1A2820;margin-bottom:2px}
+    .wish-meta{font-size:.72rem;color:#6B8C7A}
     .plan-carousel{display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none}
     .plan-carousel::-webkit-scrollbar{display:none}
-    .plan-card{background:#fff8f3;border:1.5px solid #e8d8cc;border-radius:16px;padding:14px 12px;min-width:152px;max-width:152px;display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;position:relative}
-    .staple-card{background:#fff8f3;border:1.5px solid #e8c8a0;border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:center}
-    .tab-bar{display:flex;gap:0;background:#f0e4d8;border-radius:12px;padding:3px;margin-bottom:18px}
-    .tab-btn{flex:1;padding:7px 4px;border:none;background:transparent;border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.76rem;color:#a08070;transition:all .15s;font-weight:400}
-    .tab-btn.on{background:#fff;color:#3a2e27;font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+    .plan-card{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:16px;padding:14px 12px;min-width:152px;max-width:152px;display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;position:relative}
+    .staple-card{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:center}
+    .tab-bar{display:flex;gap:0;background:rgba(0,0,0,.18);border-radius:12px;padding:3px;margin-bottom:18px}
+    .tab-btn{flex:1;padding:7px 4px;border:none;background:transparent;border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.76rem;color:rgba(255,255,255,.55);transition:all .15s;font-weight:400}
+    .tab-btn.on{background:#1E3428;color:#fff;font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,.15)}
   `;
 
   return (
     <div className="app">
       <style>{WISH_STYLES}</style>
       <div className="header" style={{position:"relative"}}>
-        <button onClick={onHome||onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
+        <button onClick={onHome||onBack} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,.7)",padding:"8px",lineHeight:1}}><HomeIcon/></button>
         <div className="header-title">My <span>Wishlist</span></div>
         {onMenuOpen&&<HamburgerBtn onClick={onMenuOpen}/>}
       </div>
@@ -1079,26 +1252,26 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
       {/* ── WISHLIST TAB ── */}
       {tab==="wishlist"&&<>
         {chooseCat&&(
-          <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:14}}>What are you wishing for?</div>
+          <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:16,padding:"18px",marginBottom:16}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"rgba(255,255,255,.8)",marginBottom:14}}>What are you wishing for?</div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
                 <button key={cat} onClick={()=>{setEditItem(blankWish(cat));setShowForm(true);setChooseCat(false);}}
-                  style={{display:"flex",alignItems:"center",gap:12,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+                  style={{display:"flex",alignItems:"center",gap:12,background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
                   <span style={{fontSize:"1.3rem"}}>{emoji}</span>
-                  <span style={{fontSize:".88rem",color:"#3a2e27",fontWeight:500}}>{label} Product</span>
+                  <span style={{fontSize:".88rem",color:"rgba(255,255,255,.85)",fontWeight:500}}>{label} Product</span>
                 </button>
               ))}
-              <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".78rem",color:"#a08070",cursor:"pointer",marginTop:4}}>Cancel</button>
+              <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".78rem",color:"rgba(255,255,255,.55)",cursor:"pointer",marginTop:4}}>Cancel</button>
             </div>
           </div>
         )}
 
         {showForm&&editItem&&(
-          <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+          <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:16,padding:"18px",marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{wishlist.find(w=>w.id===editItem.id)?"Edit":"Add to"} Wishlist</div>
-              <button onClick={()=>{setShowForm(false);setEditItem(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"rgba(255,255,255,.8)"}}>{wishlist.find(w=>w.id===editItem.id)?"Edit":"Add to"} Wishlist</div>
+              <button onClick={()=>{setShowForm(false);setEditItem(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"rgba(255,255,255,.55)"}}>×</button>
             </div>
             <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editItem.name} onChange={e=>setEditItem(p=>({...p,name:e.target.value}))}/>
             <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={editItem.brand||""} onChange={e=>setEditItem(p=>({...p,brand:e.target.value}))}/>
@@ -1133,21 +1306,21 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
         )}
 
         {!showForm&&!chooseCat&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>setChooseCat(true)}>+ Add to Wishlist</button>}
-        {sortedWish.length===0&&!showForm&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Your wishlist is empty ✨</div>}
+        {sortedWish.length===0&&!showForm&&<div style={{textAlign:"center",padding:"32px 0",color:"rgba(255,255,255,.55)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Your wishlist is empty ✨</div>}
 
         {sortedWish.map(item=>(
           <div key={item.id} className="wish-card">
             {item.image
               ?<img src={item.image} alt="" style={{width:52,height:52,objectFit:"cover",borderRadius:10,flexShrink:0}}/>
-              :<div style={{width:52,height:52,borderRadius:10,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{item.category==="skin"?"🌿":item.category==="treatment"?"💉":"✨"}</div>
+              :<div style={{width:52,height:52,borderRadius:10,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{item.category==="skin"?"🌿":item.category==="treatment"?"💉":"✨"}</div>
             }
             <div style={{flex:1,minWidth:0}}>
               <div className="wish-name">{item.name}</div>
-              <div className="wish-meta">{item.brand&&`${item.brand} · `}{item.category}{item.priority>0&&<span style={{color:item.priority===2?"#c06050":"#b07a5e",marginLeft:4}}>{item.priority===2?"🔥 High":"Medium"}</span>}</div>
-              {item.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>{item.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"#f7ece4",border:"1px solid #e8d8cc",borderRadius:20,padding:"2px 8px",color:"#8a6858"}}>{t}</span>)}</div>}
-              {item.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:4,fontStyle:"italic"}}>{item.notes}</div>}
+              <div className="wish-meta">{item.brand&&`${item.brand} · `}{item.category}{item.priority>0&&<span style={{color:item.priority===2?"#c06050":"#6B8C7A",marginLeft:4}}>{item.priority===2?"🔥 High":"Medium"}</span>}</div>
+              {item.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>{item.tags.map(t=><span key={t} style={{fontSize:".68rem",background:"rgba(255,255,255,.15)",border:"1px solid rgba(255,255,255,.25)",borderRadius:20,padding:"2px 8px",color:"#6B8C7A"}}>{t}</span>)}</div>}
+              {item.notes&&<div style={{fontSize:".72rem",color:"#6B8C7A",marginTop:4,fontStyle:"italic"}}>{item.notes}</div>}
               <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
-                {item.link&&<button onClick={()=>openUrl(item.link)} style={{background:"#b07a5e",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
+                {item.link&&<button onClick={()=>openUrl(item.link)} style={{background:"#1E3428",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
                 <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>onMoveToCart(item)}>✓ Purchased</button>
                 <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setNewPlanned({...blankPlanned(),name:item.name,brand:item.brand||"",category:item.category||"skin",image:item.image||"",link:item.link||"",notes:item.notes||"",wishlist_id:item.id});setShowPlannedForm(true);setTab("planned");}}>📋 Plan</button>
                 <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setEditItem({...item});setShowForm(true);}}>Edit</button>
@@ -1160,19 +1333,19 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
 
       {/* ── STAPLES TAB ── */}
       {tab==="staples"&&<>
-        {staples.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No staples yet — mark a product as ⭐ Staple in My Products</div>}
+        {staples.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:"rgba(255,255,255,.55)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No staples yet — mark a product as ⭐ Staple in My Products</div>}
         {staples.map(p=>(
           <div key={p.id} className="staple-card">
             {p.image
               ?<img src={p.image} alt="" style={{width:52,height:52,objectFit:"cover",borderRadius:10,flexShrink:0}}/>
-              :<div style={{width:52,height:52,borderRadius:10,background:"#f7ece4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{p.category==="skin"?"🌿":"✨"}</div>
+              :<div style={{width:52,height:52,borderRadius:10,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{p.category==="skin"?"🌿":"✨"}</div>
             }
             <div style={{flex:1,minWidth:0}}>
               <div className="wish-name">⭐ {p.name}</div>
               <div className="wish-meta">{p.brand&&`${p.brand} · `}{p.category}{p.price&&` · $${p.price}`}</div>
-              {p.notes&&<div style={{fontSize:".72rem",color:"#a08070",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
+              {p.notes&&<div style={{fontSize:".72rem",color:"#6B8C7A",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
               <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
-                {p.link&&<button onClick={()=>openUrl(p.link)} style={{background:"#b07a5e",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
+                {p.link&&<button onClick={()=>openUrl(p.link)} style={{background:"#1E3428",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
                 <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setNewPlanned({...blankPlanned(),name:p.name,brand:p.brand||"",category:p.category||"skin",image:p.image||"",link:p.link||"",price:String(p.price||""),product_id:p.id});setShowPlannedForm(true);setTab("planned");}}>📋 Plan to Buy</button>
               </div>
             </div>
@@ -1183,9 +1356,9 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
       {/* ── PLANNED PURCHASES TAB ── */}
       {tab==="planned"&&<>
         {purchasingItem&&(
-          <div style={{background:"#fff8f3",border:"1.5px solid #b07a5e",borderRadius:16,padding:"18px",marginBottom:16}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#3a2e27",marginBottom:4}}>Mark as purchased?</div>
-            <div style={{fontSize:".8rem",color:"#5a3a27",fontWeight:500,marginBottom:12}}>{purchasingItem.name}</div>
+          <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:16,padding:"18px",marginBottom:16}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"rgba(255,255,255,.85)",marginBottom:4}}>Mark as purchased?</div>
+            <div style={{fontSize:".8rem",color:"rgba(255,255,255,.85)",fontWeight:500,marginBottom:12}}>{purchasingItem.name}</div>
             <input type="date" className="time-input" style={{width:"100%",marginBottom:14}} value={purchaseDate} onChange={e=>setPurchaseDate(e.target.value)}/>
             <div style={{display:"flex",gap:8}}>
               <button className="save-btn" style={{flex:1}} onClick={()=>{onMovePlannedToPurchase(purchasingItem,purchaseDate);setPurchasingItem(null);setPurchaseDate(today);}}>✓ Confirm</button>
@@ -1195,10 +1368,10 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
         )}
 
         {showPlannedForm&&newPlanned&&(
-          <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+          <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:16,padding:"18px",marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>Plan to Buy</div>
-              <button onClick={()=>{setShowPlannedForm(false);setNewPlanned(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"rgba(255,255,255,.8)"}}>Plan to Buy</div>
+              <button onClick={()=>{setShowPlannedForm(false);setNewPlanned(null);}} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"rgba(255,255,255,.55)"}}>×</button>
             </div>
             <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={newPlanned.name} onChange={e=>setNewPlanned(p=>({...p,name:e.target.value}))} autoFocus/>
             <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={newPlanned.brand||""} onChange={e=>setNewPlanned(p=>({...p,brand:e.target.value}))}/>
@@ -1218,7 +1391,7 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
 
         {!showPlannedForm&&!purchasingItem&&<button className="add-sched-btn" style={{marginBottom:16}} onClick={()=>{setNewPlanned(blankPlanned());setShowPlannedForm(true);}}>+ Plan to Buy</button>}
 
-        {(plannedPurchases||[]).length===0&&!showPlannedForm&&<div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Nothing planned yet</div>}
+        {(plannedPurchases||[]).length===0&&!showPlannedForm&&<div style={{textAlign:"center",padding:"32px 0",color:"rgba(255,255,255,.55)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Nothing planned yet</div>}
 
         {(plannedPurchases||[]).length>0&&<div className="plan-carousel">
           {(plannedPurchases||[]).map(item=>(
@@ -1226,12 +1399,12 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
               <button onClick={()=>onDeletePlanned(item.id)} style={{position:"absolute",top:6,right:6,background:"none",border:"none",cursor:"pointer",color:"#c09080",fontSize:".76rem",padding:"2px 5px",lineHeight:1,zIndex:1}}>✕</button>
               {item.image
                 ?<img src={item.image} alt="" style={{width:72,height:72,borderRadius:12,objectFit:"cover"}}/>
-                :<div style={{width:72,height:72,borderRadius:12,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2rem"}}>{item.category==="skin"?"🌿":item.category==="treatment"?"💉":"✨"}</div>
+                :<div style={{width:72,height:72,borderRadius:12,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2rem"}}>{item.category==="skin"?"🌿":item.category==="treatment"?"💉":"✨"}</div>
               }
               <div style={{textAlign:"center",width:"100%"}}>
-                <div style={{fontSize:".82rem",fontWeight:500,color:"#3a2e27",lineHeight:1.3,marginBottom:2,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{item.name}</div>
-                {item.brand&&<div style={{fontSize:".68rem",color:"#a08070",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{item.brand}</div>}
-                {item.price&&<div style={{fontSize:".78rem",color:"#b07a5e",marginTop:2,fontWeight:500}}>${item.price}</div>}
+                <div style={{fontSize:".82rem",fontWeight:500,color:"#1A2820",lineHeight:1.3,marginBottom:2,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{item.name}</div>
+                {item.brand&&<div style={{fontSize:".68rem",color:"#6B8C7A",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{item.brand}</div>}
+                {item.price&&<div style={{fontSize:".78rem",color:"#243D30",marginTop:2,fontWeight:500}}>${item.price}</div>}
               </div>
               <button className="save-btn" style={{width:"100%",padding:"7px 0",fontSize:".76rem",marginTop:2}} onClick={()=>{if(!purchasingItem){setPurchasingItem(item);setPurchaseDate(today);}}}>✓ Purchased</button>
             </div>
@@ -1375,28 +1548,28 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
 
   // Auto-analyze for historic snapshots
   if (status === "loading_auto") { setTimeout(() => doAnalyze(true), 0); return (
-    <div style={{background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"16px",marginTop:12}}>
+    <div style={{background:"#0F0E0C",border:"1.5px solid #252320",borderRadius:14,padding:"16px",marginTop:12}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>Routine Analysis</div>
-        <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#a08070"}}>×</button>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#D4C8B8"}}>Routine Analysis</div>
+        <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#5A5248"}}>×</button>
       </div>
       <div style={{textAlign:"center",padding:"24px 0"}}>
         <div style={{fontSize:"1.4rem",marginBottom:10,animation:"spin 1.5s linear infinite",display:"inline-block"}}>✦</div>
-        <div style={{fontSize:".8rem",color:"#a08070",fontStyle:"italic"}}>Analyzing your routine…</div>
+        <div style={{fontSize:".8rem",color:"#5A5248",fontStyle:"italic"}}>Analyzing your routine…</div>
         <style>{".spin-anim{animation:spin 1.5s linear infinite}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}"}</style>
       </div>
     </div>
   ); }
 
   if (status === "fetching_ingredients") return (
-    <div style={{background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"16px",marginTop:12}}>
+    <div style={{background:"#0F0E0C",border:"1.5px solid #252320",borderRadius:14,padding:"16px",marginTop:12}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>Routine Analysis</div>
-        <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#a08070"}}>×</button>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#D4C8B8"}}>Routine Analysis</div>
+        <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#5A5248"}}>×</button>
       </div>
       <div style={{textAlign:"center",padding:"24px 0"}}>
         <div style={{fontSize:"1.4rem",marginBottom:10,animation:"spin 1.5s linear infinite",display:"inline-block"}}>🔍</div>
-        <div style={{fontSize:".84rem",color:"#5a3a27",marginBottom:4}}>Looking up ingredients…</div>
+        <div style={{fontSize:".84rem",color:"#D4C8B8",marginBottom:4}}>Looking up ingredients…</div>
         <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       </div>
     </div>
@@ -1456,33 +1629,33 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
     return (
       <div style={{marginBottom:14}}>
         <div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color,fontWeight:600,marginBottom:5}}>{emoji} {label}</div>
-        <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.6}}>{stripCitations(text)}</div>
+        <div style={{fontSize:".84rem",color:"#D4C8B8",lineHeight:1.6}}>{stripCitations(text)}</div>
       </div>
     );
   };
 
   return (
-    <div style={{background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"16px",marginTop:12}}>
+    <div style={{background:"#0F0E0C",border:"1.5px solid #252320",borderRadius:14,padding:"16px",marginTop:12}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>Routine Analysis</div>
-        <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#a08070"}}>×</button>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#D4C8B8"}}>Routine Analysis</div>
+        <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#5A5248"}}>×</button>
       </div>
 
       {status==="confirm_entries"&&(
         <div style={{padding:"4px 0 8px"}}>
-          <div style={{fontSize:".84rem",color:"#5a3a27",marginBottom:14,lineHeight:1.6}}>
+          <div style={{fontSize:".84rem",color:"#D4C8B8",marginBottom:14,lineHeight:1.6}}>
             Include journal entries since <strong>{new Date(dateRange.start+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</strong>?
             {journalEntryCount() > 0
-              ? <span style={{color:"#a08070"}}> ({journalEntryCount()} entries with notes)</span>
+              ? <span style={{color:"#5A5248"}}> ({journalEntryCount()} entries with notes)</span>
               : <span style={{color:"#c0a890"}}> (no notes found for this period)</span>}
           </div>
           <div style={{display:"flex",gap:8}}>
             <button onClick={()=>doAnalyze(true)}
-              style={{flex:1,background:"#3a2e27",border:"none",borderRadius:10,padding:"10px",color:"#f7ece4",fontSize:".8rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
+              style={{flex:1,background:"#D4C8B8",border:"none",borderRadius:10,padding:"10px",color:"#222019",fontSize:".8rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
               Yes, include entries
             </button>
             <button onClick={()=>doAnalyze(false)}
-              style={{flex:1,background:"none",border:"1.5px solid #e8d8cc",borderRadius:10,padding:"10px",color:"#a08070",fontSize:".8rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+              style={{flex:1,background:"none",border:"1.5px solid #252320",borderRadius:10,padding:"10px",color:"#5A5248",fontSize:".8rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
               Just products
             </button>
           </div>
@@ -1492,14 +1665,14 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
       {status==="loading"&&(
         <div style={{textAlign:"center",padding:"24px 0"}}>
           <div style={{fontSize:"1.4rem",marginBottom:10,display:"inline-block",animation:"spin 1.5s linear infinite"}}>✦</div>
-          <div style={{fontSize:".8rem",color:"#a08070",fontStyle:"italic"}}>Analyzing your routine…</div>
+          <div style={{fontSize:".8rem",color:"#5A5248",fontStyle:"italic"}}>Analyzing your routine…</div>
           <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         </div>
       )}
 
       {status==="error"&&(
         <div style={{textAlign:"center",padding:"12px 0"}}>
-          <div style={{fontSize:".8rem",color:"#c07060",marginBottom:8}}>Something went wrong. Please try again.</div>
+          <div style={{fontSize:".8rem",color:"#8A5A50",marginBottom:8}}>Something went wrong. Please try again.</div>
           <button onClick={()=>setStatus(isCurrent?"confirm_entries":"loading_auto")} className="ghost-btn">Try Again</button>
         </div>
       )}
@@ -1507,23 +1680,23 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
       {status==="done"&&result&&(
         <div>
           {result.raw
-            ? <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.7}}>{result.raw}</div>
+            ? <div style={{fontSize:".84rem",color:"#D4C8B8",lineHeight:1.7}}>{result.raw}</div>
             : <div>
                 <Section emoji="✨" label="What this routine does well" color="#5a8a5a" text={result.strengths}/>
-                <Section emoji="⚠️" label="Conflicts & risks" color="#c07060" text={result.conflicts}/>
+                <Section emoji="⚠️" label="Conflicts & risks" color="#8A5A50" text={result.conflicts}/>
                 <Section emoji="🔍" label="What's missing" color="#b07a30" text={result.gaps}/>
                 <Section emoji="🤝" label="Ingredient synergies" color="#5a6a9a" text={result.synergies}/>
                 <Section emoji="📓" label="What your journal reveals" color="#7a6a4a" text={result.journal_insights}/>
-                <Section emoji="💡" label="Top recommendation" color="#7a5c48" text={result.recommendation}/>
+                <Section emoji="💡" label="Top recommendation" color="#8A8070" text={result.recommendation}/>
               </div>
           }
 
           {/* Chatbot */}
-          <div style={{marginTop:16,borderTop:"1px solid #f0e0d4",paddingTop:14}}>
-            <div style={{fontSize:".68rem",letterSpacing:".08em",textTransform:"uppercase",color:"#a08070",marginBottom:10}}>Ask a follow-up</div>
+          <div style={{marginTop:16,borderTop:"1px solid #1E1C1A",paddingTop:14}}>
+            <div style={{fontSize:".68rem",letterSpacing:".08em",textTransform:"uppercase",color:"#5A5248",marginBottom:10}}>Ask a follow-up</div>
             {chatHistory.slice(1).map((m,i)=>(
               <div key={i} style={{marginBottom:10,display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
-                <div style={{maxWidth:"85%",background:m.role==="user"?"#3a2e27":"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"8px 12px",fontSize:".8rem",color:m.role==="user"?"#f7ece4":"#3a2e27",lineHeight:1.6}}>
+                <div style={{maxWidth:"85%",background:m.role==="user"?"#D4C8B8":"#1A1917",border:"1.5px solid #252320",borderRadius:12,padding:"8px 12px",fontSize:".8rem",color:m.role==="user"?"#222019":"#D4C8B8",lineHeight:1.6}}>
                   {m.role==="assistant"
                     ? m.content.split("\n").map((line,j) => {
                         const bold = line.replace(/\*\*(.+?)\*\*/g, (_,t) => `<b>${t}</b>`);
@@ -1533,7 +1706,7 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
                 </div>
               </div>
             ))}
-            {chatLoading&&<div style={{fontSize:".76rem",color:"#a08070",fontStyle:"italic",marginBottom:8}}>Thinking…</div>}
+            {chatLoading&&<div style={{fontSize:".76rem",color:"#5A5248",fontStyle:"italic",marginBottom:8}}>Thinking…</div>}
             <div style={{display:"flex",gap:8,marginTop:4}}>
               <input
                 className="ifield"
@@ -1544,7 +1717,7 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
                 onKeyDown={e=>e.key==="Enter"&&sendChat()}
               />
               <button onClick={sendChat} disabled={!chatInput.trim()||chatLoading}
-                style={{background:"#3a2e27",border:"none",borderRadius:10,padding:"8px 14px",color:"#f7ece4",fontSize:".8rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",opacity:chatInput.trim()?1:.4}}>
+                style={{background:"#D4C8B8",border:"none",borderRadius:10,padding:"8px 14px",color:"#222019",fontSize:".8rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",opacity:chatInput.trim()?1:.4}}>
                 →
               </button>
             </div>
@@ -1655,21 +1828,21 @@ function CompareRoutines({ snapshots, products, entries, onClose }) {
     return (
       <div style={{marginBottom:16}}>
         <div style={{fontSize:".7rem",letterSpacing:".1em",textTransform:"uppercase",color,fontWeight:600,marginBottom:6}}>{emoji} {label}</div>
-        <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.6}}>{text}</div>
+        <div style={{fontSize:".84rem",color:"#D4C8B8",lineHeight:1.6}}>{text}</div>
       </div>
     );
   };
 
   return (
-    <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+    <div style={{background:"#1A1917",border:"1.5px solid #252320",borderRadius:16,padding:"18px",marginBottom:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#5a3a27"}}>Compare Routines</div>
-        <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#D4C8B8"}}>Compare Routines</div>
+        <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#5A5248"}}>×</button>
       </div>
 
       {status==="idle"&&(
         <div>
-          <div style={{fontSize:".78rem",color:"#a08070",marginBottom:12}}>Select any routines to compare — journal notes from each period will be included.</div>
+          <div style={{fontSize:".78rem",color:"#5A5248",marginBottom:12}}>Select any routines to compare — journal notes from each period will be included.</div>
           <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
             {allSnaps.map(snap => {
               const prods = snap.products.map(sp=>products.find(p=>p.id===sp.product_id)).filter(Boolean);
@@ -1677,20 +1850,20 @@ function CompareRoutines({ snapshots, products, entries, onClose }) {
               const isSelected = selected.includes(snap.id);
               return (
                 <div key={snap.id} onClick={()=>toggle(snap.id)}
-                  style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:12,border:`1.5px solid ${isSelected?"#b07a5e":"#e8d8cc"}`,background:isSelected?"#fdf0e8":"#fdf6f0",cursor:"pointer"}}>
-                  <div style={{width:18,height:18,borderRadius:4,border:`2px solid ${isSelected?"#b07a5e":"#d0b8a8"}`,background:isSelected?"#b07a5e":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:12,border:`1.5px solid ${isSelected?"#C8B8A0":"#252320"}`,background:isSelected?"#1A1917":"#0F0E0C",cursor:"pointer"}}>
+                  <div style={{width:18,height:18,borderRadius:4,border:`2px solid ${isSelected?"#C8B8A0":"#d0b8a8"}`,background:isSelected?"#C8B8A0":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                     {isSelected&&<span style={{color:"#fff",fontSize:".7rem",lineHeight:1}}>✓</span>}
                   </div>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:".82rem",color:"#3a2e27",fontWeight:500}}>{getSnapLabel(snap)}</div>
-                    <div style={{fontSize:".7rem",color:"#a08070",marginTop:2}}>{prods.length} products{noteCount>0?` · ${noteCount} journal entries`:""}</div>
+                    <div style={{fontSize:".82rem",color:"#D4C8B8",fontWeight:500}}>{getSnapLabel(snap)}</div>
+                    <div style={{fontSize:".7rem",color:"#5A5248",marginTop:2}}>{prods.length} products{noteCount>0?` · ${noteCount} journal entries`:""}</div>
                   </div>
                 </div>
               );
             })}
           </div>
           <button onClick={compare} disabled={selected.length < 2}
-            style={{width:"100%",background:selected.length>=2?"#3a2e27":"#d0b8a8",border:"none",borderRadius:12,padding:"12px",color:"#f7ece4",fontSize:".84rem",cursor:selected.length>=2?"pointer":"default",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
+            style={{width:"100%",background:selected.length>=2?"#D4C8B8":"#d0b8a8",border:"none",borderRadius:12,padding:"12px",color:"#222019",fontSize:".84rem",cursor:selected.length>=2?"pointer":"default",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
             Compare {selected.length >= 2 ? `${selected.length} Routines` : "— Select at least 2"}
           </button>
         </div>
@@ -1699,13 +1872,13 @@ function CompareRoutines({ snapshots, products, entries, onClose }) {
       {status==="loading"&&(
         <div style={{textAlign:"center",padding:"32px 0"}}>
           <div style={{fontSize:"1.4rem",marginBottom:12,animation:"spin 1.5s linear infinite",display:"inline-block"}}>✦</div>
-          <div style={{fontSize:".82rem",color:"#a08070",fontStyle:"italic"}}>Comparing your routines…</div>
+          <div style={{fontSize:".82rem",color:"#5A5248",fontStyle:"italic"}}>Comparing your routines…</div>
         </div>
       )}
 
       {status==="error"&&(
         <div style={{textAlign:"center",padding:"16px 0"}}>
-          <div style={{fontSize:".82rem",color:"#c07060",marginBottom:12}}>Something went wrong. Please try again.</div>
+          <div style={{fontSize:".82rem",color:"#8A5A50",marginBottom:12}}>Something went wrong. Please try again.</div>
           <button onClick={()=>setStatus("idle")} className="ghost-btn">Try Again</button>
         </div>
       )}
@@ -1713,19 +1886,19 @@ function CompareRoutines({ snapshots, products, entries, onClose }) {
       {status==="done"&&result&&(
         <div>
           {result.raw ? (
-            <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.7,whiteSpace:"pre-wrap"}}>{result.raw}</div>
+            <div style={{fontSize:".84rem",color:"#D4C8B8",lineHeight:1.7,whiteSpace:"pre-wrap"}}>{result.raw}</div>
           ) : (
             <div>
               {result.routines?.map((r,i)=>(
-                <div key={i} style={{marginBottom:16,paddingBottom:16,borderBottom:i<result.routines.length-1?"1px solid #f0e0d4":"none"}}>
-                  <div style={{fontSize:".7rem",letterSpacing:".08em",textTransform:"uppercase",color:"#b07a5e",fontWeight:600,marginBottom:6}}>📅 {r.label}</div>
-                  <div style={{fontSize:".84rem",color:"#3a2e27",lineHeight:1.6}}>{r.summary}</div>
+                <div key={i} style={{marginBottom:16,paddingBottom:16,borderBottom:i<result.routines.length-1?"1px solid #1E1C1A":"none"}}>
+                  <div style={{fontSize:".7rem",letterSpacing:".08em",textTransform:"uppercase",color:"#C8B8A0",fontWeight:600,marginBottom:6}}>📅 {r.label}</div>
+                  <div style={{fontSize:".84rem",color:"#D4C8B8",lineHeight:1.6}}>{r.summary}</div>
                 </div>
               ))}
               <Section emoji="📈" label="What improved over time" color="#5a8a5a" text={result.what_improved}/>
               <Section emoji="🔗" label="Common thread" color="#5a6a9a" text={result.common_thread}/>
               <Section emoji="🏆" label="Best performing period" color="#b07a30" text={result.best_period}/>
-              <Section emoji="💡" label="Recommendation" color="#7a5c48" text={result.recommendation}/>
+              <Section emoji="💡" label="Recommendation" color="#8A8070" text={result.recommendation}/>
             </div>
           )}
           <button onClick={()=>{setStatus("idle");setSelected([]);}} className="ghost-btn" style={{marginTop:4,fontSize:".74rem"}}>Compare Again</button>
@@ -1758,14 +1931,14 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
     reader.readAsDataURL(file);
   };
   return (
-    <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"18px",marginBottom:16}}>
+    <div style={{background:"#1A1917",border:"1.5px solid #252320",borderRadius:16,padding:"18px",marginBottom:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#7a5c48"}}>{isEditingProd?"Edit Product":"Add Product"}</div>
-        <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#a08070"}}>×</button>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#8A8070"}}>{isEditingProd?"Edit Product":"Add Product"}</div>
+        <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#5A5248"}}>×</button>
       </div>
       <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name" value={p.name} onChange={e=>setP(prev=>({...prev,name:e.target.value}))} autoFocus/>
       <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={p.brand||""} onChange={e=>setP(prev=>({...prev,brand:e.target.value}))}/>
-      {isEditingProd&&<div style={{fontSize:".64rem",color:"#c0a898",fontStyle:"italic",marginTop:-6,marginBottom:10}}>Name and brand changes apply across your routine history.</div>}
+      {isEditingProd&&<div style={{fontSize:".64rem",color:"#2A2820",fontStyle:"italic",marginTop:-6,marginBottom:10}}>Name and brand changes apply across your routine history.</div>}
       <div style={{display:"flex",gap:8,marginBottom:10}}>
         <input className="ifield" style={{flex:1}} placeholder="Product URL" value={p.link||""} onChange={e=>setP(prev=>({...prev,link:e.target.value}))}/>
         <input className="ifield" style={{width:88}} placeholder="Price" type="number" min="0" step="0.01" value={p.price||""} onChange={e=>setP(prev=>({...prev,price:e.target.value}))}/>
@@ -1775,7 +1948,7 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
             <div style={{background:"#f0e8f4",borderRadius:8,padding:"6px 14px",fontSize:".74rem",color:"#7a6a8a",fontWeight:500}}>
               {p.category==="skin"?"🌿 Skin":p.category==="treatment"?"💉 Treatment":"✨ Hair"}
             </div>
-            <div style={{fontSize:".64rem",color:"#c0a898",fontStyle:"italic"}}>Category can't be changed — remove and re-add to change.</div>
+            <div style={{fontSize:".64rem",color:"#2A2820",fontStyle:"italic"}}>Category can't be changed — remove and re-add to change.</div>
           </div>
         : <div style={{display:"flex",gap:8,marginBottom:10}}>
             {["skin","hair","treatment"].map(cat=>(
@@ -1808,7 +1981,7 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
           onKeyDown={e=>{if(e.key==="Enter"&&customTagInput.trim()){setP(prev=>({...prev,tags:[...(prev.tags||[]),customTagInput.trim()]}));setCustomTagInput("");}}}/>
         <button onClick={()=>{if(customTagInput.trim()){setP(prev=>({...prev,tags:[...(prev.tags||[]),customTagInput.trim()]}));setCustomTagInput("");}}}
           disabled={!customTagInput.trim()}
-          style={{padding:"5px 10px",borderRadius:8,border:"1px solid #e0cfc4",background:"transparent",color:"#7a5c48",fontSize:".74rem",cursor:customTagInput.trim()?"pointer":"default",fontFamily:"'DM Sans',sans-serif"}}>
+          style={{padding:"5px 10px",borderRadius:8,border:"1px solid #e0cfc4",background:"transparent",color:"#8A8070",fontSize:".74rem",cursor:customTagInput.trim()?"pointer":"default",fontFamily:"'DM Sans',sans-serif"}}>
           + Add
         </button>
       </div>
@@ -1819,7 +1992,7 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
             fontFamily:"'DM Sans',sans-serif",transition:"all .15s",
             background:p.is_staple?"#fff8e8":"transparent",
             borderColor:p.is_staple?"#d4a820":"#e0cfc4",
-            color:p.is_staple?"#9a7010":"#a08070"}}>
+            color:p.is_staple?"#9a7010":"#5A5248"}}>
           <span style={{fontSize:".8rem"}}>⭐</span> Staple
         </button>
       </div>
@@ -1837,16 +2010,16 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
         const bump = delta => setFreq(Math.min(7,Math.max(1,count+delta)), period==="day"?"week":period);
         return (
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
-            <span style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase",flexShrink:0}}>Freq</span>
+            <span style={{fontSize:".62rem",color:"#5A5248",letterSpacing:".08em",textTransform:"uppercase",flexShrink:0}}>Freq</span>
             <div style={{flex:1,display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end"}}>
               {enabled&&period!=="day"&&(
                 <>
                   <button onClick={()=>bump(-1)} disabled={count<=1}
-                    style={{width:24,height:24,borderRadius:"50%",border:"1px solid #e0cfc4",background:"#fff",color:count<=1?"#d0c0b8":"#7a5c48",cursor:count<=1?"default":"pointer",fontSize:".9rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>−</button>
-                  <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",color:"#3a2e27",minWidth:14,textAlign:"center"}}>{count}</span>
-                  <span style={{fontSize:".62rem",color:"#a08070"}}>×</span>
+                    style={{width:24,height:24,borderRadius:"50%",border:"1px solid #e0cfc4",background:"#fff",color:count<=1?"#d0c0b8":"#8A8070",cursor:count<=1?"default":"pointer",fontSize:".9rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>−</button>
+                  <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",color:"#D4C8B8",minWidth:14,textAlign:"center"}}>{count}</span>
+                  <span style={{fontSize:".62rem",color:"#5A5248"}}>×</span>
                   <button onClick={()=>bump(1)} disabled={count>=7}
-                    style={{width:24,height:24,borderRadius:"50%",border:"1px solid #e0cfc4",background:"#fff",color:count>=7?"#d0c0b8":"#7a5c48",cursor:count>=7?"default":"pointer",fontSize:".9rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
+                    style={{width:24,height:24,borderRadius:"50%",border:"1px solid #e0cfc4",background:"#fff",color:count>=7?"#d0c0b8":"#8A8070",cursor:count>=7?"default":"pointer",fontSize:".9rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
                 </>
               )}
               <div style={{display:"flex",gap:4}}>
@@ -1854,14 +2027,14 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
                   <button key={per} onClick={()=>setFreq(per==="day"?1:count,per)}
                     style={{padding:"4px 10px",borderRadius:7,border:"1px solid",cursor:"pointer",
                       fontFamily:"'DM Sans',sans-serif",fontSize:".68rem",fontWeight:500,
-                      background:enabled&&period===per?"#b07a5e":"transparent",
-                      color:enabled&&period===per?"#fff":"#a08070",
-                      borderColor:enabled&&period===per?"#b07a5e":"#ddd0c4",transition:"all .12s"}}>
+                      background:enabled&&period===per?"#C8B8A0":"transparent",
+                      color:enabled&&period===per?"#fff":"#5A5248",
+                      borderColor:enabled&&period===per?"#C8B8A0":"#ddd0c4",transition:"all .12s"}}>
                     {per==="day"?"Daily":per==="week"?"Wkly":"Mnth"}
                   </button>
                 ))}
                 {enabled&&<button onClick={()=>setP(prev=>({...prev,frequency:""}))}
-                  style={{padding:"4px 6px",borderRadius:7,border:"1px solid #ddd0c4",cursor:"pointer",background:"transparent",color:"#c0a898",fontSize:".68rem"}}>✕</button>}
+                  style={{padding:"4px 6px",borderRadius:7,border:"1px solid #ddd0c4",cursor:"pointer",background:"transparent",color:"#2A2820",fontSize:".68rem"}}>✕</button>}
               </div>
             </div>
           </div>
@@ -1874,15 +2047,15 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
           <button onClick={()=>mediaRef.current.click()} title="Attach my photo"
             style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",
               background:"none",border:"none",cursor:"pointer",fontSize:".9rem",
-              color:p.media_url?"#b07a5e":"#c8b8ac",lineHeight:1,padding:2}}>📷</button>
+              color:p.media_url?"#C8B8A0":"#c8b8ac",lineHeight:1,padding:2}}>📷</button>
           <input ref={mediaRef} type="file" accept="image/*" style={{display:"none"}}
             onChange={e=>handleMediaFile(e.target.files[0])}/>
         </div>
         {p.media_url&&(
           <div style={{display:"flex",alignItems:"center",gap:8,marginTop:6,padding:"4px 8px",background:"#f7f2ee",borderRadius:8}}>
-            <img src={p.media_url} alt="" style={{width:26,height:26,borderRadius:5,objectFit:"cover",border:"1px solid #e8d8cc",flexShrink:0}}/>
-            <span style={{fontSize:".68rem",color:"#a08070",flex:1}}>My photo attached</span>
-            <button onClick={()=>setP(prev=>({...prev,media_url:""}))} style={{background:"none",border:"none",color:"#c0a898",cursor:"pointer",fontSize:".75rem",padding:0}}>✕</button>
+            <img src={p.media_url} alt="" style={{width:26,height:26,borderRadius:5,objectFit:"cover",border:"1px solid #252320",flexShrink:0}}/>
+            <span style={{fontSize:".68rem",color:"#5A5248",flex:1}}>My photo attached</span>
+            <button onClick={()=>setP(prev=>({...prev,media_url:""}))} style={{background:"none",border:"none",color:"#2A2820",cursor:"pointer",fontSize:".75rem",padding:0}}>✕</button>
           </div>
         )}
       </div>
@@ -1952,21 +2125,21 @@ function SlimEditForm({ initialData, onSave, onClose, viewOnly }) {
       <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
         <div className="modal" style={{padding:"24px 22px 28px"}} onClick={e=>e.stopPropagation()}>
           <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:18}}>
-            {displayImage&&<img src={displayImage} alt="" style={{width:52,height:52,borderRadius:9,objectFit:"cover",flexShrink:0,border:"1px solid #f0e0d4"}}/>}
+            {displayImage&&<img src={displayImage} alt="" style={{width:52,height:52,borderRadius:9,objectFit:"cover",flexShrink:0,border:"1px solid #1E1C1A"}}/>}
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",color:"#3a2e27",lineHeight:1.1}}>{p.name}</div>
-              {p.brand&&<div style={{fontSize:".74rem",color:"#a08070",marginTop:2}}>{p.brand}</div>}
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",color:"#D4C8B8",lineHeight:1.1}}>{p.name}</div>
+              {p.brand&&<div style={{fontSize:".74rem",color:"#5A5248",marginTop:2}}>{p.brand}</div>}
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
-                <div style={{background:"#f7f0ea",borderRadius:5,padding:"2px 8px",fontSize:".6rem",color:"#b07a5e",letterSpacing:".06em",textTransform:"uppercase",fontWeight:600}}>{p.category==="skin"?"Skin":p.category==="treatment"?"Treatment":"Hair"}</div>
+                <div style={{background:"#f7f0ea",borderRadius:5,padding:"2px 8px",fontSize:".6rem",color:"#C8B8A0",letterSpacing:".06em",textTransform:"uppercase",fontWeight:600}}>{p.category==="skin"?"Skin":p.category==="treatment"?"Treatment":"Hair"}</div>
                 {p.is_staple&&<div style={{background:"#fff8e8",borderRadius:5,padding:"2px 8px",fontSize:".6rem",color:"#9a7010",letterSpacing:".06em",border:"1px solid #e8d060"}}>⭐ Staple</div>}
               </div>
             </div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8,flexShrink:0}}>
-              <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#c0a898",lineHeight:1,padding:0}}>×</button>
+              <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#2A2820",lineHeight:1,padding:0}}>×</button>
               <button onClick={()=>setIsViewMode(false)}
-                style={{width:30,height:30,borderRadius:"50%",background:"#fdf6f0",border:"1px solid #e8d8cc",
+                style={{width:30,height:30,borderRadius:"50%",background:"#0F0E0C",border:"1px solid #252320",
                   display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7a5c48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8A8070" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                   <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
@@ -1974,20 +2147,20 @@ function SlimEditForm({ initialData, onSave, onClose, viewOnly }) {
             </div>
           </div>
           {(p.price||p.frequency)&&<div style={{display:"flex",gap:12,marginBottom:12}}>
-            {p.price&&<div style={{fontSize:".84rem",color:"#3a2e27"}}>💰 <span style={{fontWeight:500}}>${parseFloat(p.price).toFixed(2)}</span></div>}
+            {p.price&&<div style={{fontSize:".84rem",color:"#D4C8B8"}}>💰 <span style={{fontWeight:500}}>${parseFloat(p.price).toFixed(2)}</span></div>}
             {p.frequency&&<div style={{fontSize:".84rem",color:"#9a7050"}}>{p.frequency}</div>}
           </div>}
           {p.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>
-            {p.tags.map(t=><span key={t} style={{padding:"3px 10px",borderRadius:10,background:"#f0e8e0",fontSize:".7rem",color:"#7a5c48"}}>{t}</span>)}
+            {p.tags.map(t=><span key={t} style={{padding:"3px 10px",borderRadius:10,background:"#f0e8e0",fontSize:".7rem",color:"#8A8070"}}>{t}</span>)}
           </div>}
-          {p.notes&&<div style={{fontSize:".82rem",color:"#6a5048",lineHeight:1.6,marginBottom:12,padding:"10px 12px",background:"#fdf8f4",borderRadius:10,border:"1px solid #f0e0d4"}}>{p.notes}</div>}
+          {p.notes&&<div style={{fontSize:".82rem",color:"#6a5048",lineHeight:1.6,marginBottom:12,padding:"10px 12px",background:"#fdf8f4",borderRadius:10,border:"1px solid #1E1C1A"}}>{p.notes}</div>}
           {p.media_url&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,padding:"6px 10px",background:"#f7f2ee",borderRadius:8}}>
-            <img src={p.media_url} alt="" style={{width:28,height:28,borderRadius:5,objectFit:"cover",border:"1px solid #e8d8cc",flexShrink:0}}/>
-            <span style={{fontSize:".68rem",color:"#a08070"}}>My photo</span>
+            <img src={p.media_url} alt="" style={{width:28,height:28,borderRadius:5,objectFit:"cover",border:"1px solid #252320",flexShrink:0}}/>
+            <span style={{fontSize:".68rem",color:"#5A5248"}}>My photo</span>
           </div>}
           {p.link&&<button onClick={()=>window.open(p.link,"_blank")}
-            style={{width:"100%",padding:"10px",background:"none",border:"1.5px solid #e8d8cc",borderRadius:12,
-              color:"#7a5c48",fontFamily:"'DM Sans',sans-serif",fontSize:".82rem",cursor:"pointer"}}>
+            style={{width:"100%",padding:"10px",background:"none",border:"1.5px solid #252320",borderRadius:12,
+              color:"#8A8070",fontFamily:"'DM Sans',sans-serif",fontSize:".82rem",cursor:"pointer"}}>
             View product ↗
           </button>}
         </div>
@@ -2000,14 +2173,14 @@ function SlimEditForm({ initialData, onSave, onClose, viewOnly }) {
 
         {/* Header */}
         <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:20}}>
-          {displayImage&&<img src={displayImage} alt="" style={{width:52,height:52,borderRadius:9,objectFit:"cover",flexShrink:0,border:"1px solid #f0e0d4"}}/>}
+          {displayImage&&<img src={displayImage} alt="" style={{width:52,height:52,borderRadius:9,objectFit:"cover",flexShrink:0,border:"1px solid #1E1C1A"}}/>}
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",color:"#3a2e27",lineHeight:1.1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
-            {p.brand&&<div style={{fontSize:".74rem",color:"#a08070",marginTop:1}}>{p.brand}</div>}
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",color:"#D4C8B8",lineHeight:1.1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
+            {p.brand&&<div style={{fontSize:".74rem",color:"#5A5248",marginTop:1}}>{p.brand}</div>}
           </div>
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}}>
-            <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#c0a898",lineHeight:1,padding:0}}>×</button>
-            <div style={{background:"#f7f0ea",borderRadius:5,padding:"2px 8px",fontSize:".6rem",color:"#b07a5e",letterSpacing:".06em",textTransform:"uppercase",fontWeight:600}}>{catLabel}</div>
+            <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#2A2820",lineHeight:1,padding:0}}>×</button>
+            <div style={{background:"#f7f0ea",borderRadius:5,padding:"2px 8px",fontSize:".6rem",color:"#C8B8A0",letterSpacing:".06em",textTransform:"uppercase",fontWeight:600}}>{catLabel}</div>
           </div>
         </div>
 
@@ -2044,7 +2217,7 @@ function SlimEditForm({ initialData, onSave, onClose, viewOnly }) {
             onKeyDown={e=>{if(e.key==="Enter"&&customTagInput.trim()){setP(prev=>({...prev,tags:[...(prev.tags||[]),customTagInput.trim()]}));setCustomTagInput("");}}}/>
           <button onClick={()=>{if(customTagInput.trim()){setP(prev=>({...prev,tags:[...(prev.tags||[]),customTagInput.trim()]}));setCustomTagInput("");}}}
             disabled={!customTagInput.trim()}
-            style={{padding:"5px 9px",borderRadius:8,border:"1px solid #e0cfc4",background:"transparent",color:"#7a5c48",fontSize:".72rem",cursor:customTagInput.trim()?"pointer":"default",fontFamily:"'DM Sans',sans-serif"}}>
+            style={{padding:"5px 9px",borderRadius:8,border:"1px solid #e0cfc4",background:"transparent",color:"#8A8070",fontSize:".72rem",cursor:customTagInput.trim()?"pointer":"default",fontFamily:"'DM Sans',sans-serif"}}>
             + Add
           </button>
         </div>
@@ -2057,23 +2230,23 @@ function SlimEditForm({ initialData, onSave, onClose, viewOnly }) {
               fontFamily:"'DM Sans',sans-serif",transition:"all .15s",
               background:p.is_staple?"#fff8e8":"transparent",
               borderColor:p.is_staple?"#d4a820":"#e0cfc4",
-              color:p.is_staple?"#9a7010":"#a08070"}}>
+              color:p.is_staple?"#9a7010":"#5A5248"}}>
             <span style={{fontSize:".8rem"}}>⭐</span> Staple
           </button>
         </div>
 
         {/* Frequency — single compact row */}
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
-          <span style={{fontSize:".62rem",color:"#a08070",letterSpacing:".08em",textTransform:"uppercase",flexShrink:0}}>Frequency</span>
+          <span style={{fontSize:".62rem",color:"#5A5248",letterSpacing:".08em",textTransform:"uppercase",flexShrink:0}}>Frequency</span>
           <div style={{flex:1,display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end"}}>
             {enabled&&period!=="day"&&(
               <>
                 <button onClick={()=>bump(-1)} disabled={count<=1}
-                  style={{width:24,height:24,borderRadius:"50%",border:"1px solid #e0cfc4",background:"#fff",color:count<=1?"#d0c0b8":"#7a5c48",cursor:count<=1?"default":"pointer",fontSize:".9rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>−</button>
-                <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",color:"#3a2e27",minWidth:14,textAlign:"center"}}>{count}</span>
-                <span style={{fontSize:".62rem",color:"#a08070"}}>×</span>
+                  style={{width:24,height:24,borderRadius:"50%",border:"1px solid #e0cfc4",background:"#fff",color:count<=1?"#d0c0b8":"#8A8070",cursor:count<=1?"default":"pointer",fontSize:".9rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>−</button>
+                <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",color:"#D4C8B8",minWidth:14,textAlign:"center"}}>{count}</span>
+                <span style={{fontSize:".62rem",color:"#5A5248"}}>×</span>
                 <button onClick={()=>bump(1)} disabled={count>=7}
-                  style={{width:24,height:24,borderRadius:"50%",border:"1px solid #e0cfc4",background:"#fff",color:count>=7?"#d0c0b8":"#7a5c48",cursor:count>=7?"default":"pointer",fontSize:".9rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
+                  style={{width:24,height:24,borderRadius:"50%",border:"1px solid #e0cfc4",background:"#fff",color:count>=7?"#d0c0b8":"#8A8070",cursor:count>=7?"default":"pointer",fontSize:".9rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
               </>
             )}
             <div style={{display:"flex",gap:4}}>
@@ -2081,14 +2254,14 @@ function SlimEditForm({ initialData, onSave, onClose, viewOnly }) {
                 <button key={per} onClick={()=>setFreq(per==="day"?1:count,per)}
                   style={{padding:"4px 10px",borderRadius:7,border:"1px solid",cursor:"pointer",
                     fontFamily:"'DM Sans',sans-serif",fontSize:".68rem",fontWeight:500,
-                    background:enabled&&period===per?"#b07a5e":"transparent",
-                    color:enabled&&period===per?"#fff":"#a08070",
-                    borderColor:enabled&&period===per?"#b07a5e":"#ddd0c4",transition:"all .12s"}}>
+                    background:enabled&&period===per?"#C8B8A0":"transparent",
+                    color:enabled&&period===per?"#fff":"#5A5248",
+                    borderColor:enabled&&period===per?"#C8B8A0":"#ddd0c4",transition:"all .12s"}}>
                   {per==="day"?"Daily":per==="week"?"Wkly":"Mnth"}
                 </button>
               ))}
               {enabled&&<button onClick={()=>setP(prev=>({...prev,frequency:""}))}
-                style={{padding:"4px 6px",borderRadius:7,border:"1px solid #ddd0c4",cursor:"pointer",background:"transparent",color:"#c0a898",fontSize:".68rem"}}>✕</button>}
+                style={{padding:"4px 6px",borderRadius:7,border:"1px solid #ddd0c4",cursor:"pointer",background:"transparent",color:"#2A2820",fontSize:".68rem"}}>✕</button>}
             </div>
           </div>
         </div>
@@ -2096,19 +2269,19 @@ function SlimEditForm({ initialData, onSave, onClose, viewOnly }) {
         {/* Photo attachment */}
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,background:"#f7f2ee",borderRadius:10,padding:"8px 12px"}}>
           {displayImage
-            ?<img src={displayImage} alt="" style={{width:36,height:36,borderRadius:6,objectFit:"cover",border:"1px solid #e8d8cc",flexShrink:0}}/>
+            ?<img src={displayImage} alt="" style={{width:36,height:36,borderRadius:6,objectFit:"cover",border:"1px solid #252320",flexShrink:0}}/>
             :<div style={{width:36,height:36,borderRadius:6,background:"#ede4dc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",flexShrink:0}}>📷</div>
           }
           <div style={{flex:1}}>
-            <div style={{fontSize:".66rem",color:"#a08070",letterSpacing:".06em",textTransform:"uppercase",marginBottom:2}}>Product Photo</div>
-            <div style={{fontSize:".62rem",color:"#c0a898"}}>Used if no image from link</div>
+            <div style={{fontSize:".66rem",color:"#5A5248",letterSpacing:".06em",textTransform:"uppercase",marginBottom:2}}>Product Photo</div>
+            <div style={{fontSize:".62rem",color:"#2A2820"}}>Used if no image from link</div>
           </div>
           <button onClick={()=>fileRef.current.click()}
-            style={{background:"none",border:"1px solid #e0cfc4",borderRadius:7,padding:"5px 10px",fontSize:".68rem",color:"#7a5c48",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",flexShrink:0}}>
+            style={{background:"none",border:"1px solid #e0cfc4",borderRadius:7,padding:"5px 10px",fontSize:".68rem",color:"#8A8070",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",flexShrink:0}}>
             {displayImage?"Change":"Add"}
           </button>
           {p.userImage&&<button onClick={()=>setP(prev=>({...prev,userImage:null}))}
-            style={{background:"none",border:"none",color:"#c0a898",fontSize:".8rem",cursor:"pointer",padding:"4px",flexShrink:0}}>✕</button>}
+            style={{background:"none",border:"none",color:"#2A2820",fontSize:".8rem",cursor:"pointer",padding:"4px",flexShrink:0}}>✕</button>}
           <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleImageFile(e.target.files[0])}/>
         </div>
 
@@ -2119,21 +2292,21 @@ function SlimEditForm({ initialData, onSave, onClose, viewOnly }) {
             <button onClick={()=>mediaRef.current.click()} title="Attach my photo"
               style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",
                 background:"none",border:"none",cursor:"pointer",fontSize:".9rem",
-                color:p.media_url?"#b07a5e":"#c8b8ac",lineHeight:1,padding:2}}>📷</button>
+                color:p.media_url?"#C8B8A0":"#c8b8ac",lineHeight:1,padding:2}}>📷</button>
             <input ref={mediaRef} type="file" accept="image/*" style={{display:"none"}}
               onChange={e=>handleMediaUpload(e.target.files[0])}/>
           </div>
           {p.media_url&&(
             <div style={{display:"flex",alignItems:"center",gap:8,marginTop:6,padding:"4px 8px",background:"#f7f2ee",borderRadius:8}}>
-              <img src={p.media_url} alt="" style={{width:26,height:26,borderRadius:5,objectFit:"cover",border:"1px solid #e8d8cc",flexShrink:0}}/>
-              <span style={{fontSize:".68rem",color:"#a08070",flex:1}}>My photo attached</span>
-              <button onClick={()=>setP(prev=>({...prev,media_url:""}))} style={{background:"none",border:"none",color:"#c0a898",cursor:"pointer",fontSize:".75rem",padding:0}}>✕</button>
+              <img src={p.media_url} alt="" style={{width:26,height:26,borderRadius:5,objectFit:"cover",border:"1px solid #252320",flexShrink:0}}/>
+              <span style={{fontSize:".68rem",color:"#5A5248",flex:1}}>My photo attached</span>
+              <button onClick={()=>setP(prev=>({...prev,media_url:""}))} style={{background:"none",border:"none",color:"#2A2820",cursor:"pointer",fontSize:".75rem",padding:0}}>✕</button>
             </div>
           )}
         </div>
 
         <button onClick={()=>onSave(p)} disabled={!p.name.trim()}
-          style={{width:"100%",padding:"12px",background:p.name.trim()?"#b07a5e":"#e8d8cc",border:"none",borderRadius:12,
+          style={{width:"100%",padding:"12px",background:p.name.trim()?"#C8B8A0":"#252320",border:"none",borderRadius:12,
             color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:".84rem",fontWeight:600,cursor:p.name.trim()?"pointer":"default",
             letterSpacing:".04em",transition:"background .15s"}}>
           Save Changes
@@ -2380,20 +2553,20 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
       return (
         <div style={{marginBottom:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
-            <div style={{fontSize:".64rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070"}}>{label}</div>
-            <div style={{fontSize:".6rem",color:"#c0b0a8"}}>{catProds.length} product{catProds.length!==1?"s":""}</div>
+            <div style={{fontSize:".64rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)"}}>{label}</div>
+            <div style={{fontSize:".6rem",color:"rgba(255,255,255,.45)"}}>{catProds.length} product{catProds.length!==1?"s":""}</div>
           </div>
           <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,scrollbarWidth:"none",WebkitOverflowScrolling:"touch",paddingRight:4}}>
             {catProds.map(p=>(
-              <div key={p.id} style={{flexShrink:0,width:96,background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:13,overflow:"hidden"}}>
+              <div key={p.id} style={{flexShrink:0,width:96,background:"rgba(255,255,255,.92)",border:"1px solid rgba(255,255,255,.9)",borderRadius:13,overflow:"hidden"}}>
                 {(p.image||p.media_url)
                   ?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:76,objectFit:"cover",display:"block"}}/>
-                  :<div style={{width:"100%",height:76,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem"}}>{catEmoji(cat)}</div>
+                  :<div style={{width:"100%",height:76,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem"}}>{catEmoji(cat)}</div>
                 }
                 <div style={{padding:"7px 8px 8px"}}>
-                  <div style={{fontSize:".7rem",fontWeight:500,color:"#3a2e27",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
-                  {p.brand&&<div style={{fontSize:".6rem",color:"#a08070",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.brand}</div>}
-                  {p.frequency&&<div style={{fontSize:".56rem",background:"#f0e8f4",borderRadius:5,padding:"1px 5px",color:"#7a6a8a",display:"inline-block",marginTop:3}}>{p.frequency}</div>}
+                  <div style={{fontSize:".7rem",fontWeight:500,color:"#1A2820",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
+                  {p.brand&&<div style={{fontSize:".6rem",color:"#6B8C7A",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.brand}</div>}
+                  {p.frequency&&<div style={{fontSize:".56rem",background:"rgba(126,196,154,.15)",borderRadius:5,padding:"1px 5px",color:"#243D30",display:"inline-block",marginTop:3}}>{p.frequency}</div>}
                 </div>
               </div>
             ))}
@@ -2402,20 +2575,20 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
       );
     };
     return (
-      <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:16,padding:"16px 18px",marginBottom:12,cursor:"pointer"}} onClick={()=>setOpen(o=>!o)}>
+      <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:16,padding:"16px 18px",marginBottom:12,cursor:"pointer"}} onClick={()=>setOpen(o=>!o)}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
           <div>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>{startLabel} — {endLabel}</div>
-            <div style={{fontSize:".72rem",color:"#a08070",marginTop:3}}>{prods.length} product{prods.length!==1?"s":""}{skinP.length>0?` · ${skinP.length} skin`:""}{ hairP.length>0?` · ${hairP.length} hair`:""}{ txP.length>0?` · ${txP.length} treatment`:""}</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"rgba(255,255,255,.85)"}}>{startLabel} — {endLabel}</div>
+            <div style={{fontSize:".72rem",color:"rgba(255,255,255,.55)",marginTop:3}}>{prods.length} product{prods.length!==1?"s":""}{skinP.length>0?` · ${skinP.length} skin`:""}{ hairP.length>0?` · ${hairP.length} hair`:""}{ txP.length>0?` · ${txP.length} treatment`:""}</div>
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <button onClick={e=>{e.stopPropagation();setSnapAnalysis(v=>!v);}} style={{background:"none",border:"1px solid #e8d8cc",borderRadius:8,padding:"4px 10px",color:"#a08070",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+            <button onClick={e=>{e.stopPropagation();setSnapAnalysis(v=>!v);}} style={{background:"none",border:"1px solid rgba(255,255,255,.25)",borderRadius:8,padding:"4px 10px",color:"rgba(255,255,255,.6)",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
               {snapAnalysis?"Close":"Analyze"}
             </button>
-            {open&&<button onClick={e=>{e.stopPropagation();setConfirmDel(true);}} style={{background:"none",border:"1px solid #f0c8c0",borderRadius:8,padding:"4px 10px",color:"#c07060",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+            {open&&<button onClick={e=>{e.stopPropagation();setConfirmDel(true);}} style={{background:"none",border:"1px solid #f0c8c0",borderRadius:8,padding:"4px 10px",color:"#8A5A50",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
               Delete
             </button>}
-            <span style={{color:"#b07a5e",fontSize:".8rem"}}>{open?"▲":"▼"}</span>
+            <span style={{color:"rgba(255,255,255,.6)",fontSize:".8rem"}}>{open?"▲":"▼"}</span>
           </div>
         </div>
         {snapAnalysis&&<div onClick={e=>e.stopPropagation()}>
@@ -2428,17 +2601,17 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
             onClose={()=>setSnapAnalysis(false)}
             onFetchIngredients={onFetchIngredients}/>
         </div>}
-        {confirmDel&&<div style={{marginTop:12,background:"#fff8f3",border:"1.5px solid #f0c8c0",borderRadius:12,padding:"14px"}} onClick={e=>e.stopPropagation()}>
-          <div style={{fontSize:".84rem",color:"#3a2e27",marginBottom:12,lineHeight:1.5}}>Delete this snapshot? This cannot be undone.</div>
+        {confirmDel&&<div style={{marginTop:12,background:"rgba(200,100,80,.08)",border:"1px solid #f0c8c0",borderRadius:12,padding:"14px"}} onClick={e=>e.stopPropagation()}>
+          <div style={{fontSize:".84rem",color:"rgba(255,255,255,.85)",marginBottom:12,lineHeight:1.5}}>Delete this snapshot? This cannot be undone.</div>
           <div style={{display:"flex",gap:8}}>
             <button onClick={()=>setConfirmDel(false)} className="ghost-btn" style={{flex:1,fontSize:".78rem"}}>Cancel</button>
             <button onClick={()=>onDeleteSnapshot(snap.id)}
-              style={{flex:1,background:"#c07060",border:"none",borderRadius:10,padding:"9px",color:"#fff",fontSize:".78rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+              style={{flex:1,background:"#8A5A50",border:"none",borderRadius:10,padding:"9px",color:"#fff",fontSize:".78rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
               Yes, Delete
             </button>
           </div>
         </div>}
-        {open&&<div style={{marginTop:14,borderTop:"1px solid #f0e0d4",paddingTop:14}} onClick={e=>e.stopPropagation()}>
+        {open&&<div style={{marginTop:14,borderTop:"1px solid rgba(255,255,255,.15)",paddingTop:14}} onClick={e=>e.stopPropagation()}>
           <SnapCatRow cat="skin" label="🌿 Skin" catProds={skinP}/>
           <SnapCatRow cat="hair" label="✨ Hair" catProds={hairP}/>
           <SnapCatRow cat="treatment" label="💉 Treatments" catProds={txP}/>
@@ -2452,13 +2625,13 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
   return (
     <div className="app">
       <div className="header" style={{position:"relative"}}>
-        <button onClick={()=>tryNavigateAway(onHome||onBack)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
+        <button onClick={()=>tryNavigateAway(onHome||onBack)} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,.7)",padding:"8px",lineHeight:1}}><HomeIcon/></button>
         <div className="header-title">My <span>Products</span></div>
         <div className="header-sub">{products.length} in library</div>
         {onMenuOpen&&<HamburgerBtn onClick={onMenuOpen}/>}
       </div>
 
-      <div style={{display:"flex",gap:0,marginBottom:20,borderRadius:12,overflow:"hidden",border:"1.5px solid #e8d8cc"}}>
+      <div style={{display:"flex",gap:0,marginBottom:20,borderRadius:12,overflow:"hidden",border:"1px solid rgba(255,255,255,.2)"}}>
         {[["current","Current Routine"],["history","Snapshot History"]].map(([v,l])=>(
           <button key={v}
             onClick={()=>{
@@ -2473,7 +2646,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
               setChooseCat(false);
             }}
             style={{flex:1,padding:"10px",fontSize:".78rem",cursor:"pointer",border:"none",fontFamily:"'DM Sans',sans-serif",
-              background:tab===v?"#b07a5e":"#fff8f3",color:tab===v?"#fff":"#a08070",transition:"all .15s"}}>
+              background:tab===v?"#1E3428":"rgba(255,255,255,.12)",color:tab===v?"#fff":"rgba(255,255,255,.6)",transition:"all .15s"}}>
             {l}
           </button>
         ))}
@@ -2496,12 +2669,12 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                 {/* Featured header */}
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,padding:"2px 0"}}>
                   <button onClick={()=>setFeaturedView(null)}
-                    style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:"#a08070",fontFamily:"'DM Sans',sans-serif",fontSize:".76rem",padding:"4px 0",flexShrink:0}}>
+                    style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,.7)",fontFamily:"'DM Sans',sans-serif",fontSize:".76rem",padding:"4px 0",flexShrink:0}}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
                     {catLabel}
                   </button>
-                  <div style={{flex:1,fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27",textAlign:"center"}}>My <em style={{color:"#b07a5e"}}>{catLabel}</em></div>
-                  <div style={{fontSize:".66rem",color:"#c0b0a8",flexShrink:0}}>{catProds.length} products</div>
+                  <div style={{flex:1,fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"rgba(255,255,255,.85)",textAlign:"center"}}>My <em style={{color:"#7EC49A"}}>{catLabel}</em></div>
+                  <div style={{fontSize:".66rem",color:"rgba(255,255,255,.5)",flexShrink:0}}>{catProds.length} products</div>
                 </div>
 
                 {/* Carousel — unified lookbook cards (image + details in one card) */}
@@ -2517,20 +2690,20 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                   }}>
                   {catProds.map((p,i)=>(
                     <div key={p.id} style={{flexShrink:0,width:260,scrollSnapAlign:"center",
-                      background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:20,overflow:"hidden",
+                      background:"rgba(255,255,255,.92)",border:"1px solid rgba(255,255,255,.9)",borderRadius:20,overflow:"hidden",
                       opacity:i===idx?1:.45,transform:i===idx?"scale(1)":"scale(0.93)",
                       transition:"opacity .25s,transform .25s",
-                      boxShadow:i===idx?"0 6px 28px rgba(90,50,30,.14)":"none"}}>
+                      boxShadow:i===idx?"0 6px 28px rgba(0,0,0,.18)":"none"}}>
                       {/* Image */}
-                      <div style={{position:"relative",height:220,background:"#f0e0d4",
+                      <div style={{position:"relative",height:220,background:"rgba(255,255,255,.15)",
                         display:"flex",alignItems:"center",justifyContent:"center",fontSize:"4rem",overflow:"hidden"}}>
                         <SwipeableProductImage images={[p.image, p.media_url]} height={220} emoji={catEmoji(featuredView.category)}/>
                         {i===idx&&<button onClick={e=>{e.stopPropagation();openEditForm(p);}}
                           style={{position:"absolute",top:10,right:10,width:30,height:30,borderRadius:"50%",
-                            background:"rgba(253,246,240,.92)",border:"1px solid rgba(232,216,204,.8)",
+                            background:"rgba(255,255,255,.9)",border:"1px solid rgba(255,255,255,.8)",
                             display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",
                             boxShadow:"0 1px 4px rgba(0,0,0,.1)"}}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7a5c48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4A5E50" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                             <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                           </svg>
@@ -2539,26 +2712,26 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                       {/* Details — inside the card */}
                       <div style={{padding:"14px 16px 16px"}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
-                          {p.brand&&<div style={{fontSize:".6rem",color:"#a08070",letterSpacing:".1em",textTransform:"uppercase"}}>{p.brand}</div>}
-                          {p.price&&<div style={{fontSize:".7rem",fontWeight:500,color:"#3a2e27"}}>${parseFloat(p.price).toFixed(2)}</div>}
+                          {p.brand&&<div style={{fontSize:".6rem",color:"#6B8C7A",letterSpacing:".1em",textTransform:"uppercase"}}>{p.brand}</div>}
+                          {p.price&&<div style={{fontSize:".7rem",fontWeight:500,color:"#243D30"}}>${parseFloat(p.price).toFixed(2)}</div>}
                         </div>
-                        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.15rem",color:"#3a2e27",lineHeight:1.3,marginBottom:6}}>{p.name}</div>
-                        {p.frequency&&<div style={{fontSize:".6rem",background:"#f0e8f4",borderRadius:5,padding:"2px 7px",color:"#7a6a8a",display:"inline-block",marginBottom:6}}>{p.frequency}</div>}
-                        {p.notes&&<div style={{fontSize:".7rem",color:"#8a6858",fontStyle:"italic",lineHeight:1.5,marginBottom:10}}>{p.notes}</div>}
+                        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.15rem",color:"#1A2820",lineHeight:1.3,marginBottom:6}}>{p.name}</div>
+                        {p.frequency&&<div style={{fontSize:".6rem",background:"rgba(126,196,154,.15)",borderRadius:5,padding:"2px 7px",color:"#243D30",display:"inline-block",marginBottom:6}}>{p.frequency}</div>}
+                        {p.notes&&<div style={{fontSize:".7rem",color:"#6B8C7A",fontStyle:"italic",lineHeight:1.5,marginBottom:10}}>{p.notes}</div>}
                         {i===idx&&(p.link||isDraft)&&<div style={{marginTop:p.notes?0:8}}>
                           {p.link&&<button onClick={e=>{e.stopPropagation();openUrl(p.link);}}
-                            style={{width:"100%",background:"#b07a5e",color:"#fff",border:"none",borderRadius:9,padding:"9px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500,marginBottom:isDraft?6:0}}>Buy Now</button>}
+                            style={{width:"100%",background:"#1E3428",color:"#fff",border:"none",borderRadius:9,padding:"9px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500,marginBottom:isDraft?6:0}}>Buy Now</button>}
                           {isDraft&&(
                             removeConfirm===p.snapProdId
-                              ? <div style={{display:"flex",gap:6,alignItems:"center",background:"#fff0ee",borderRadius:9,padding:"8px 10px"}}>
-                                  <span style={{flex:1,fontSize:".68rem",color:"#c07060"}}>Remove from routine?</span>
+                              ? <div style={{display:"flex",gap:6,alignItems:"center",background:"rgba(200,100,80,.08)",borderRadius:9,padding:"8px 10px"}}>
+                                  <span style={{flex:1,fontSize:".68rem",color:"#8A5A50"}}>Remove from routine?</span>
                                   <button onClick={async e=>{e.stopPropagation();await removeProduct(p.snapProdId,p.name);setFeaturedView(null);setRemoveConfirm(null);}}
-                                    style={{background:"#c07060",border:"none",borderRadius:7,padding:"5px 10px",color:"#fff",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>Yes</button>
+                                    style={{background:"#8A5A50",border:"none",borderRadius:7,padding:"5px 10px",color:"#fff",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>Yes</button>
                                   <button onClick={e=>{e.stopPropagation();setRemoveConfirm(null);}}
-                                    style={{background:"none",border:"1px solid #e8d8cc",borderRadius:7,padding:"5px 10px",color:"#a08070",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+                                    style={{background:"none",border:"1px solid rgba(255,255,255,.25)",borderRadius:7,padding:"5px 10px",color:"#6B8C7A",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
                                 </div>
                               : <button onClick={e=>{e.stopPropagation();setRemoveConfirm(p.snapProdId);}}
-                                  style={{width:"100%",background:"none",color:"#c07060",border:"1.5px solid #f0c8c0",borderRadius:9,padding:"8px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",textAlign:"center"}}>Remove from routine</button>
+                                  style={{width:"100%",background:"none",color:"#8A5A50",border:"1.5px solid rgba(200,100,80,.3)",borderRadius:9,padding:"8px",fontSize:".74rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",textAlign:"center"}}>Remove from routine</button>
                           )}
                         </div>}
                       </div>
@@ -2575,10 +2748,10 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                         carouselScrollRef.current?.scrollTo({left:i*272,behavior:"smooth"});
                       }}
                       style={{height:6,borderRadius:3,cursor:"pointer",transition:"all .2s",
-                        background:i===idx?"#b07a5e":"#e8d8cc",width:i===idx?18:6}}/>
+                        background:i===idx?"#1E3428":"rgba(255,255,255,.25)",width:i===idx?18:6}}/>
                   ))}
                 </div>
-                <div style={{textAlign:"center",marginTop:5,fontSize:".62rem",color:"#c0b0a8",letterSpacing:".06em"}}>{idx+1} of {catProds.length}</div>
+                <div style={{textAlign:"center",marginTop:5,fontSize:".62rem",color:"rgba(255,255,255,.5)",letterSpacing:".06em"}}>{idx+1} of {catProds.length}</div>
 
                 {/* Edit form rendered as bottom sheet — see below MyProductsPage return */}
               </div>
@@ -2590,38 +2763,38 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
             <>
               {snapProducts.length===0&&!showForm&&!chooseCat&&!isDraft&&(
                 <div style={{textAlign:"center",padding:"52px 16px 44px"}}>
-                  <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.9rem",fontWeight:300,fontStyle:"italic",color:"#b07a5e",marginBottom:10}}>Your ritual begins here</div>
-                  <div style={{fontSize:".78rem",color:"#a08070",lineHeight:1.8,marginBottom:28,maxWidth:260,margin:"0 auto 28px"}}>Add your first product to start building a routine you can track, analyze, and look back on.</div>
+                  <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.9rem",fontWeight:300,fontStyle:"italic",color:"rgba(255,255,255,.85)",marginBottom:10}}>Your ritual begins here</div>
+                  <div style={{fontSize:".78rem",color:"rgba(255,255,255,.6)",lineHeight:1.8,marginBottom:28,maxWidth:260,margin:"0 auto 28px"}}>Add your first product to start building a routine you can track, analyze, and look back on.</div>
                   <button onClick={()=>setChooseCat(true)}
-                    style={{background:"#b07a5e",border:"none",borderRadius:12,padding:"11px 32px",color:"#fff",fontSize:".82rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500,letterSpacing:".04em"}}>
+                    style={{background:"#1E3428",border:"none",borderRadius:12,padding:"11px 32px",color:"#fff",fontSize:".82rem",fontFamily:"'DM Sans',sans-serif",cursor:"pointer",fontWeight:500,letterSpacing:".04em"}}>
                     Begin my routine
                   </button>
                 </div>
               )}
 
               {(snapProducts.length>0||isDraft||chooseCat)&&(
-                <div style={{background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:20,padding:"18px",marginBottom:16}}>
+                <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:20,padding:"18px",marginBottom:16}}>
 
                   {/* Card header: date + action buttons */}
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
                     <div>
-                      {activeSnap&&<div style={{fontSize:".58rem",letterSpacing:".14em",textTransform:"uppercase",color:"#c0a898",marginBottom:3}}>Current Routine</div>}
-                      {activeSnap&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>Since {new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>}
-                      {activeSnap&&<div style={{fontSize:".7rem",color:"#a08070",marginTop:3}}>{snapProducts.length} product{snapProducts.length!==1?"s":""}{skinProds.length>0?` · ${skinProds.length} skin`:""}{ hairProds.length>0?` · ${hairProds.length} hair`:""}{ txProds.length>0?` · ${txProds.length} treatment`:""}</div>}
-                      {isDraft&&draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:500,color:"#c07a28",letterSpacing:".04em"}}>Building your routine</div>}
-                      {isDraft&&!draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:500,color:"#7a8a5a",letterSpacing:".04em"}}>Editing your routine</div>}
+                      {activeSnap&&<div style={{fontSize:".58rem",letterSpacing:".14em",textTransform:"uppercase",color:"rgba(255,255,255,.4)",marginBottom:3}}>Current Routine</div>}
+                      {activeSnap&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"rgba(255,255,255,.85)"}}>Since {new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>}
+                      {activeSnap&&<div style={{fontSize:".7rem",color:"rgba(255,255,255,.55)",marginTop:3}}>{snapProducts.length} product{snapProducts.length!==1?"s":""}{skinProds.length>0?` · ${skinProds.length} skin`:""}{ hairProds.length>0?` · ${hairProds.length} hair`:""}{ txProds.length>0?` · ${txProds.length} treatment`:""}</div>}
+                      {isDraft&&draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:500,color:"#7EC49A",letterSpacing:".04em"}}>Building your routine</div>}
+                      {isDraft&&!draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:500,color:"#243D30",letterSpacing:".04em"}}>Editing your routine</div>}
                     </div>
                     <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0,marginLeft:10}}>
-                      {!isDraft&&<button onClick={()=>setShowAnalysis(v=>!v)} style={{background:"#3a2e27",border:"none",borderRadius:9,padding:"6px 12px",color:"#f7ece4",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,whiteSpace:"nowrap"}}>{showAnalysis?"Close":"Analyze My Routine"}</button>}
-                      {!isDraft&&<button onClick={enterEditMode} style={{background:"none",border:"1.5px solid #e8d8cc",borderRadius:9,padding:"6px 10px",color:"#a08070",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>Update Routine</button>}
-                      {isDraft&&<button onClick={discardChanges} style={{background:"none",border:"1.5px solid #e8d8cc",borderRadius:9,padding:"6px 12px",color:"#a08070",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>Discard</button>}
-                      {isDraft&&<button onClick={()=>setConfirmFinalize(true)} style={{background:"#b07a5e",border:"none",borderRadius:9,padding:"6px 14px",color:"#fff",fontSize:".76rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,whiteSpace:"nowrap"}}>Save Routine</button>}
+                      {!isDraft&&<button onClick={()=>setShowAnalysis(v=>!v)} style={{background:"rgba(255,255,255,.2)",border:"none",borderRadius:9,padding:"6px 12px",color:"rgba(255,255,255,.85)",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,whiteSpace:"nowrap"}}>{showAnalysis?"Close":"Analyze My Routine"}</button>}
+                      {!isDraft&&<button onClick={enterEditMode} style={{background:"none",border:"1px solid rgba(255,255,255,.3)",borderRadius:9,padding:"6px 10px",color:"rgba(255,255,255,.65)",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>Update Routine</button>}
+                      {isDraft&&<button onClick={discardChanges} style={{background:"none",border:"1px solid rgba(255,255,255,.3)",borderRadius:9,padding:"6px 12px",color:"rgba(255,255,255,.65)",fontSize:".72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>Discard</button>}
+                      {isDraft&&<button onClick={()=>setConfirmFinalize(true)} style={{background:"#1E3428",border:"none",borderRadius:9,padding:"6px 14px",color:"#fff",fontSize:".76rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,whiteSpace:"nowrap"}}>Save Routine</button>}
                     </div>
                   </div>
 
                   {/* Analysis panel */}
                   {showAnalysis&&activeSnap&&!isDraft&&(
-                    <div style={{marginBottom:16,borderBottom:"1px solid #f0e0d4",paddingBottom:16}}>
+                    <div style={{marginBottom:16,borderBottom:"1px solid rgba(255,255,255,.15)",paddingBottom:16}}>
                       <RoutineAnalysis products={products} snapProducts={activeSnap.products} entries={entries} dateRange={{start:activeSnap.started_at,end:null}} isCurrent={true} onClose={()=>setShowAnalysis(false)} onFetchIngredients={onFetchIngredients}/>
                     </div>
                   )}
@@ -2633,24 +2806,24 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                   {/* Add product button */}
                   {!showForm&&isDraft&&!chooseCat&&(
                     <button onClick={()=>setChooseCat(true)}
-                      style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"1.5px dashed #e8d8cc",borderRadius:12,padding:"10px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",color:"#a08070",fontSize:".82rem",width:"100%",marginBottom:14}}>
+                      style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"1.5px dashed rgba(255,255,255,.3)",borderRadius:12,padding:"10px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",color:"rgba(255,255,255,.6)",fontSize:".82rem",width:"100%",marginBottom:14}}>
                       <span style={{fontSize:"1.1rem"}}>+</span> Add a product
                     </button>
                   )}
 
                   {/* Category picker */}
                   {!showForm&&isDraft&&chooseCat&&(
-                    <div style={{background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"16px",marginBottom:14}}>
-                      <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#7a5c48",marginBottom:12}}>Add a product</div>
+                    <div style={{background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.2)",borderRadius:14,padding:"16px",marginBottom:14}}>
+                      <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"rgba(255,255,255,.8)",marginBottom:12}}>Add a product</div>
                       <div style={{display:"flex",flexDirection:"column",gap:8}}>
                         {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
                           <button key={cat} onClick={()=>{setEditProd(blank(cat));setIsEditingProd(false);setShowForm(true);setChooseCat(false);}}
-                            style={{display:"flex",alignItems:"center",gap:12,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"11px 14px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+                            style={{display:"flex",alignItems:"center",gap:12,background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:12,padding:"11px 14px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
                             <span style={{fontSize:"1.2rem"}}>{emoji}</span>
-                            <span style={{fontSize:".86rem",color:"#3a2e27",fontWeight:500}}>{label} Product</span>
+                            <span style={{fontSize:".86rem",color:"rgba(255,255,255,.9)",fontWeight:500}}>{label} Product</span>
                           </button>
                         ))}
-                        <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".76rem",color:"#a08070",cursor:"pointer",marginTop:2,fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+                        <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".76rem",color:"rgba(255,255,255,.5)",cursor:"pointer",marginTop:2,fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
                       </div>
                     </div>
                   )}
@@ -2659,10 +2832,10 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                   {[["skin","🌿 Skin",skinProds],["hair","✨ Hair",hairProds],["treatment","💉 Treatments",txProds]].filter(([,,p])=>p.length>0).map(([cat,label,prods],ri,arr)=>(
                     <div key={cat} style={{marginBottom:ri<arr.length-1?18:0}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:9}}>
-                        <div style={{fontSize:".66rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070"}}>
-                          {label}{isDraft&&<span style={{fontSize:".56rem",color:"#c0b0a8",marginLeft:6,fontStyle:"italic"}}>drag to reorder</span>}
+                        <div style={{fontSize:".66rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)"}}>
+                          {label}{isDraft&&<span style={{fontSize:".56rem",color:"rgba(255,255,255,.4)",marginLeft:6,fontStyle:"italic"}}>drag to reorder</span>}
                         </div>
-                        <div style={{fontSize:".62rem",color:"#c0b0a8"}}>{prods.length} product{prods.length!==1?"s":""}</div>
+                        <div style={{fontSize:".62rem",color:"rgba(255,255,255,.45)"}}>{prods.length} product{prods.length!==1?"s":""}</div>
                       </div>
                       <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,scrollbarWidth:"none",WebkitOverflowScrolling:"touch",paddingRight:18,marginRight:-18}}>
                         {prods.map((p,i)=>{
@@ -2688,21 +2861,21 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                               } : undefined}
                               onClick={()=>{ if(!dragItem.current) setFeaturedView({category:cat,index:i}); }}
                               style={{flexShrink:0,width:96,position:"relative",
-                                background:isDropTarget?"#fdf0e8":"#fff8f3",
-                                border:isDropTarget?"1.5px solid #b07a5e":"1.5px solid #e8d8cc",
+                                background:"rgba(255,255,255,.92)",
+                                border:isDropTarget?"2px solid #1E3428":"1px solid rgba(255,255,255,.9)",
                                 borderRadius:13,overflow:"hidden",
                                 cursor:isDraft?"grab":"pointer",
                                 opacity:isBeingDragged?0.4:1,
                                 transition:"opacity .15s,border-color .15s,background .15s"}}>
-                              {isDraft&&<div style={{position:"absolute",top:4,left:4,fontSize:".65rem",color:"rgba(160,128,112,.6)",pointerEvents:"none",zIndex:1}}>⠿</div>}
+                              {isDraft&&<div style={{position:"absolute",top:4,left:4,fontSize:".65rem",color:"rgba(71,102,90,.4)",pointerEvents:"none",zIndex:1}}>⠿</div>}
                               {(p.image||p.media_url)
                                 ?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:76,objectFit:"cover",display:"block"}}/>
-                                :<div style={{width:"100%",height:76,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem"}}>{catEmoji(cat)}</div>
+                                :<div style={{width:"100%",height:76,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem"}}>{catEmoji(cat)}</div>
                               }
                               <div style={{padding:"7px 8px 8px"}}>
-                                <div style={{fontSize:".7rem",fontWeight:500,color:"#3a2e27",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
-                                {p.brand&&<div style={{fontSize:".6rem",color:"#a08070",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.brand}</div>}
-                                {p.frequency&&<div style={{fontSize:".56rem",background:"#f0e8f4",borderRadius:5,padding:"1px 5px",color:"#7a6a8a",display:"inline-block",marginTop:3}}>{p.frequency}</div>}
+                                <div style={{fontSize:".7rem",fontWeight:500,color:"#1A2820",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
+                                {p.brand&&<div style={{fontSize:".6rem",color:"#6B8C7A",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.brand}</div>}
+                                {p.frequency&&<div style={{fontSize:".56rem",background:"rgba(126,196,154,.15)",borderRadius:5,padding:"1px 5px",color:"#243D30",display:"inline-block",marginTop:3}}>{p.frequency}</div>}
                               </div>
                             </div>
                           );
@@ -2713,11 +2886,11 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
 
                   {/* ── Morning & Night Routines ── */}
                   {!isDraft&&snapProducts.length>0&&(
-                    <div style={{marginTop:20,borderTop:"1.5px solid #f0e4dc",paddingTop:16}}>
+                    <div style={{marginTop:20,borderTop:"1px solid rgba(255,255,255,.15)",paddingTop:16}}>
                       <div onClick={()=>setShowAmPm(v=>!v)}
                         style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",marginBottom:showAmPm?16:0}}>
-                        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"#5a3a27"}}>Your Morning & Night Routines</div>
-                        <span style={{color:"#b09080",fontSize:".78rem",lineHeight:1}}>{showAmPm?"▲":"▼"}</span>
+                        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"rgba(255,255,255,.8)"}}>Your Morning & Night Routines</div>
+                        <span style={{color:"rgba(255,255,255,.5)",fontSize:".78rem",lineHeight:1}}>{showAmPm?"▲":"▼"}</span>
                       </div>
 
                       {showAmPm&&(
@@ -2736,10 +2909,10 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                                 :snapProducts.filter(p=>p.time_of_day==="am").map(p=>(
                                   <div key={p.snapProdId} onClick={()=>{const prod=products.find(x=>x.id===p.id)||{id:p.id,name:p.name,brand:p.brand||"",category:p.category,image:p.image||"",media_url:p.media_url||""};setEditProd({...prod,_origName:prod.name,_origBrand:prod.brand||"",_origCategory:prod.category});setShowForm(true);setIsEditingProd(true);setViewOnlyForm(true);}}
                                     style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,padding:"5px 8px",background:"rgba(255,255,255,.75)",borderRadius:10,border:"1px solid #F0E8C0",cursor:"pointer",minWidth:0}}>
-                                    <div style={{width:22,height:22,borderRadius:5,overflow:"hidden",flexShrink:0,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".7rem"}}>
+                                    <div style={{width:22,height:22,borderRadius:5,overflow:"hidden",flexShrink:0,background:"rgba(71,102,90,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".7rem"}}>
                                       {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{catEmoji(p.category)}</span>}
                                     </div>
-                                    <span style={{flex:1,fontSize:".7rem",color:"#3a2e27",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{p.name}</span>
+                                    <span style={{flex:1,fontSize:".7rem",color:"#1A2820",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{p.name}</span>
                                     <button onClick={e=>{e.stopPropagation();onUpdateSnapProductTimeOfDay(p.snapProdId,"all");}} style={{background:"none",border:"none",color:"#C8B060",cursor:"pointer",fontSize:".72rem",padding:"2px 4px",lineHeight:1,flexShrink:0}}>×</button>
                                   </div>
                                 ))
@@ -2760,7 +2933,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                                     <div style={{width:22,height:22,borderRadius:5,overflow:"hidden",flexShrink:0,background:"#e8e4f8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".7rem"}}>
                                       {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{catEmoji(p.category)}</span>}
                                     </div>
-                                    <span style={{flex:1,fontSize:".7rem",color:"#3a2e27",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{p.name}</span>
+                                    <span style={{flex:1,fontSize:".7rem",color:"#1A2820",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{p.name}</span>
                                     <button onClick={e=>{e.stopPropagation();onUpdateSnapProductTimeOfDay(p.snapProdId,"all");}} style={{background:"none",border:"none",color:"#9888C8",cursor:"pointer",fontSize:".72rem",padding:"2px 4px",lineHeight:1,flexShrink:0}}>×</button>
                                   </div>
                                 ))
@@ -2769,7 +2942,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                           </div>
 
                           {/* Draggable product pool */}
-                          <div style={{fontSize:".58rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080",marginBottom:10}}>Your products — drag to assign</div>
+                          <div style={{fontSize:".58rem",letterSpacing:".1em",textTransform:"uppercase",color:"#3A3830",marginBottom:10}}>Your products — drag to assign</div>
                           <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
                             {snapProducts.map(p=>{
                               const tod=p.time_of_day||"all";
@@ -2778,11 +2951,11 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                                 <div key={p.snapProdId}
                                   draggable
                                   onDragStart={e=>{e.dataTransfer.setData("ampm_id",p.snapProdId);e.dataTransfer.effectAllowed="move";}}
-                                  style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px 5px 6px",background:badge?badge.bg:"#fff8f3",border:`1.5px solid ${badge?badge.border:"#e8d8cc"}`,borderRadius:20,cursor:"grab",userSelect:"none",transition:"opacity .15s"}}>
-                                  <div style={{width:22,height:22,borderRadius:5,overflow:"hidden",flexShrink:0,background:"#f0e0d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".65rem"}}>
+                                  style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px 5px 6px",background:badge?badge.bg:"#1A1917",border:`1.5px solid ${badge?badge.border:"#252320"}`,borderRadius:20,cursor:"grab",userSelect:"none",transition:"opacity .15s"}}>
+                                  <div style={{width:22,height:22,borderRadius:5,overflow:"hidden",flexShrink:0,background:"#1E1C1A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".65rem"}}>
                                     {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{catEmoji(p.category)}</span>}
                                   </div>
-                                  <span style={{fontSize:".7rem",color:"#3a2e27",maxWidth:80,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+                                  <span style={{fontSize:".7rem",color:"#D4C8B8",maxWidth:80,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
                                   {badge&&<span style={{fontSize:".62rem",color:badge.col,flexShrink:0}}>{badge.icon}</span>}
                                 </div>
                               );
@@ -2811,26 +2984,26 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
           )}
           {!showCompare&&(
             <button onClick={()=>setShowCompare(true)}
-              style={{width:"100%",background:"#3a2e27",border:"none",borderRadius:12,padding:"12px",color:"#f7ece4",fontSize:".82rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,marginBottom:16,letterSpacing:".04em"}}>
+              style={{width:"100%",background:"#D4C8B8",border:"none",borderRadius:12,padding:"12px",color:"#222019",fontSize:".82rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500,marginBottom:16,letterSpacing:".04em"}}>
               ✦ Compare Routines
             </button>
           )}
           {pastSnaps.length===0&&!showCompare&&(
             <div style={{textAlign:"center",padding:"40px 16px"}}>
-              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",fontStyle:"italic",color:"#b09080",marginBottom:8}}>No history yet</div>
-              <div style={{fontSize:".74rem",color:"#c0a898",lineHeight:1.7}}>Your past routines will appear here each time you update what you're using.</div>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",fontStyle:"italic",color:"#3A3830",marginBottom:8}}>No history yet</div>
+              <div style={{fontSize:".74rem",color:"#2A2820",lineHeight:1.7}}>Your past routines will appear here each time you update what you're using.</div>
             </div>
           )}
           {!showCompare&&pastSnaps.length>0&&(
             <div style={{position:"relative",paddingLeft:24}}>
               {/* Timeline spine */}
-              <div style={{position:"absolute",left:6,top:20,bottom:20,width:1.5,background:"linear-gradient(to bottom,#e8d8cc,#f4ece6)"}}/>
+              <div style={{position:"absolute",left:6,top:20,bottom:20,width:1.5,background:"linear-gradient(to bottom,#252320,#f4ece6)"}}/>
               {pastSnaps.map((snap,i)=>(
                 <div key={snap.id} style={{position:"relative",marginBottom:12}}>
                   {/* Timeline dot */}
                   <div style={{position:"absolute",left:-24,top:20,width:13,height:13,borderRadius:"50%",
-                    background:i===0?"#b07a5e":"#fdf6f0",
-                    border:`2px solid ${i===0?"#b07a5e":"#d0c0b8"}`,
+                    background:i===0?"#C8B8A0":"#0F0E0C",
+                    border:`2px solid ${i===0?"#C8B8A0":"#d0c0b8"}`,
                     boxShadow:i===0?"0 0 0 3px rgba(176,122,94,.12)":"none"}}/>
                   <SnapCard snap={snap} onDeleteSnapshot={onDeleteSnapshot}/>
                 </div>
@@ -2859,7 +3032,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
             <div style={{display:"flex",gap:10}}>
               <button onClick={()=>setConfirmFinalize(false)} className="ghost-btn" style={{flex:1}}>Cancel</button>
               <button onClick={doFinalize}
-                style={{flex:1,background:"#b07a5e",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
+                style={{flex:1,background:"#C8B8A0",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
                 Save Routine
               </button>
             </div>
@@ -2891,7 +3064,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                 }
                 setNewProductAlert(null);
                 setShowForm(false); setEditProd(null); setIsEditingProd(false);
-              }} style={{background:"#b07a5e",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
+              }} style={{background:"#C8B8A0",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
                 Yes, it's a new product
               </button>
               <button onClick={()=>setNewProductAlert(null)} className="ghost-btn">Cancel</button>
@@ -2909,7 +3082,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
               <div style={{fontSize:".84rem",color:"#6a5048",lineHeight:1.7}}>{routineSuccess.body}</div>
             </div>
             <button onClick={()=>setRoutineSuccess(null)}
-              style={{width:"100%",background:"#b07a5e",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
+              style={{width:"100%",background:"#C8B8A0",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
               Done
             </button>
           </div>
@@ -2926,11 +3099,11 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               <button onClick={saveDraft}
-                style={{background:"#b07a5e",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
+                style={{background:"#C8B8A0",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
                 Save Draft
               </button>
               <button onClick={discardChanges}
-                style={{background:"none",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"12px",color:"#c07060",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+                style={{background:"none",border:"1.5px solid #252320",borderRadius:12,padding:"12px",color:"#8A5A50",fontSize:".84rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
                 Discard Changes
               </button>
               <button onClick={()=>setUnsavedWarning(false)} className="ghost-btn">Stay on Page</button>
@@ -2952,18 +3125,18 @@ function TreatmentHistoryCard({ tx, doneDates }) {
         <span className="freq-emoji">💉</span>
         <span className="freq-label">{tx.name}</span>
         <span className="freq-count">{doneDates.length}x done</span>
-        <span style={{marginLeft:6,color:"#b07a5e",fontSize:".8rem"}}>{open?"▲":"▼"}</span>
+        <span style={{marginLeft:6,color:"#C8B8A0",fontSize:".8rem"}}>{open?"▲":"▼"}</span>
       </div>
-      <div style={{fontSize:".72rem",color:"#a08070",marginTop:2}}>{tx.type==="skin"?"🌿 Skin":"✨ Hair"}</div>
-      {open&&sorted.length>0&&<div style={{marginTop:10,borderTop:"1px solid #f0e0d4",paddingTop:8}}>
+      <div style={{fontSize:".72rem",color:"#5A5248",marginTop:2}}>{tx.type==="skin"?"🌿 Skin":"✨ Hair"}</div>
+      {open&&sorted.length>0&&<div style={{marginTop:10,borderTop:"1px solid #1E1C1A",paddingTop:8}}>
         {sorted.map(d=>(
-          <div key={d} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid #f7ece4",fontSize:".8rem",color:"#5a3a27"}}>
+          <div key={d} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid #222019",fontSize:".8rem",color:"#D4C8B8"}}>
             <span>{parse(d).toLocaleDateString("en-US",{weekday:"short",month:"long",day:"numeric",year:"numeric"})}</span>
-            <span style={{color:"#2d4a2d",fontWeight:500}}>✓</span>
+            <span style={{color:"#3A5A3A",fontWeight:500}}>✓</span>
           </div>
         ))}
       </div>}
-      {open&&sorted.length===0&&<div style={{marginTop:8,fontSize:".8rem",color:"#b09080",fontStyle:"italic"}}>No completed sessions yet</div>}
+      {open&&sorted.length===0&&<div style={{marginTop:8,fontSize:".8rem",color:"#3A3830",fontStyle:"italic"}}>No completed sessions yet</div>}
     </div>
   );
 }
@@ -3017,14 +3190,14 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
     }
   };
   return (
-    <div style={{background:"#fff8f3",border:"1px solid #e8d8cc",borderRadius:12,overflow:"hidden",marginBottom:14}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderBottom:"1px solid #eedad2"}}>
-        <button onClick={()=>setCalM(p=>{const d=new Date(p.y,p.m-1,1);return{y:d.getFullYear(),m:d.getMonth()};})} style={{background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1rem",padding:"2px 8px"}}>‹</button>
-        <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",color:"#3a2e27"}}>{monthLabel}</span>
-        <button onClick={()=>setCalM(p=>{const d=new Date(p.y,p.m+1,1);return{y:d.getFullYear(),m:d.getMonth()};})} style={{background:"none",border:"none",cursor:"pointer",color:"#b07a5e",fontSize:"1rem",padding:"2px 8px"}}>›</button>
+    <div style={{background:"#1A1917",border:"1px solid #252320",borderRadius:12,overflow:"hidden",marginBottom:14}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderBottom:"1px solid #222019"}}>
+        <button onClick={()=>setCalM(p=>{const d=new Date(p.y,p.m-1,1);return{y:d.getFullYear(),m:d.getMonth()};})} style={{background:"none",border:"none",cursor:"pointer",color:"#C8B8A0",fontSize:"1rem",padding:"2px 8px"}}>‹</button>
+        <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",color:"#D4C8B8"}}>{monthLabel}</span>
+        <button onClick={()=>setCalM(p=>{const d=new Date(p.y,p.m+1,1);return{y:d.getFullYear(),m:d.getMonth()};})} style={{background:"none",border:"none",cursor:"pointer",color:"#C8B8A0",fontSize:"1rem",padding:"2px 8px"}}>›</button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",textAlign:"center",padding:"6px 8px 2px"}}>
-        {["Mo","Tu","We","Th","Fr","Sa","Su"].map(d=><div key={d} style={{fontSize:".62rem",color:"#b09080",fontWeight:500,letterSpacing:".04em"}}>{d}</div>)}
+        {["Mo","Tu","We","Th","Fr","Sa","Su"].map(d=><div key={d} style={{fontSize:".62rem",color:"#3A3830",fontWeight:500,letterSpacing:".04em"}}>{d}</div>)}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",padding:"2px 8px 10px",gap:2}}>
         {cells.map((d,i)=>{
@@ -3038,18 +3211,18 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
               onMouseEnter={()=>rangeMode&&setHov(d)}
               onMouseLeave={()=>setHov(null)}
               style={{aspectRatio:1,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:"50%",fontSize:".78rem",cursor:"pointer",position:"relative",
-                background:sel?"#b07a5e":isPending?"#c08870":prev?"#f7e8de":"transparent",
-                color:sel||isPending?"#fff":"#3a2e27",fontWeight:sel?600:400,
-                border:d===today&&!sel?"1.5px solid #b07a5e":"none",
-                boxShadow:isPending?"0 0 0 2px #fff,0 0 0 4px #b07a5e":"none"}}>
+                background:sel?"#C8B8A0":isPending?"#c08870":prev?"#222019":"transparent",
+                color:sel||isPending?"#fff":"#D4C8B8",fontWeight:sel?600:400,
+                border:d===today&&!sel?"1.5px solid #C8B8A0":"none",
+                boxShadow:isPending?"0 0 0 2px #fff,0 0 0 4px #C8B8A0":"none"}}>
               {parse(d).getDate()}
               {isNeedle&&<span style={{position:"absolute",bottom:1,right:1,fontSize:".42rem",lineHeight:1,pointerEvents:"none"}}>💉</span>}
             </div>
           );
         })}
       </div>
-      {rangeMode&&<div style={{padding:"4px 14px 8px",fontSize:".72rem",color:"#b07a5e",fontStyle:"italic"}}>Tap another date to select a range</div>}
-      {selectedDates.length>0&&!rangeMode&&<div style={{padding:"6px 14px 10px",fontSize:".72rem",color:"#b07a5e"}}>
+      {rangeMode&&<div style={{padding:"4px 14px 8px",fontSize:".72rem",color:"#C8B8A0",fontStyle:"italic"}}>Tap another date to select a range</div>}
+      {selectedDates.length>0&&!rangeMode&&<div style={{padding:"6px 14px 10px",fontSize:".72rem",color:"#C8B8A0"}}>
         {selectedDates.length} date{selectedDates.length!==1?"s":""} selected
       </div>}
     </div>
@@ -3102,18 +3275,18 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
           <div className="modal-top" style={{justifyContent:"flex-end"}}>
             <button className="modal-x" onClick={onClose}>×</button>
           </div>
-          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.5rem",fontStyle:"italic",color:"#3a2e27",marginBottom:6}}>What are you planning?</div>
-          <div style={{fontSize:".78rem",color:"#a08070",marginBottom:28}}>Choose a category to get started</div>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.5rem",fontStyle:"italic",color:"#D4C8B8",marginBottom:6}}>What are you planning?</div>
+          <div style={{fontSize:".78rem",color:"#5A5248",marginBottom:28}}>Choose a category to get started</div>
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             {[["🌿","Skin Routine","Plan your skin care steps","skin"],["✨","Hair Routine","Plan your hair care steps","hair"],["💉","Treatment","Schedule a treatment session","treatment"]].map(([emoji,label,sub,type])=>(
               <button key={type} onClick={()=>{
                 if(type==="treatment"){ setEditTx({id:uid(),name:"",type:"skin",dates:[]}); setScreen("editTreatment"); }
                 else { setEditing(e=>({...e,itemIds:[],_category:type})); setScreen("editPlan"); }
-              }} style={{display:"flex",alignItems:"center",gap:14,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",transition:"all .15s",fontFamily:"'DM Sans',sans-serif"}}>
+              }} style={{display:"flex",alignItems:"center",gap:14,background:"#1A1917",border:"1.5px solid #252320",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",transition:"all .15s",fontFamily:"'DM Sans',sans-serif"}}>
                 <span style={{fontSize:"1.6rem"}}>{emoji}</span>
                 <div>
-                  <div style={{fontSize:".9rem",color:"#3a2e27",fontWeight:500}}>{label}</div>
-                  <div style={{fontSize:".74rem",color:"#a08070",marginTop:2}}>{sub}</div>
+                  <div style={{fontSize:".9rem",color:"#D4C8B8",fontWeight:500}}>{label}</div>
+                  <div style={{fontSize:".74rem",color:"#5A5248",marginTop:2}}>{sub}</div>
                 </div>
               </button>
             ))}
@@ -3154,16 +3327,16 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
         <div className="modal" style={{padding:"22px 20px 20px"}}>
           {/* Header row: title + close */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#5a3a27"}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#D4C8B8"}}>
               {editing.ended_at?"Past Plan":"Active Plan"}
             </div>
             <button className="modal-x" onClick={onClose}>×</button>
           </div>
           {/* Item — prominent */}
-          {it&&<div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16,padding:"12px 14px",background:"#fff8f3",borderRadius:16,border:"1.5px solid #f0e4dc"}}>
-            <div style={{width:44,height:44,borderRadius:12,background:"#f7ece4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem",flexShrink:0}}>{it.emoji}</div>
+          {it&&<div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16,padding:"12px 14px",background:"#1A1917",borderRadius:16,border:"1.5px solid #252320"}}>
+            <div style={{width:44,height:44,borderRadius:12,background:"#222019",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem",flexShrink:0}}>{it.emoji}</div>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:"1rem",fontWeight:500,color:"#3a2e27",lineHeight:1.2}}>{it.label}</div>
+              <div style={{fontSize:"1rem",fontWeight:500,color:"#D4C8B8",lineHeight:1.2}}>{it.label}</div>
               <div style={{fontSize:".72rem",color:"#9a7050",marginTop:3}}>
                 {(editing.days||[]).length===7?"Every day":recurDays?`Every ${recurDays}`:dateCount>0?`${dateCount} date${dateCount!==1?"s":""}`:editing.startDate?"One-off":"—"}
                 {editing.startDate&&<span style={{color:"#b8a090"}}> · from {parse(editing.startDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>}
@@ -3171,36 +3344,36 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                 {editing.ended_at&&<span style={{color:"#b8a090"}}> · ended {parse(editing.ended_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
               </div>
             </div>
-            {editing.ended_at&&<div style={{fontSize:".6rem",background:"#e8d8cc",color:"#a08070",borderRadius:10,padding:"2px 8px",flexShrink:0}}>Ended</div>}
+            {editing.ended_at&&<div style={{fontSize:".6rem",background:"#252320",color:"#5A5248",borderRadius:10,padding:"2px 8px",flexShrink:0}}>Ended</div>}
           </div>}
           {/* Linked product */}
-          {linkedProd&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,padding:"10px 12px",background:"#fdf6f0",borderRadius:12,border:"1px solid #f0e0d4"}}>
-            <div style={{width:34,height:34,borderRadius:9,overflow:"hidden",background:"#f0e0d4",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".85rem"}}>
+          {linkedProd&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,padding:"10px 12px",background:"#0F0E0C",borderRadius:12,border:"1px solid #1E1C1A"}}>
+            <div style={{width:34,height:34,borderRadius:9,overflow:"hidden",background:"#1E1C1A",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".85rem"}}>
               {(linkedProd.image||linkedProd.media_url)?<img src={linkedProd.image||linkedProd.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>🧴</span>}
             </div>
             <div>
-              <div style={{fontSize:".6rem",letterSpacing:".08em",textTransform:"uppercase",color:"#b09080",marginBottom:1}}>Product</div>
-              <div style={{fontSize:".82rem",color:"#3a2e27"}}>{linkedProd.name}</div>
+              <div style={{fontSize:".6rem",letterSpacing:".08em",textTransform:"uppercase",color:"#3A3830",marginBottom:1}}>Product</div>
+              <div style={{fontSize:".82rem",color:"#D4C8B8"}}>{linkedProd.name}</div>
             </div>
           </div>}
           {/* Completion */}
           {completion&&<div style={{marginBottom:14}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#b09080"}}>Completion</div>
-              <div style={{fontSize:".82rem",color:"#3a2e27",fontWeight:500}}>{completion.done}/{completion.total} <span style={{color:"#b09080",fontWeight:400}}>({pct}%)</span></div>
+              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#3A3830"}}>Completion</div>
+              <div style={{fontSize:".82rem",color:"#D4C8B8",fontWeight:500}}>{completion.done}/{completion.total} <span style={{color:"#3A3830",fontWeight:400}}>({pct}%)</span></div>
             </div>
-            <div style={{height:5,borderRadius:4,background:"#f0e4dc",overflow:"hidden"}}>
-              <div style={{height:"100%",width:`${pct}%`,borderRadius:4,background:"linear-gradient(90deg,#d4a090,#b07a5e)",transition:"width .4s"}}/>
+            <div style={{height:5,borderRadius:4,background:"#252320",overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${pct}%`,borderRadius:4,background:"linear-gradient(90deg,#d4a090,#C8B8A0)",transition:"width .4s"}}/>
             </div>
           </div>}
           {/* No start date note for recurring plans */}
-          {!hasStartDate&&(editing.days||[]).length>0&&!completion&&<div style={{fontSize:".72rem",color:"#c0a898",fontStyle:"italic",marginBottom:14,textAlign:"center"}}>Add a start date to track completion rate</div>}
+          {!hasStartDate&&(editing.days||[]).length>0&&!completion&&<div style={{fontSize:".72rem",color:"#2A2820",fontStyle:"italic",marginBottom:14,textAlign:"center"}}>Add a start date to track completion rate</div>}
           {/* End Plan */}
-          {!editing.ended_at&&isExisting&&<button className="ghost-btn" style={{width:"100%",color:"#b07a5e",fontSize:".82rem",marginBottom:12}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>}
+          {!editing.ended_at&&isExisting&&<button className="ghost-btn" style={{width:"100%",color:"#C8B8A0",fontSize:".82rem",marginBottom:12}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>}
           {/* Edit + Delete row */}
           {isExisting&&<div style={{display:"flex",gap:8}}>
             <button onClick={()=>startEditPlan(editing)}
-              style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px",background:"#fdf6f0",border:"1.5px solid #e8d8cc",borderRadius:12,cursor:"pointer",color:"#7a5c48",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif"}}>
+              style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px",background:"#0F0E0C",border:"1.5px solid #252320",borderRadius:12,cursor:"pointer",color:"#8A8070",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif"}}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -3208,7 +3381,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
               Edit Plan
             </button>
             <button onClick={()=>{onDelete(editing.id);onClose();}}
-              style={{flex:1,padding:"10px",background:"none",border:"1.5px solid #f0d0c8",borderRadius:12,cursor:"pointer",color:"#c07060",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif"}}>
+              style={{flex:1,padding:"10px",background:"none",border:"1.5px solid #f0d0c8",borderRadius:12,cursor:"pointer",color:"#8A5A50",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif"}}>
               Delete Plan
             </button>
           </div>}
@@ -3229,7 +3402,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
               <div className="modal-title">{schedules.find(s=>s.id===editing.id)?"Edit Plan":"New Plan"}</div>
             </div>
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              {schedules.find(s=>s.id===editing.id)&&!editing.ended_at&&<button className="ghost-btn" style={{fontSize:".75rem",padding:"4px 10px",color:"#b07a5e"}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>}
+              {schedules.find(s=>s.id===editing.id)&&!editing.ended_at&&<button className="ghost-btn" style={{fontSize:".75rem",padding:"4px 10px",color:"#C8B8A0"}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>}
               {schedules.find(s=>s.id===editing.id)&&<button className="del-btn" onClick={()=>{onDelete(editing.id);onClose();}}>Delete</button>}
               <button className="modal-x" onClick={onClose}>×</button>
             </div>
@@ -3241,9 +3414,9 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                 const it=allItems.find(x=>x.id===id);
                 if(!it) return null;
                 return (
-                  <div key={id} className="m-item" style={{background:"#f7ece4",border:"1.5px solid #b07a5e",marginBottom:0,cursor:"default"}}>
+                  <div key={id} className="m-item" style={{background:"#222019",border:"1.5px solid #C8B8A0",marginBottom:0,cursor:"default"}}>
                     <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-                    <span className="m-item-lbl" style={{color:"#5a3a27",fontWeight:500}}>{it.label}</span>
+                    <span className="m-item-lbl" style={{color:"#D4C8B8",fontWeight:500}}>{it.label}</span>
                   </div>
                 );
               })}
@@ -3256,11 +3429,11 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                 {(editing._category==="hair"?hairItems:editing._category==="skin"?skinItems:allItems).map(it=>{
                   const on=(editing.itemIds||[]).includes(it.id);
                   return (
-                    <div key={it.id} className="m-item" style={{cursor:"pointer",background:on?"#f7ece4":"#fff8f3",border:on?"1.5px solid #b07a5e":"1px solid #e8d8cc",marginBottom:0}}
+                    <div key={it.id} className="m-item" style={{cursor:"pointer",background:on?"#222019":"#1A1917",border:on?"1.5px solid #C8B8A0":"1px solid #252320",marginBottom:0}}
                       onClick={()=>toggleItemSel(it.id)}>
                       <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-                      <span className="m-item-lbl" style={{color:on?"#5a3a27":"#3a2e27",fontWeight:on?500:400}}>{it.label}</span>
-                      <div style={{width:16,height:16,borderRadius:"50%",border:`1.5px solid ${on?"#b07a5e":"#d0b0a0"}`,background:on?"#b07a5e":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      <span className="m-item-lbl" style={{color:on?"#D4C8B8":"#D4C8B8",fontWeight:on?500:400}}>{it.label}</span>
+                      <div style={{width:16,height:16,borderRadius:"50%",border:`1.5px solid ${on?"#C8B8A0":"#252320"}`,background:on?"#C8B8A0":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                         {on&&<svg width="9" height="7" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                       </div>
                     </div>
@@ -3308,7 +3481,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                 onChange={e=>setEditing(ed=>({...ed,startDate:e.target.value}))}/>
             </div>
             <div style={{flex:1}}>
-              <div className="modal-sub" style={{marginBottom:4}}>End date <span style={{color:"#c0a898",fontWeight:400}}>(optional)</span></div>
+              <div className="modal-sub" style={{marginBottom:4}}>End date <span style={{color:"#2A2820",fontWeight:400}}>(optional)</span></div>
               <input type="date" className="time-input" style={{width:"100%"}}
                 value={editing.endDate||""}
                 onChange={e=>setEditing(ed=>({...ed,endDate:e.target.value}))}/>
@@ -3320,14 +3493,14 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             const linked=allPickable.find(p=>p.id===editing.linkedProductId);
             return (
               <div style={{marginBottom:14}}>
-                <div className="modal-sub" style={{marginBottom:6}}>Linked product <span style={{fontWeight:400,color:"#c0a898"}}>(optional)</span></div>
+                <div className="modal-sub" style={{marginBottom:6}}>Linked product <span style={{fontWeight:400,color:"#2A2820"}}>(optional)</span></div>
                 {linked?(
-                  <div style={{display:"flex",alignItems:"center",gap:10,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:12,padding:"8px 10px"}}>
-                    <div style={{width:32,height:32,borderRadius:8,overflow:"hidden",background:"#f0e0d4",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,background:"#1A1917",border:"1.5px solid #252320",borderRadius:12,padding:"8px 10px"}}>
+                    <div style={{width:32,height:32,borderRadius:8,overflow:"hidden",background:"#1E1C1A",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem"}}>
                       {(linked.image||linked.media_url)?<img src={linked.image||linked.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>🧴</span>}
                     </div>
-                    <span style={{flex:1,fontSize:".82rem",color:"#3a2e27"}}>{linked.name}</span>
-                    <button onClick={()=>setEditing(ed=>({...ed,linkedProductId:""}))} style={{background:"none",border:"none",color:"#b09080",cursor:"pointer",fontSize:".9rem",padding:"0 4px"}}>×</button>
+                    <span style={{flex:1,fontSize:".82rem",color:"#D4C8B8"}}>{linked.name}</span>
+                    <button onClick={()=>setEditing(ed=>({...ed,linkedProductId:""}))} style={{background:"none",border:"none",color:"#3A3830",cursor:"pointer",fontSize:".9rem",padding:"0 4px"}}>×</button>
                   </div>
                 ):(
                   <button className="ghost-btn" style={{width:"100%",fontSize:".78rem"}} onClick={()=>setShowProductPick(p=>!p)}>{showProductPick?"Cancel":"+ Link a product"}</button>
@@ -3336,8 +3509,8 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                   const [pickSearch, setPickSearch] = [editing._pickSearch||"", v=>setEditing(ed=>({...ed,_pickSearch:v}))];
                   const filtered=allPickable.filter(p=>p.name.toLowerCase().includes(pickSearch.toLowerCase())||(p.brand||"").toLowerCase().includes(pickSearch.toLowerCase()));
                   return (
-                    <div style={{border:"1px solid #f0e4dc",borderRadius:12,marginTop:6,background:"#fff",overflow:"hidden"}}>
-                      <div style={{padding:"6px 10px",borderBottom:"1px solid #f0e4dc"}}>
+                    <div style={{border:"1px solid #252320",borderRadius:12,marginTop:6,background:"#fff",overflow:"hidden"}}>
+                      <div style={{padding:"6px 10px",borderBottom:"1px solid #252320"}}>
                         <input className="ifield" style={{width:"100%",fontSize:".74rem",padding:"5px 8px"}}
                           placeholder="Search products…" value={pickSearch}
                           onChange={e=>setEditing(ed=>({...ed,_pickSearch:e.target.value}))}/>
@@ -3346,16 +3519,16 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                         {filtered.map(p=>(
                           <div key={p.id} onClick={()=>{setEditing(ed=>({...ed,linkedProductId:p.id,_pickSearch:""}));setShowProductPick(false);}}
                             style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",cursor:"pointer",borderBottom:"1px solid #f8f0ec"}}>
-                            <div style={{width:28,height:28,borderRadius:7,overflow:"hidden",background:"#f0e0d4",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".75rem"}}>
+                            <div style={{width:28,height:28,borderRadius:7,overflow:"hidden",background:"#1E1C1A",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".75rem"}}>
                               {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>🧴</span>}
                             </div>
                             <div style={{flex:1}}>
-                              <div style={{fontSize:".8rem",color:"#3a2e27"}}>{p.name}</div>
-                              {p._fromWishlist&&<div style={{fontSize:".62rem",color:"#b09080"}}>Wishlist</div>}
+                              <div style={{fontSize:".8rem",color:"#D4C8B8"}}>{p.name}</div>
+                              {p._fromWishlist&&<div style={{fontSize:".62rem",color:"#3A3830"}}>Wishlist</div>}
                             </div>
                           </div>
                         ))}
-                        {filtered.length===0&&<div style={{padding:"12px",fontSize:".76rem",color:"#b09080",textAlign:"center",fontStyle:"italic"}}>No products found</div>}
+                        {filtered.length===0&&<div style={{padding:"12px",fontSize:".76rem",color:"#3A3830",textAlign:"center",fontStyle:"italic"}}>No products found</div>}
                       </div>
                     </div>
                   );
@@ -3439,20 +3612,20 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="📍 Location"
               value={editTx.location||""} onChange={e=>setEditTx(t=>({...t,location:e.target.value}))}/>
             <TypeToggle/>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.15rem",color:"#3a2e27",marginBottom:14,fontStyle:"italic"}}>When is this treatment?</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.15rem",color:"#D4C8B8",marginBottom:14,fontStyle:"italic"}}>When is this treatment?</div>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <button onClick={()=>setTxMode("past")} style={{display:"flex",alignItems:"center",gap:14,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
+              <button onClick={()=>setTxMode("past")} style={{display:"flex",alignItems:"center",gap:14,background:"#1A1917",border:"1.5px solid #252320",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
                 <span style={{fontSize:"1.5rem"}}>📅</span>
                 <div>
-                  <div style={{fontSize:".9rem",color:"#3a2e27",fontWeight:500}}>Register a past treatment</div>
-                  <div style={{fontSize:".74rem",color:"#a08070",marginTop:2}}>Log something you've already had</div>
+                  <div style={{fontSize:".9rem",color:"#D4C8B8",fontWeight:500}}>Register a past treatment</div>
+                  <div style={{fontSize:".74rem",color:"#5A5248",marginTop:2}}>Log something you've already had</div>
                 </div>
               </button>
-              <button onClick={()=>setTxMode("upcoming")} style={{display:"flex",alignItems:"center",gap:14,background:"#fff8f3",border:"1.5px solid #e8d8cc",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
+              <button onClick={()=>setTxMode("upcoming")} style={{display:"flex",alignItems:"center",gap:14,background:"#1A1917",border:"1.5px solid #252320",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
                 <span style={{fontSize:"1.5rem"}}>💉</span>
                 <div>
-                  <div style={{fontSize:".9rem",color:"#3a2e27",fontWeight:500}}>Plan an upcoming treatment</div>
-                  <div style={{fontSize:".74rem",color:"#a08070",marginTop:2}}>Schedule something coming up</div>
+                  <div style={{fontSize:".9rem",color:"#D4C8B8",fontWeight:500}}>Plan an upcoming treatment</div>
+                  <div style={{fontSize:".74rem",color:"#5A5248",marginTop:2}}>Schedule something coming up</div>
                 </div>
               </button>
             </div>
@@ -3529,7 +3702,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             onRangeEnd={range=>{ setEditTx(t=>({...t,dates:[...new Set([...t.dates,...range])]})); setCalRangeStart(null); }}
             needleDates={editTx.completedDates||[]}
           />
-          {(editTx.completedDates||[]).length>0&&<div style={{fontSize:".7rem",color:"#a08070",marginBottom:10}}>💉 marks a completed past session</div>}
+          {(editTx.completedDates||[]).length>0&&<div style={{fontSize:".7rem",color:"#5A5248",marginBottom:10}}>💉 marks a completed past session</div>}
           <div style={{display:"flex",gap:8}}>
             <button className="save-btn" onClick={()=>doSaveUpcoming(false)} disabled={!canSaveFinal} style={{flex:1,opacity:canSaveFinal?1:.4}}>
               {isExisting?"Save Changes":"Schedule"}
@@ -3567,7 +3740,7 @@ function FreqModal({ allItems, tracked, period, onToggle, onPeriod, onClose }) {
           <div key={it.id} className={`freq-toggle-item ${tracked.includes(it.id)?"on":""}`} onClick={()=>onToggle(it.id)}>
             <div className="fti-check">{tracked.includes(it.id)&&<CheckIcon/>}</div>
             <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-            <span style={{fontSize:".86rem",color:"#3a2e27",flex:1}}>{it.label}</span>
+            <span style={{fontSize:".86rem",color:"#D4C8B8",flex:1}}>{it.label}</span>
           </div>
         ))}
       </div>
@@ -3665,7 +3838,7 @@ function RangeApplyModal({ rangeStart, rangeEnd, skinRoutines, hairRoutines, onA
           <div className="modal-title">Log a Date Range</div>
           <button className="modal-x" onClick={onClose}>×</button>
         </div>
-        <div style={{background:"#f0f5f0",borderRadius:10,padding:"9px 14px",marginBottom:16,fontSize:".82rem",color:"#3a5a3a",lineHeight:1.5}}>
+        <div style={{background:"#1A1E18",borderRadius:10,padding:"9px 14px",marginBottom:16,fontSize:".82rem",color:"#3A5A3A",lineHeight:1.5}}>
           Applying to <strong>{days.length} day{days.length!==1?"s":""}</strong>: {label}
         </div>
         <div className="modal-sub">Steps done across this period</div>
@@ -3725,12 +3898,12 @@ function HairLengthCard({ hairLengths, setHairLengths, saveHairLength }) {
           {saving?"…":"Save"}
         </button>
       </div>
-      {!isLastDay&&<div style={{fontSize:".72rem",color:"#a08070",marginBottom:10,fontStyle:"italic"}}>
+      {!isLastDay&&<div style={{fontSize:".72rem",color:"#5A5248",marginBottom:10,fontStyle:"italic"}}>
         💡 You can update this anytime — just save it on the last day of the month for accuracy!
       </div>}
       {history.length>0&&(
         <>
-          <div style={{fontSize:".74rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginTop:6,marginBottom:8}}>Growth History</div>
+          <div style={{fontSize:".74rem",letterSpacing:".1em",textTransform:"uppercase",color:"#5A5248",marginTop:6,marginBottom:8}}>Growth History</div>
           {history.map(([month, val], i)=>{
             const prev = history[i+1]?.[1];
             const curr = parseFloat(val), prevN = parseFloat(prev);
@@ -3742,7 +3915,7 @@ function HairLengthCard({ hairLengths, setHairLengths, saveHairLength }) {
                 <span>
                   <span className="hair-history-val">{val}</span>
                   {growth!==null&&growth>0&&<span className="hair-growth-badge">▲ +{growth}{unit} growth</span>}
-                  {growth!==null&&growth<0&&<span className="hair-growth-badge" style={{color:"#c07060"}}>▼ {growth}{unit}</span>}
+                  {growth!==null&&growth<0&&<span className="hair-growth-badge" style={{color:"#8A5A50"}}>▼ {growth}{unit}</span>}
                 </span>
               </div>
             );
@@ -3753,10 +3926,107 @@ function HairLengthCard({ hairLengths, setHairLengths, saveHairLength }) {
   );
 }
 
+function RitualDebrief({ debrief, onClose }) {
+  if (!debrief) return null;
+  return (
+    <div className="debrief-overlay" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div className="debrief-inner">
+        {debrief.loading ? (
+          <div className="debrief-loading">Reflecting on your ritual…</div>
+        ) : (
+          <>
+            <div className="debrief-eyebrow">Ritual complete</div>
+            <div className="debrief-heading">{debrief.heading}</div>
+            {debrief.done?.length > 0 && (
+              <div style={{marginBottom:20}}>
+                <div className="debrief-section-label">What you did</div>
+                {debrief.done.map((item,i)=>(
+                  <div key={i} className="debrief-item">
+                    <div className="debrief-item-name">{item.name}</div>
+                    <div className="debrief-item-insight">{item.insight}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {debrief.skipped?.length > 0 && (
+              <div style={{marginBottom:20}}>
+                <div className="debrief-section-label">What you skipped</div>
+                {debrief.skipped.map((item,i)=>(
+                  <div key={i} className="debrief-item">
+                    <div className="debrief-skip-name">{item.name}</div>
+                    <div className="debrief-item-insight">{item.nudge}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button className="debrief-close" onClick={onClose}>Close</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+function getBottleSvg(item) {
+  const l = (item.label || "").toLowerCase();
+  const isJar = /moistur|cream|mask|balm|butter/i.test(l);
+  const isPump = /cleanse|cleanser|wash|toner|mist|lotion/i.test(l);
+  const isTube = /spf|sunscreen|tretinoin|retinol|tube/i.test(l);
+  const bgClass = isTube || /serum|vitamin|acid|oil|eye|lash|drop/i.test(l) ? "g" :
+                  isPump || isJar ? "br" : "bl";
+  const stroke = bgClass === "g" ? "#243D30" : bgClass === "br" ? "#7A5840" : "#4A7A9B";
+
+  if (isJar) return {
+    svg: <svg className="placeholder-svg" viewBox="0 0 40 32" fill="none">
+      <rect x="6" y="12" width="28" height="16" rx="6" stroke={stroke} strokeWidth="1.5"/>
+      <rect x="8" y="7" width="24" height="6" rx="3" stroke={stroke} strokeWidth="1.3"/>
+      <path d="M12 20h16" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".4"/>
+      <path d="M14 24h12" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".3"/>
+    </svg>,
+    bgClass
+  };
+  if (isPump) return {
+    svg: <svg className="placeholder-svg" viewBox="0 0 28 48" fill="none">
+      <rect x="7" y="20" width="14" height="24" rx="5" stroke={stroke} strokeWidth="1.5"/>
+      <path d="M14 20v-8" stroke={stroke} strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M14 12H9a2 2 0 000 4h2" stroke={stroke} strokeWidth="1.3" strokeLinecap="round"/>
+      <circle cx="14" cy="18" r="2" stroke={stroke} strokeWidth="1.2"/>
+      <path d="M10 31h8" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".4"/>
+      <path d="M10 35h5" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".3"/>
+    </svg>,
+    bgClass
+  };
+  // default: dropper / serum
+  return {
+    svg: <svg className="placeholder-svg" viewBox="0 0 32 48" fill="none">
+      <rect x="11" y="16" width="10" height="26" rx="5" stroke={stroke} strokeWidth="1.5"/>
+      <path d="M14 16V10M18 16V10" stroke={stroke} strokeWidth="1.5" strokeLinecap="round"/>
+      <rect x="12" y="7" width="8" height="4" rx="2" stroke={stroke} strokeWidth="1.3"/>
+      <path d="M16 7V4" stroke={stroke} strokeWidth="1.3" strokeLinecap="round"/>
+      <circle cx="16" cy="3" r="1.5" stroke={stroke} strokeWidth="1.2"/>
+      <path d="M13 28h6" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".4"/>
+      <path d="M13 32h4" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".3"/>
+    </svg>,
+    bgClass
+  };
+}
+
 export default function App({ user }) {
   const today = fmt(new Date());
   const [view,        setView]        = useState(() => sessionStorage.getItem('ritual_view') || "log");
   const [activeTab,   setActiveTab]   = useState("skin");
+  const [logFilter,   setLogFilter]   = useState("all");
+  const activeDayRef = useRef(null);
+  const [editSection, setEditSection] = useState("morning");
+  const [collapsedSections, setCollapsedSections] = useState({morning:false,night:false});
+  const toggleSection = key => setCollapsedSections(p=>({...p,[key]:!p[key]}));
   const [activeDate,  setActiveDate]  = useState(today);
   const [entries,     setEntries]     = useState({});
   const [skinR,       setSkinR]       = useState(DEFAULT_SKIN);
@@ -3765,6 +4035,8 @@ export default function App({ user }) {
   const [freqTracked, setFreqTracked] = useState(["tretinoin","spf","alpyn_serum","rosemary_oil"]);
   const [freqPeriod,  setFreqPeriod]  = useState("year");
   const [modal,       setModal]       = useState(null);
+  const [debrief,     setDebrief]     = useState(null); // null | {loading:true} | {heading,done,skipped}
+  const [sessionSkipped, setSessionSkipped] = useState([]); // item ids explicitly skipped this session
   const [calMonth,    setCalMonth]    = useState({y:new Date().getFullYear(),m:new Date().getMonth()});
   const [selectedDay, setSelectedDay] = useState(today);
   const [toast,       setToast]       = useState("");
@@ -3795,6 +4067,7 @@ export default function App({ user }) {
 
   // Persist current page across refreshes
   useEffect(() => { sessionStorage.setItem('ritual_view', view); }, [view]);
+  useEffect(() => { activeDayRef.current?.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' }); }, [activeDate]);
   useEffect(() => {
     if (pageView) sessionStorage.setItem('ritual_pageView', pageView);
     else sessionStorage.removeItem('ritual_pageView');
@@ -3996,10 +4269,62 @@ export default function App({ user }) {
     setCurPhotos(photos);
   };
 
+  const getQuestion = (it) => {
+    const l = it.label.toLowerCase();
+    if (/spf|sunscreen|sun/i.test(it.label)) return `Did you apply your ${l} today?`;
+    if (/cleanse|cleanser|wash/i.test(it.label)) return `Did you cleanse with ${it.emoji} ${it.label} today?`;
+    if (/serum|retinol|tretinoin|acid|vitamin/i.test(it.label)) return `Did you apply your ${l} today?`;
+    if (/oil|mask|treatment/i.test(it.label)) return `Did you use your ${it.emoji} ${it.label}?`;
+    if (/moistur|cream|lotion/i.test(it.label)) return `Did you moisturise with ${it.label} today?`;
+    return `Did you complete — ${it.emoji} ${it.label}?`;
+  };
+
   const saveEntry=async()=>{
     const e = getE(activeDate);
     await persistEntry(activeDate, e);
     showT("✓ Entry saved");
+    // Trigger AI debrief
+    const routines = activeTab==="skin" ? skinR : hairR;
+    const doneItems = routines.filter(it => (activeTab==="skin" ? e.skin : e.hair)?.includes(it.id));
+    const skippedItems = routines.filter(it => !(activeTab==="skin" ? e.skin : e.hair)?.includes(it.id));
+    if (!doneItems.length && !skippedItems.length) return;
+    setDebrief({ loading: true });
+    try {
+      const prompt = `You are a luxury skincare & haircare ritual coach. The user just completed their ${activeTab} ritual log.
+
+Done today: ${doneItems.map(it => `${it.emoji} ${it.label}`).join(", ") || "nothing"}
+Skipped today: ${skippedItems.map(it => `${it.emoji} ${it.label}`).join(", ") || "nothing"}
+
+Respond ONLY with valid JSON (no markdown, no explanation):
+{
+  "heading": "A short poetic sentence (max 12 words) affirming what they did, or gently encouraging if they skipped a lot. No exclamation marks.",
+  "done": [{"name": "product name", "insight": "1–2 sentence insight about what this product does for them and why consistency matters. Warm, knowledgeable, luxury tone."}],
+  "skipped": [{"name": "product name", "nudge": "1 sentence — what this product helps with and a gentle reminder to use it next time. Never judgmental."}]
+}`;
+      const res = await fetch("/api/claude", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 600,
+          messages: [{ role: "user", content: prompt }],
+          userId: user?.id,
+          action: "ritual_debrief"
+        })
+      });
+      const data = await res.json();
+      const text = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        setDebrief(parsed);
+      } else {
+        setDebrief(null);
+      }
+    } catch(err) {
+      console.error("Debrief error:", err);
+      setDebrief(null);
+    }
   };
   const persistRoutines = async (newSkin, newHair) => {
     if (!user) return;
@@ -4394,6 +4719,25 @@ export default function App({ user }) {
 
   const goHome = () => { setView("log"); setActiveDate(today); setPageView(null); };
 
+  const sideMenuEl = (
+    <>
+      {sideMenu&&<div className="side-menu-overlay" onClick={()=>setSideMenu(false)}/>}
+      <div className={`side-menu ${sideMenu?"open":""}`}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+          <div className="side-menu-title" style={{marginBottom:0}}>Menu</div>
+          <button onClick={()=>setSideMenu(false)} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#3A3830",lineHeight:1,padding:"2px 6px"}}>×</button>
+        </div>
+        <button className="side-menu-item" onClick={()=>{setPageView("account");setSideMenu(false);}}><span>👤</span> My Account</button>
+        <hr style={{border:"none",borderTop:"1px solid #1E1C1A",margin:"8px 0"}}/>
+        <button className="side-menu-item" onClick={()=>{setPageView("products");setSideMenu(false);}}><span>💄</span> My Products</button>
+        <button className="side-menu-item" onClick={()=>{setPageView("wishlist");setSideMenu(false);}}><span>💝</span> Wishlist</button>
+        <button className="side-menu-item" onClick={()=>{setPageView("purchases");setSideMenu(false);}}><span>💳</span> Purchases</button>
+        <hr style={{border:"none",borderTop:"1px solid #1E1C1A",margin:"16px 0"}}/>
+        <button className="side-menu-item" style={{color:"#3A3830"}} onClick={()=>supabase.auth.signOut()}><span>🚪</span> Sign Out</button>
+      </div>
+    </>
+  );
+
   return (
     <div>
       <style>{STYLES}</style>
@@ -4433,122 +4777,267 @@ export default function App({ user }) {
       {pageView==="account"&&(
         <div className="app">
           <div className="header" style={{position:"relative"}}>
-            <button onClick={()=>{setView("log");setActiveDate(today);setPageView(null);}} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
+            <button onClick={()=>{setView("log");setActiveDate(today);setPageView(null);}} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#C8B8A0",padding:"8px",lineHeight:1}}><HomeIcon/></button>
             <div className="header-title">My <span>Account</span></div>
             <HamburgerBtn onClick={()=>setSideMenu(true)}/>
           </div>
-          <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Coming soon</div>
+          <div style={{textAlign:"center",padding:"32px 0",color:"#3A3830",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>Coming soon</div>
         </div>
       )}
       {!pageView&&(
       <div className="app">
-        <div className="header" style={{position:"relative"}}>
-          <button onClick={()=>{setView("log");setActiveDate(today);setPageView(null);}} style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#b07a5e",padding:"8px",lineHeight:1}}><HomeIcon/></button>
-          <div className="header-title">{userName ? userName+"'s" : "My"} <span>Ritual</span></div>
-          <div className="header-sub">Your Beauty HQ</div>
-          <HamburgerBtn onClick={()=>setSideMenu(true)}/>
-        </div>
-
-        <div className="top-tabs">
-          {[["log","Log"],["history","History"],["plan","Plan"],["frequency","Stats"]].map(([v,l])=>(
-            <button key={v} className={`top-tab ${view===v?"active":""}`} onClick={()=>setView(v)}>{l}</button>
-          ))}
-        </div>
+        {view==="log" ? (
+          <>
+            <div className="lux-hdr">
+              <div className="lux-hdr-avatar" onClick={()=>setSideMenu(true)}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+              </div>
+              <div className="lux-hdr-mid">
+                <div className="lux-greeting">{getGreeting()},</div>
+                <div className="lux-name">{userName || "Friend"}</div>
+                <div className="lux-tagline">Your daily ritual</div>
+              </div>
+              <div className="lux-hdr-bell" onClick={()=>setSideMenu(true)}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+              </div>
+            </div>
+            <div className="log-filter-row">
+              <button className={`log-fpill ${logFilter==="all"?"active":""}`} onClick={()=>setLogFilter("all")}>All</button>
+              <button className={`log-fpill ${logFilter==="skin"?"active":""}`} onClick={()=>setLogFilter("skin")}>Skin</button>
+              <button className={`log-fpill ${logFilter==="hair"?"active":""}`} onClick={()=>setLogFilter("hair")}>Hair</button>
+            </div>
+          </>
+        ) : (
+          <div className="header" style={{position:"relative"}}>
+            <button onClick={()=>{setView("log");setActiveDate(today);}} style={{position:"absolute",left:16,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,.8)",padding:"8px",lineHeight:1}}><HomeIcon/></button>
+            <div className="header-title">My <span>Ritual</span></div>
+            <HamburgerBtn onClick={()=>setSideMenu(true)}/>
+          </div>
+        )}
 
         {view==="log"&&(
           <>
-            <div className="date-nav">
-              <button className="dnb" onClick={()=>setActiveDate(shiftD(activeDate,-1))}>‹</button>
-              <div style={{textAlign:"center"}}>
-                <div className={`date-label ${activeDate===today?"is-today":""}`}>{activeDate===today?"Today":dispLong(activeDate)}</div>
-                {activeDate===today&&<div style={{fontSize:".7rem",color:"#a08070"}}>{dispLong(today)}</div>}
-              </div>
-              <button className="dnb" onClick={()=>setActiveDate(shiftD(activeDate,1))} disabled={activeDate>=today}>›</button>
-            </div>
-            <div className="sub-tabs">
-              <button className={`sub-tab ${activeTab==="skin"?"active":""}`} onClick={()=>setActiveTab("skin")}>🌿 Skin</button>
-              <button className={`sub-tab ${activeTab==="hair"?"active":""}`} onClick={()=>setActiveTab("hair")}>✨ Hair</button>
-            </div>
             {(()=>{
-              const todayPlanned=schedules.filter(s=>s.days.includes(activeDateDow)&&(!s.startDate||activeDate>=s.startDate)&&(activeTab==="skin"?skinR:hairR).find(r=>r.id===s.itemId));
-              const plannedIds=todayPlanned.map(s=>s.itemId);
-              const plannedDone=checked.filter(id=>plannedIds.includes(id)).length;
-              const hasPlanned=plannedIds.length>0;
-              return hasPlanned?(
-                <div style={{marginBottom:12}}>
-                  <div style={{display:"flex",justifyContent:"space-between",fontSize:".73rem",color:"#a08070",marginBottom:5}}>
-                    <span>Planned for today</span>
-                    <span style={{color:plannedDone===plannedIds.length?"#2d4a2d":"#a08070",fontWeight:plannedDone===plannedIds.length?600:400}}>{plannedDone} / {plannedIds.length} done{plannedDone===plannedIds.length?" ✓":""}</span>
-                  </div>
-                  <div className="prog-wrap"><div className="prog-bar" style={{width:`${(plannedDone/plannedIds.length)*100}%`,background:plannedDone===plannedIds.length?"#2d4a2d":"#b07a5e"}}/></div>
-                </div>
-              ):null;
-            })()}
-            {visibleReminders.filter(s=>{
-                const itemTab=skinR.find(r=>r.id===s.itemId)?"skin":"hair";
-                return itemTab===activeTab;
-              }).map(s=>{ const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
-              const isDone=(activeTab==="skin"?getE(activeDate).skin:getE(activeDate).hair)?.includes(s.itemId);
+              const DOW_SHORT = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+              const weekDates = Array.from({length:30}, (_,i) => shiftD(today, i-23));
               return (
-                <div key={s.id} className={`reminder-banner ${isDone?"done":""}`}
-                  onClick={()=>{ if(!isDone) toggleItem(activeDate,activeTab,s.itemId); }}>
-                  <div className="rb-dot"/>
-                  <div className="rb-text">{isDone?"✓ ":""}{it.emoji} {it.label}{s.reminder&&!isDone?` · ${s.time}`:""}</div>
-                </div>
-              );
-            })}
-            {treatments.filter(t=>t.dates.includes(activeDate)&&t.type===activeTab).map(tx=>{
-              const isDone=tx.completedDates.includes(activeDate);
-              return (
-                <div key={tx.id} className={`treatment-banner ${isDone?"done":""}`}
-                  onClick={()=>completeTreatment(tx.id,activeDate)}>
-                  <div className="tb-dot"/>
-                  <div className="tb-text">{isDone?"✓ ":""}💉 {tx.name}{isDone?"":" · tap to complete"}</div>
-                </div>
-              );
-            })}
-
-            <div className="sec-head">
-              <div className="sec-title">{activeTab==="skin"?"Skin Steps":"Hair Steps"}</div>
-              <button className="ghost-btn" onClick={()=>setModal("manageItems")}>✏️ Edit</button>
-            </div>
-            {(()=>{
-              const hasTimeGroups=routines.some(it=>it.time==="day"||it.time==="night");
-              if(!hasTimeGroups) return (
-                <div className="routine-grid">
-                  {routines.map(it=>{ const on=checked.includes(it.id); return (
-                    <div key={it.id} className={`r-item ${on?"on":""}`} onClick={()=>toggleItem(activeDate,activeTab,it.id)}>
-                      <span className="r-emoji">{it.emoji}</span>
-                      <span className="r-label">{it.label}</span>
-                      <div className="r-check">{on&&<CheckIcon/>}</div>
-                    </div>
-                  );})}
-                </div>
-              );
-              return [["day","☀️ Morning"],["night","🌙 Evening"],["both","✦ Any Time"]].map(([t,label])=>{
-                const group=routines.filter(it=>(it.time||"both")===t);
-                if(!group.length) return null;
-                return (
-                  <div key={t}>
-                    <div style={{fontSize:".7rem",letterSpacing:".08em",textTransform:"uppercase",color:"#a08070",marginBottom:6,marginTop:t==="day"?0:12}}>{label}</div>
-                    <div className="routine-grid" style={{marginBottom:0}}>
-                      {group.map(it=>{ const on=checked.includes(it.id); return (
-                        <div key={it.id} className={`r-item ${on?"on":""}`} onClick={()=>toggleItem(activeDate,activeTab,it.id)}>
-                          <span className="r-emoji">{it.emoji}</span>
-                          <span className="r-label">{it.label}</span>
-                          <div className="r-check">{on&&<CheckIcon/>}</div>
+                <div className="week-strip">
+                  {weekDates.map((d) => {
+                    const isActive = d === activeDate;
+                    const isToday = d === today;
+                    const isFuture = d > today;
+                    const e = getE(d);
+                    const doneCount = [...(e.skin||[]), ...(e.hair||[])].length;
+                    const totalItems = (skinR.length + hairR.length) || 1;
+                    const pct = Math.min(1, doneCount / totalItems);
+                    const dt = parse(d);
+                    const dayNum = dt.getDate();
+                    const dowLabel = DOW_SHORT[dt.getDay()];
+                    const isComplete = !isFuture && pct >= 1 && doneCount > 0;
+                    const sz = isActive ? 44 : 36;
+                    const r = isActive ? 18 : 14;
+                    const cx = sz/2, cy = sz/2;
+                    const circumference = 2 * Math.PI * r;
+                    return (
+                      <div key={d} ref={isActive?activeDayRef:null} className="wday" onClick={()=>{if(!isFuture)setActiveDate(d);}}>
+                        <span className={`wday-lbl ${isActive?"active-lbl":""}`}>{isToday?"Today":dowLabel}</span>
+                        <div className="wday-ring">
+                          <svg width={sz} height={sz} viewBox={`0 0 ${sz} ${sz}`} style={{transition:"width .18s,height .18s"}}>
+                            <circle cx={cx} cy={cy} r={r}
+                              fill={isActive?"rgba(255,255,255,.22)":"rgba(255,255,255,.08)"}
+                              stroke={isFuture?"rgba(255,255,255,.1)":isActive?"rgba(255,255,255,.55)":isToday?"rgba(255,255,255,.35)":"rgba(255,255,255,.18)"}
+                              strokeWidth={isActive?1.8:1.5}
+                              strokeDasharray={isFuture?"3 4":undefined}/>
+                            {!isFuture && pct > 0 && (
+                              <circle cx={cx} cy={cy} r={r} fill="none"
+                                stroke={isActive?"#fff":"rgba(255,255,255,.65)"}
+                                strokeWidth={isActive?3:2}
+                                strokeDasharray={`${(pct*circumference).toFixed(1)} ${circumference}`}
+                                strokeLinecap="round"
+                                transform={`rotate(-90 ${cx} ${cy})`}/>
+                            )}
+                            <text x={cx} y={cy+4} textAnchor="middle"
+                              fontFamily="DM Sans,sans-serif"
+                              fontSize={isActive?14:10}
+                              fontWeight={isActive?"700":"500"}
+                              fill={isFuture?"rgba(255,255,255,.22)":"rgba(255,255,255,.9)"}>
+                              {dayNum}
+                            </text>
+                          </svg>
+                          {isComplete && <div className="wday-heart">♥</div>}
+                          {isToday && !isActive && <div className="wday-today-dot"/>}
                         </div>
-                      );})}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {(()=>{
+              const e2 = getE(activeDate);
+              const skinDone = e2.skin||[];
+              const hairDone = e2.hair||[];
+              const allItems2 = [...skinR, ...hairR];
+              const doneCount = allItems2.filter(it=>[...skinDone,...hairDone].includes(it.id)).length;
+              const total = allItems2.length;
+              const pct = total > 0 ? (doneCount/total*100).toFixed(0) : 0;
+              const streak = (()=>{
+                let c=0, d=today;
+                while(d<=today){const e=getE(d);if(e.skin?.length||e.hair?.length){c++;d=shiftD(d,-1);}else break;}
+                return c;
+              })();
+              return (
+                <div className="lux-progress">
+                  <div className="lp-left">
+                    <div className="lp-title">Today's ritual</div>
+                    <div className="lp-sub">{streak>1?`${streak} day streak · keep going`:"Start your streak today"}</div>
+                    <div className="lp-track"><div className="lp-fill" style={{width:`${pct}%`}}/></div>
+                  </div>
+                  <div className="lp-right">
+                    <div className="lp-num">{doneCount}</div>
+                    <div className="lp-total">of {total} done</div>
+                  </div>
+                </div>
+              );
+            })()}
+
+
+            {(()=>{
+              const allRoutines = [
+                ...skinR.map(it=>({...it,_tab:"skin"})),
+                ...hairR.map(it=>({...it,_tab:"hair"}))
+              ];
+              const filterFn = it => logFilter==="all" || it._tab===logFilter;
+              const e2 = getE(activeDate);
+
+              const getLinkedProduct = (itemId) => products.find(p=>p.id===(
+                [...skinR,...hairR].find(r=>r.id===itemId)?.productId
+              ));
+
+              const completeSectionItems = (sectionItems) => {
+                const skinItems = sectionItems.filter(it=>it._tab==="skin");
+                const hairItems = sectionItems.filter(it=>it._tab==="hair");
+                const skinDone = e2.skin||[];
+                const hairDone = e2.hair||[];
+                const allDone = skinItems.every(it=>skinDone.includes(it.id)) && hairItems.every(it=>hairDone.includes(it.id));
+                if (allDone) {
+                  const updated = {...e2,
+                    skin: skinDone.filter(id=>!skinItems.find(it=>it.id===id)),
+                    hair: hairDone.filter(id=>!hairItems.find(it=>it.id===id))
+                  };
+                  setEntries(p=>({...p,[activeDate]:updated}));
+                  persistEntry(activeDate, updated);
+                } else {
+                  const updated = {...e2,
+                    skin:[...new Set([...skinDone,...skinItems.map(it=>it.id)])],
+                    hair:[...new Set([...hairDone,...hairItems.map(it=>it.id)])]
+                  };
+                  setEntries(p=>({...p,[activeDate]:updated}));
+                  persistEntry(activeDate, updated);
+                }
+              };
+
+              const SunIcon = () => (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <circle cx="12" cy="12" r="4"/>
+                  <line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/>
+                  <line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>
+                  <line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/>
+                  <line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/>
+                </svg>
+              );
+              const MoonIcon = () => (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+              );
+              const PencilIcon = () => (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              );
+              const ChevronIcon = ({collapsed}) => (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  style={{transform:collapsed?"rotate(-90deg)":"rotate(0deg)",transition:"transform .2s"}}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              );
+
+              const renderCard = (it) => {
+                const isDone = it._tab==="skin"?(e2.skin||[]).includes(it.id):(e2.hair||[]).includes(it.id);
+                const linkedProd = getLinkedProduct(it.id);
+                const {svg, bgClass} = getBottleSvg(it);
+                return (
+                  <div key={it._tab+it.id} className={`pc-card ${isDone?"done":""}`}
+                    onClick={()=>toggleItem(activeDate,it._tab,it.id)}>
+                    {linkedProd?.image
+                      ? <div className="pc-img" style={{background:"rgba(255,255,255,.15)",overflow:"hidden"}}>
+                          <img src={linkedProd.image} alt={linkedProd.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                        </div>
+                      : <div className={`pc-img ${bgClass}`}>{svg}</div>
+                    }
+                    <div className="pc-info">
+                      <div className="pc-brand" style={{fontSize:".62rem",opacity:.55,lineHeight:1.3}}>{linkedProd?.brand||it.emoji}</div>
+                      <div className="pc-name">{linkedProd?.name||it.label}</div>
+                      <div className="pc-cat-tag">{it._tab}</div>
+                    </div>
+                    <div className="pc-check">
+                      {isDone&&<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1.5 4l2.5 2.5 5-5" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                     </div>
                   </div>
                 );
-              });
+              };
+
+              const morningItems = allRoutines.filter(it=>filterFn(it)&&((it.time||"both")==="day"||(it.time||"both")==="both"));
+              const nightItems = allRoutines.filter(it=>filterFn(it)&&((it.time||"both")==="night"||(it.time||"both")==="both"));
+              const hasAny = morningItems.length || nightItems.length;
+              if (!hasAny) return <div style={{padding:"20px 18px",color:"rgba(255,255,255,.45)",fontSize:".85rem",textAlign:"center"}}>No routine items · tap + to add</div>;
+              return (
+                <>
+                  {morningItems.length > 0 && (
+                    <div className="log-section morning">
+                      <div className="log-section-head" onClick={()=>toggleSection("morning")} style={{cursor:"pointer"}}>
+                        <div className="log-section-title"><SunIcon/> Morning <ChevronIcon collapsed={collapsedSections.morning}/></div>
+                        <div className="log-section-actions" onClick={e=>e.stopPropagation()}>
+                          {!collapsedSections.morning&&<button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(morningItems);}}>
+                            {morningItems.every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"↩ Undo":"✓ All done"}
+                          </button>}
+                          <button className="log-sec-edit-btn" onClick={e=>{e.stopPropagation();setEditSection("morning");setModal("manageItems");}}><PencilIcon/></button>
+                        </div>
+                      </div>
+                      {!collapsedSections.morning && morningItems.map(renderCard)}
+                    </div>
+                  )}
+                  {nightItems.length > 0 && (
+                    <div className="log-section night">
+                      <div className="log-section-head" onClick={()=>toggleSection("night")} style={{cursor:"pointer"}}>
+                        <div className="log-section-title"><MoonIcon/> Evening <ChevronIcon collapsed={collapsedSections.night}/></div>
+                        <div className="log-section-actions" onClick={e=>e.stopPropagation()}>
+                          {!collapsedSections.night&&<button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(nightItems);}}>
+                            {nightItems.every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"↩ Undo":"✓ All done"}
+                          </button>}
+                          <button className="log-sec-edit-btn" onClick={e=>{e.stopPropagation();setEditSection("night");setModal("manageItems");}}><PencilIcon/></button>
+                        </div>
+                      </div>
+                      {!collapsedSections.night && nightItems.map(renderCard)}
+                    </div>
+                  )}
+                </>
+              );
             })()}
-            <div className="sec-title" style={{marginBottom:12}}>How's your {activeTab==="skin"?"skin":"hair"} feeling?</div>
+            <div className="sec-label" style={{paddingBottom:8}}>
+              <span className="sec-tag">How does your {activeTab==="skin"?"skin":"hair"} feel?</span>
+              <div className="sec-line"/>
+            </div>
             <div className="mood-row">
               {MOODS.map(m=><button key={m} className={`mood-chip ${(activeTab==="skin"?entry.skin_mood:entry.hair_mood)===m?"on":""}`} onClick={()=>setMoodVal(activeDate,activeTab,m)}>{m}</button>)}
             </div>
-            <div className="sec-title" style={{marginBottom:10}}>Notes & Observations</div>
+            <div className="sec-label" style={{paddingTop:16,paddingBottom:8}}>
+              <span className="sec-tag">Notes</span>
+              <div className="sec-line"/>
+            </div>
             <PhotoNotes notes={activeTab==="skin"?entry.skin_notes:entry.hair_notes} photos={curPhotos}
               hidePhotos={true}
               onNotesChange={v=>setNotesVal(activeDate,activeTab,v)}
@@ -4597,7 +5086,7 @@ export default function App({ user }) {
                   );
                 })}
               </div>
-              {rangeMode&&<div style={{textAlign:"center",fontSize:".72rem",color:"#b07a5e",marginTop:8,fontStyle:"italic"}}>Tap another date to select a range</div>}
+              {rangeMode&&<div style={{textAlign:"center",fontSize:".72rem",color:"#C8B8A0",marginTop:8,fontStyle:"italic"}}>Tap another date to select a range</div>}
             </div>
 
             {selectedDay&&rangeStart&&!rangeEnd&&(()=>{
@@ -4617,14 +5106,14 @@ export default function App({ user }) {
                   {hasAny?(
                     <>
                       {hasSkin&&<>
-                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:6,marginTop:4}}>🌿 Skin</div>
+                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#5A5248",marginBottom:6,marginTop:4}}>🌿 Skin</div>
                         {si.length>0&&<div className="dp-pills">{si.map(r=><span key={r.id} className="dp-pill">{r.emoji} {r.label}</span>)}</div>}
                         {e.skin_mood&&<div className="dp-mood">Feeling: {e.skin_mood}</div>}
                         {e.skin_notes&&<div className="dp-note">"{e.skin_notes}"</div>}
                         {e.skin_photos?.length>0&&<div className="photo-thumbs" style={{marginTop:6,marginBottom:4}}>{e.skin_photos.map(p=><div key={p.id} className="photo-thumb" style={{cursor:"pointer"}} onClick={()=>setLightboxPhoto({...p,_type:"skin",_date:selectedDay})}><img src={p.src} alt={p.name}/></div>)}</div>}
                       </>}
                       {hasHair&&<>
-                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",marginBottom:6,marginTop:hasSkin?12:4}}>✨ Hair</div>
+                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#5A5248",marginBottom:6,marginTop:hasSkin?12:4}}>✨ Hair</div>
                         {hi.length>0&&<div className="dp-pills">{hi.map(r=><span key={r.id} className="dp-pill h">{r.emoji} {r.label}</span>)}</div>}
                         {e.hair_mood&&<div className="dp-mood">Feeling: {e.hair_mood}</div>}
                         {e.hair_notes&&<div className="dp-note">"{e.hair_notes}"</div>}
@@ -4656,10 +5145,10 @@ export default function App({ user }) {
             <div style={{display:"flex",gap:6,marginBottom:18}}>
               {[["active","Active"],["past","Past"],["all","All"]].map(([v,l])=>(
                 <button key={v} onClick={()=>setPlansFilter(v)}
-                  style={{padding:"5px 14px",borderRadius:20,border:"1.5px solid",fontSize:".74rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",transition:"all .15s",
-                    background:plansFilter===v?"#b07a5e":"transparent",
-                    color:plansFilter===v?"#fff":"#a08070",
-                    borderColor:plansFilter===v?"#b07a5e":"#e0cfc4"}}>
+                  style={{padding:"5px 14px",borderRadius:20,border:"1px solid",fontSize:".74rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",transition:"all .15s",
+                    background:plansFilter===v?"#1E3428":"rgba(255,255,255,.15)",
+                    color:plansFilter===v?"#fff":"rgba(255,255,255,.65)",
+                    borderColor:plansFilter===v?"#1E3428":"rgba(255,255,255,.3)"}}>
                   {l}
                 </button>
               ))}
@@ -4689,15 +5178,15 @@ export default function App({ user }) {
                     <div className="sched-top">
                       <span style={{fontSize:"1rem"}}>{it.emoji}</span>
                       <div style={{flex:1}}>
-                        <div className="sched-label">{it.label}{s.ended_at&&<span style={{fontSize:".62rem",background:"#e8d8cc",color:"#a08070",borderRadius:10,padding:"1px 7px",marginLeft:6}}>Ended</span>}</div>
-                        <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
+                        <div className="sched-label">{it.label}{s.ended_at&&<span style={{fontSize:".62rem",background:"rgba(71,102,90,.15)",color:"#4A5E50",borderRadius:10,padding:"1px 7px",marginLeft:6}}>Ended</span>}</div>
+                        <div style={{fontSize:".71rem",color:"#6B8C7A",marginTop:2}}>
                           {(s.days||[]).length===7?<span>Every day</span>:recurDays&&<span>Every {recurDays}</span>}
                           {recurDays&&dateCount>0&&<span> · </span>}
                           {dateCount>0&&<span>{dateCount} date{dateCount!==1?"s":""}</span>}
-                          {s.startDate&&(s.days||[]).length===0&&dateCount===0&&<span style={{color:"#b8a090"}}>from {parse(s.startDate).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
-                          {s.endDate&&!s.ended_at&&<span style={{color:"#b8a090"}}> · until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>}
-                          {s.ended_at&&<span style={{color:"#b8a090"}}> · ended {parse(s.ended_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
-                          {s.location&&<span> · <span style={{cursor:"pointer",color:"#b07a5e",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(s.location)}`);}}>📍 {s.location}</span></span>}
+                          {s.startDate&&(s.days||[]).length===0&&dateCount===0&&<span style={{color:"#9AB0A4"}}>from {parse(s.startDate).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
+                          {s.endDate&&!s.ended_at&&<span style={{color:"#9AB0A4"}}> · until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>}
+                          {s.ended_at&&<span style={{color:"#9AB0A4"}}> · ended {parse(s.ended_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
+                          {s.location&&<span> · <span style={{cursor:"pointer",color:"#243D30",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(s.location)}`);}}>📍 {s.location}</span></span>}
                         </div>
                       </div>
                     </div>
@@ -4712,23 +5201,23 @@ export default function App({ user }) {
                 return (
                   <div style={{flexShrink:0,width:148,position:"relative"}}>
                     <div onClick={()=>setSelectedPlan({type:"plan",data:s})}
-                      style={{background:"#fff8f3",border:`1.5px solid ${s.ended_at?"#e8d8cc":"#d4c4b4"}`,borderRadius:16,padding:"14px 12px 10px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:s.ended_at?.55:1,height:"100%"}}>
+                      style={{background:"rgba(255,255,255,.92)",border:"1px solid rgba(255,255,255,.9)",borderRadius:16,padding:"14px 12px 10px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:s.ended_at?.55:1,height:"100%"}}>
                       <div style={{fontSize:"1.6rem",textAlign:"center"}}>{it.emoji}</div>
-                      <div style={{fontSize:".82rem",fontWeight:500,color:"#3a2e27",textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{it.label}</div>
+                      <div style={{fontSize:".82rem",fontWeight:500,color:"#1A2820",textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{it.label}</div>
                       {s.ended_at
-                        ?<div style={{fontSize:".6rem",color:"#a08070",textAlign:"center",background:"#f0e4d8",borderRadius:10,padding:"2px 6px"}}>Ended</div>
-                        :<div style={{fontSize:".64rem",color:"#9a7050",textAlign:"center"}}>
+                        ?<div style={{fontSize:".6rem",color:"#4A5E50",textAlign:"center",background:"rgba(71,102,90,.12)",borderRadius:10,padding:"2px 6px"}}>Ended</div>
+                        :<div style={{fontSize:".64rem",color:"#6B8C7A",textAlign:"center"}}>
                           {(s.days||[]).length===7?"Every day":recurDays||`${(s.dates||[]).length} date${(s.dates||[]).length!==1?"s":""}`}
                         </div>
                       }
-                      {s.endDate&&!s.ended_at&&<div style={{fontSize:".58rem",color:"#b8a090",textAlign:"center"}}>until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>}
+                      {s.endDate&&!s.ended_at&&<div style={{fontSize:".58rem",color:"#9AB0A4",textAlign:"center"}}>until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>}
                     </div>
                     <button onClick={e=>{e.stopPropagation();setSelectedPlan({type:"plan",data:{...s,_editMode:true}});}}
                       style={{position:"absolute",top:8,right:8,width:26,height:26,borderRadius:"50%",
-                        background:"rgba(253,246,240,.92)",border:"1px solid rgba(232,216,204,.8)",
+                        background:"rgba(255,255,255,.9)",border:"1px solid rgba(255,255,255,.8)",
                         display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",
                         boxShadow:"0 1px 4px rgba(0,0,0,.08)"}}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7a5c48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4A5E50" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                         <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                       </svg>
@@ -4746,14 +5235,14 @@ export default function App({ user }) {
                     <div className="sched-top">
                       <span style={{fontSize:"1rem"}}>💉</span>
                       <div style={{flex:1}}>
-                        <div className="sched-label">{tx.name}{isPast&&<span style={{fontSize:".62rem",background:"#e8d8cc",color:"#a08070",borderRadius:10,padding:"1px 7px",marginLeft:6}}>Past</span>}</div>
-                        <div style={{fontSize:".71rem",color:"#9a7050",marginTop:2}}>
+                        <div className="sched-label">{tx.name}{isPast&&<span style={{fontSize:".62rem",background:"rgba(71,102,90,.15)",color:"#4A5E50",borderRadius:10,padding:"1px 7px",marginLeft:6}}>Past</span>}</div>
+                        <div style={{fontSize:".71rem",color:"#6B8C7A",marginTop:2}}>
                           {tx.completedDates?.length||0} done
-                          {tx.location?<span> · <span style={{cursor:"pointer",color:"#b07a5e",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(tx.location)}`);}}>📍 {tx.location}</span></span>:null}
+                          {tx.location?<span> · <span style={{cursor:"pointer",color:"#243D30",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(tx.location)}`);}}>📍 {tx.location}</span></span>:null}
                           {next&&<span> · Next: {parse(next).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
                         </div>
                       </div>
-                      {tx.dates.includes(today)&&<span style={{fontSize:".68rem",background:"#e06050",color:"#fff",borderRadius:20,padding:"2px 8px",whiteSpace:"nowrap"}}>Today</span>}
+                      {tx.dates.includes(today)&&<span style={{fontSize:".68rem",background:"#1E3428",color:"#fff",borderRadius:20,padding:"2px 8px",whiteSpace:"nowrap"}}>Today</span>}
                     </div>
                   </div>
                 );
@@ -4765,16 +5254,16 @@ export default function App({ user }) {
                 const isPast=!upcoming.length;
                 return (
                   <div onClick={()=>setSelectedPlan({type:"treatment",data:tx})}
-                    style={{flexShrink:0,width:148,background:"#fff8f3",border:`1.5px solid ${isPast?"#e8d8cc":"#e0c8b8"}`,borderRadius:16,padding:"14px 12px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:isPast?.55:1}}>
+                    style={{flexShrink:0,width:148,background:"rgba(255,255,255,.92)",border:"1px solid rgba(255,255,255,.9)",borderRadius:16,padding:"14px 12px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:isPast?.55:1}}>
                     <div style={{fontSize:"1.6rem",textAlign:"center"}}>💉</div>
-                    <div style={{fontSize:".82rem",fontWeight:500,color:"#3a2e27",textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{tx.name}</div>
+                    <div style={{fontSize:".82rem",fontWeight:500,color:"#1A2820",textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{tx.name}</div>
                     {isPast
-                      ?<div style={{fontSize:".6rem",color:"#a08070",textAlign:"center",background:"#f0e4d8",borderRadius:10,padding:"2px 6px"}}>Past</div>
-                      :<div style={{fontSize:".64rem",color:"#9a7050",textAlign:"center"}}>
+                      ?<div style={{fontSize:".6rem",color:"#4A5E50",textAlign:"center",background:"rgba(71,102,90,.12)",borderRadius:10,padding:"2px 6px"}}>Past</div>
+                      :<div style={{fontSize:".64rem",color:"#6B8C7A",textAlign:"center"}}>
                         {next?`Next: ${parse(next).toLocaleDateString("en-US",{month:"short",day:"numeric"})}`:`${tx.completedDates?.length||0} done`}
                       </div>
                     }
-                    {tx.dates.includes(today)&&<div style={{fontSize:".6rem",background:"#e06050",color:"#fff",borderRadius:10,padding:"2px 6px",textAlign:"center"}}>Today</div>}
+                    {tx.dates.includes(today)&&<div style={{fontSize:".6rem",background:"#1E3428",color:"#fff",borderRadius:10,padding:"2px 6px",textAlign:"center"}}>Today</div>}
                   </div>
                 );
               };
@@ -4785,24 +5274,24 @@ export default function App({ user }) {
                   {[["all","All"],["upcoming","Upcoming"],["past","Past"]].map(([v,l])=>(
                     <button key={v} onClick={()=>setTxFilter(v)}
                       style={{padding:"3px 10px",borderRadius:14,border:"1px solid",fontSize:".68rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",
-                        background:txFilter===v?"#b07a5e":"transparent",
-                        color:txFilter===v?"#fff":"#a08070",
-                        borderColor:txFilter===v?"#b07a5e":"#e0cfc4"}}>
+                        background:txFilter===v?"#1E3428":"rgba(255,255,255,.15)",
+                        color:txFilter===v?"#fff":"rgba(255,255,255,.65)",
+                        borderColor:txFilter===v?"#1E3428":"rgba(255,255,255,.3)"}}>
                       {l}
                     </button>
                   ))}
                 </div>
               );
 
-              const ScrollHint=()=>(<div style={{display:"flex",justifyContent:"center",marginTop:8}}><div style={{width:28,height:3,borderRadius:2,background:"linear-gradient(90deg,transparent,#d8c4b8,transparent)"}}/></div>);
+              const ScrollHint=()=>(<div style={{display:"flex",justifyContent:"center",marginTop:8}}><div style={{width:28,height:3,borderRadius:2,background:"linear-gradient(90deg,transparent,#2E2B27,transparent)"}}/></div>);
 
               const SectionCarousel=({label,planItems=[],txItems=[],allTxForSection=[]})=>{
                 if(!planItems.length&&!txItems.length) return null;
                 const total=planItems.length+txItems.length;
                 return (
-                  <div style={{marginBottom:16,background:"#fffaf7",border:"1.5px solid #f0e4dc",borderRadius:18,padding:"14px 14px 10px"}}>
+                  <div style={{marginBottom:16,background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:18,padding:"14px 14px 10px"}}>
                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:allTxForSection.length?6:10}}>
-                      <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",fontWeight:600}}>{label}</div>
+                      <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)",fontWeight:600}}>{label}</div>
                     </div>
                     {allTxForSection.length>0&&<TxFilterBar/>}
                     <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:4,scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch"}}>
@@ -4814,25 +5303,25 @@ export default function App({ user }) {
                 );
               };
 
-              if(!hasAnything) return <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No plans yet — tap + Add to start</div>;
-              if(!hasVisible) return <div style={{textAlign:"center",padding:"24px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem"}}>No {plansFilter} plans</div>;
+              if(!hasAnything) return <div style={{textAlign:"center",padding:"32px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No plans yet — tap + Add to start</div>;
+              if(!hasVisible) return <div style={{textAlign:"center",padding:"24px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem"}}>No {plansFilter} plans</div>;
 
               const allSkinTx=treatments.filter(t=>t.type==="skin");
               const allHairTx=treatments.filter(t=>t.type==="hair");
 
               if(plansViewMode==="carousel") return (
                 <>
-                  <SectionCarousel label="🌿 Skin" planItems={skinPlans} txItems={skinTreatments} allTxForSection={allSkinTx}/>
-                  <SectionCarousel label="✨ Hair" planItems={hairPlans} txItems={hairTreatments} allTxForSection={allHairTx}/>
+                  <SectionCarousel label="Skin" planItems={skinPlans} txItems={skinTreatments} allTxForSection={allSkinTx}/>
+                  <SectionCarousel label="Hair" planItems={hairPlans} txItems={hairTreatments} allTxForSection={allHairTx}/>
                 </>
               );
 
               return (
                 <>
                   {(skinPlans.length>0||skinTreatments.length>0)&&(
-                    <div style={{marginBottom:16,background:"#fffaf7",border:"1.5px solid #f0e4dc",borderRadius:18,padding:"14px 14px 6px"}}>
+                    <div style={{marginBottom:16,background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:18,padding:"14px 14px 6px"}}>
                       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",fontWeight:600}}>🌿 Skin</div>
+                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)",fontWeight:600}}>Skin</div>
                         {skinTreatments.length>0&&<TxFilterBar/>}
                       </div>
                       {skinPlans.map(s=><PlanCardList key={s.id} s={s}/>)}
@@ -4840,9 +5329,9 @@ export default function App({ user }) {
                     </div>
                   )}
                   {(hairPlans.length>0||hairTreatments.length>0)&&(
-                    <div style={{marginBottom:16,background:"#fffaf7",border:"1.5px solid #f0e4dc",borderRadius:18,padding:"14px 14px 6px"}}>
+                    <div style={{marginBottom:16,background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:18,padding:"14px 14px 6px"}}>
                       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#a08070",fontWeight:600}}>✨ Hair</div>
+                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)",fontWeight:600}}>Hair</div>
                         {hairTreatments.length>0&&<TxFilterBar/>}
                       </div>
                       {hairPlans.map(s=><PlanCardList key={s.id} s={s}/>)}
@@ -4870,7 +5359,7 @@ export default function App({ user }) {
               ))}
             </div>
             {!freqTracked.length?(
-              <div style={{textAlign:"center",padding:"32px 0",color:"#b09080",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No habits tracked — tap Configure</div>
+              <div style={{textAlign:"center",padding:"32px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No habits tracked — tap Configure</div>
             ):freqTracked.map(id=>{
               const it=allItems.find(x=>x.id===id); if(!it) return null;
               const {count,possible}=freqStats(id);
@@ -4899,14 +5388,35 @@ export default function App({ user }) {
             })}
           </>}
 
-          <hr style={{border:"none",borderTop:"1.5px solid #e8d8cc",margin:"28px 0 20px"}}/>
+          <hr style={{border:"none",borderTop:"1px solid rgba(255,255,255,.15)",margin:"28px 0 20px"}}/>
           <SpendingSummary purchases={purchases} period={freqPeriod} onGoToPurchases={()=>setPageView("purchases")}/>
           </>
         )}
+        <nav className="bottom-nav">
+          {[["log","⌂","Log"],["history","◻","History"],["plan","◈","Plans"],["frequency","◷","Stats"]].map(([v,icon,lbl])=>(
+            <button key={v} className={`bnav ${view===v?"active":""}`} onClick={()=>setView(v)}>
+              <span className="bnav-icon">{icon}</span>
+              <div className="bnav-dot"/>
+              <span className="bnav-lbl">{lbl}</span>
+            </button>
+          ))}
+        </nav>
       </div>
       )}
 
-      {modal==="manageItems"&&<ManageItemsModal type={activeTab} items={activeTab==="skin"?skinR:hairR} onAdd={item=>addItem(activeTab,item)} onRemove={id=>removeItem(activeTab,id)} onEdit={(id,changes)=>editItem(activeTab,id,changes)} onClose={()=>setModal(null)}/>}
+      {modal==="manageItems"&&<ManageItemsModal
+        type={activeTab}
+        section={editSection}
+        items={[...skinR.map(it=>({...it,_tab:"skin"})),...hairR.map(it=>({...it,_tab:"hair"}))].filter(it=>{
+          if(editSection==="morning") return (it.time||"both")==="day"||(it.time||"both")==="both";
+          if(editSection==="night") return (it.time||"both")==="night"||(it.time||"both")==="both";
+          return true;
+        })}
+        products={products}
+        onAdd={item=>addItem(item._tab||activeTab,item)}
+        onRemove={id=>{ const tab=skinR.find(r=>r.id===id)?"skin":"hair"; removeItem(tab,id); }}
+        onEdit={(id,changes)=>{ const tab=skinR.find(r=>r.id===id)?"skin":"hair"; editItem(tab,id,changes); }}
+        onClose={()=>setModal(null)}/>}
       {selectedPlan&&<PlanModal allItems={allItems} skinItems={skinR} hairItems={hairR} schedules={schedules} treatments={treatments}
         entries={entries} products={products} wishlist={wishlist} today={today}
         onSave={async s=>{ await saveSched(s); setSelectedPlan(null); }}
@@ -4938,7 +5448,7 @@ export default function App({ user }) {
               onClick={async()=>{ await supabase.auth.updateUser({data:{display_name:userName.trim()}}); setShowNamePrompt(false); }}>
               Let's go ✨
             </button>
-            <button onClick={()=>setShowNamePrompt(false)} style={{background:"none",border:"none",fontSize:".76rem",color:"#a08070",cursor:"pointer",marginTop:10,fontFamily:"'DM Sans',sans-serif"}}>
+            <button onClick={()=>setShowNamePrompt(false)} style={{background:"none",border:"none",fontSize:".76rem",color:"#5A5248",cursor:"pointer",marginTop:10,fontFamily:"'DM Sans',sans-serif"}}>
               Skip for now
             </button>
           </div>
@@ -4958,6 +5468,7 @@ export default function App({ user }) {
           if(date===activeDate&&type===activeTab) setCurPhotos(prev=>prev.filter(p=>p.id!==photoId));
         }}/>}
       {confirmDelete&&<ConfirmDialog message={confirmDelete.message} onConfirm={()=>{confirmDelete.onConfirm();setConfirmDelete(null);}} onCancel={()=>setConfirmDelete(null)}/>}
+      {debrief&&<RitualDebrief debrief={debrief} onClose={()=>setDebrief(null)}/>}
 
       {sideMenuEl}
     </div>
