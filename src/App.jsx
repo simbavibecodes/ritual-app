@@ -113,7 +113,8 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .log-section{border-radius:18px;padding:12px 12px 10px;margin:14px 14px 12px;position:relative;overflow:hidden}
 .log-section.morning{background:rgba(238,248,242,.88);border:1px solid rgba(200,235,215,.7)}
 .log-section.night{background:rgba(15,27,53,.52);border:1px solid rgba(15,27,53,.4)}
-.log-section.night::before{content:'';position:absolute;inset:0;background:radial-gradient(1.5px 1.5px at 10% 12%,rgba(255,255,255,.9),transparent),radial-gradient(2px 2px at 32% 8%,rgba(255,255,255,.8),transparent),radial-gradient(1.5px 1.5px at 65% 14%,rgba(255,255,255,.85),transparent),radial-gradient(1px 1px at 82% 22%,rgba(255,255,255,.65),transparent),radial-gradient(2px 2px at 20% 38%,rgba(255,255,255,.6),transparent),radial-gradient(1px 1px at 50% 32%,rgba(255,255,255,.7),transparent),radial-gradient(1.5px 1.5px at 75% 50%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 40% 62%,rgba(255,255,255,.5),transparent),radial-gradient(2px 2px at 88% 68%,rgba(255,255,255,.65),transparent),radial-gradient(1px 1px at 25% 78%,rgba(255,255,255,.55),transparent),radial-gradient(1.5px 1.5px at 60% 82%,rgba(255,255,255,.45),transparent),radial-gradient(1px 1px at 6% 55%,rgba(255,255,255,.6),transparent),radial-gradient(2px 2px at 95% 42%,rgba(255,255,255,.5),transparent);pointer-events:none}
+.log-section.morning::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 88% 10%,rgba(255,218,130,.2),transparent 52%),radial-gradient(ellipse at 10% 85%,rgba(180,225,255,.12),transparent 45%);pointer-events:none;z-index:0}
+.log-section.night::before{content:'';position:absolute;inset:0;background:radial-gradient(1.5px 1.5px at 10% 12%,rgba(255,255,255,.9),transparent),radial-gradient(2px 2px at 32% 8%,rgba(255,255,255,.8),transparent),radial-gradient(1.5px 1.5px at 65% 14%,rgba(255,255,255,.85),transparent),radial-gradient(1px 1px at 82% 22%,rgba(255,255,255,.65),transparent),radial-gradient(2px 2px at 20% 38%,rgba(255,255,255,.6),transparent),radial-gradient(1px 1px at 50% 32%,rgba(255,255,255,.7),transparent),radial-gradient(1.5px 1.5px at 75% 50%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 40% 62%,rgba(255,255,255,.5),transparent),radial-gradient(2px 2px at 88% 68%,rgba(255,255,255,.65),transparent),radial-gradient(1px 1px at 25% 78%,rgba(255,255,255,.55),transparent),radial-gradient(1.5px 1.5px at 60% 82%,rgba(255,255,255,.45),transparent),radial-gradient(1px 1px at 6% 55%,rgba(255,255,255,.6),transparent),radial-gradient(2px 2px at 95% 42%,rgba(255,255,255,.5),transparent);pointer-events:none;z-index:0}
 .log-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;position:relative;z-index:1}
 .log-section-title{font-family:'Cormorant Garamond',serif;font-size:.95rem;font-weight:600;letter-spacing:.04em;display:flex;align-items:center;gap:6px}
 .log-section.morning .log-section-title{color:rgba(30,52,40,.82)}
@@ -193,7 +194,7 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .save-btn:disabled{opacity:.35;cursor:not-allowed}
 
 /* ── Bottom nav ── */
-.bottom-nav{position:fixed;bottom:0;left:max(0px,calc(50% - 340px));right:max(0px,calc(50% - 340px));z-index:100;display:flex;justify-content:space-around;align-items:center;padding:10px 0 max(20px,calc(10px + env(safe-area-inset-bottom)));background:rgba(50,75,58,.5);backdrop-filter:blur(28px) saturate(1.4);border-top:1px solid rgba(255,255,255,.14)}
+.bottom-nav{position:fixed;bottom:0;left:max(0px,calc(50% - 340px));right:max(0px,calc(50% - 340px));z-index:100;display:flex;justify-content:space-around;align-items:center;padding:6px 0 max(12px,calc(6px + env(safe-area-inset-bottom)));background:rgba(50,75,58,.5);backdrop-filter:blur(28px) saturate(1.4);border-top:1px solid rgba(255,255,255,.14)}
 .bnav{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;background:none;border:none;padding:4px 18px}
 .bnav-icon{font-size:18px;color:rgba(255,255,255,.38);transition:color .15s;line-height:1}
 .bnav.active .bnav-icon{color:#fff}
@@ -4024,6 +4025,8 @@ export default function App({ user }) {
   const [activeTab,   setActiveTab]   = useState("skin");
   const [logFilter,   setLogFilter]   = useState("all");
   const activeDayRef = useRef(null);
+  const weekStripRef = useRef(null);
+  const [wdayW, setWdayW] = useState(0);
   const [editSection, setEditSection] = useState("morning");
   const [collapsedSections, setCollapsedSections] = useState({morning:false,night:false});
   const toggleSection = key => setCollapsedSections(p=>({...p,[key]:!p[key]}));
@@ -4067,7 +4070,13 @@ export default function App({ user }) {
 
   // Persist current page across refreshes
   useEffect(() => { sessionStorage.setItem('ritual_view', view); }, [view]);
-  useEffect(() => { activeDayRef.current?.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' }); }, [activeDate]);
+  useEffect(() => { activeDayRef.current?.scrollIntoView({ behavior:'auto', inline:'center', block:'nearest' }); }, [activeDate]);
+  useEffect(() => {
+    const measure = () => { if (weekStripRef.current) setWdayW(weekStripRef.current.clientWidth / 7); };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
   useEffect(() => {
     if (pageView) sessionStorage.setItem('ritual_pageView', pageView);
     else sessionStorage.removeItem('ritual_pageView');
@@ -4821,7 +4830,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
               const DOW_SHORT = ["Su","Mo","Tu","We","Th","Fr","Sa"];
               const weekDates = Array.from({length:30}, (_,i) => shiftD(today, i-23));
               return (
-                <div className="week-strip">
+                <div className="week-strip" ref={weekStripRef}>
                   {weekDates.map((d) => {
                     const isActive = d === activeDate;
                     const isToday = d === today;
@@ -4839,7 +4848,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                     const cx = sz/2, cy = sz/2;
                     const circumference = 2 * Math.PI * r;
                     return (
-                      <div key={d} ref={isActive?activeDayRef:null} className="wday" onClick={()=>{if(!isFuture)setActiveDate(d);}}>
+                      <div key={d} ref={isActive?activeDayRef:null} className="wday" style={wdayW?{width:wdayW}:{}} onClick={()=>setActiveDate(d)}>
                         <span className={`wday-lbl ${isActive?"active-lbl":""}`}>{isToday?"Today":dowLabel}</span>
                         <div className="wday-ring">
                           <svg width={sz} height={sz} viewBox={`0 0 ${sz} ${sz}`} style={{transition:"width .18s,height .18s"}}>
@@ -4915,7 +4924,9 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                 [...skinR,...hairR].find(r=>r.id===itemId)?.productId
               ));
 
+              const isFutureDate = activeDate > today;
               const completeSectionItems = (sectionItems) => {
+                if (isFutureDate) return;
                 const skinItems = sectionItems.filter(it=>it._tab==="skin");
                 const hairItems = sectionItems.filter(it=>it._tab==="hair");
                 const skinDone = e2.skin||[];
@@ -4971,7 +4982,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                 const {svg, bgClass} = getBottleSvg(it);
                 return (
                   <div key={it._tab+it.id} className={`pc-card ${isDone?"done":""}`}
-                    onClick={()=>toggleItem(activeDate,it._tab,it.id)}>
+                    onClick={()=>{ if(!isFutureDate) toggleItem(activeDate,it._tab,it.id); }}>
                     {linkedProd?.image
                       ? <div className="pc-img" style={{background:"rgba(255,255,255,.15)",overflow:"hidden"}}>
                           <img src={linkedProd.image} alt={linkedProd.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
@@ -5025,6 +5036,29 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                     </div>
                   )}
                 </>
+              );
+            })()}
+            {(()=>{
+              const todayTreatments = treatments.filter(tx => tx.dates && tx.dates.includes(activeDate));
+              if(!todayTreatments.length) return null;
+              return (
+                <div style={{margin:"0 14px 4px"}}>
+                  <div className="sec-label" style={{paddingTop:4,paddingBottom:6,paddingLeft:0,paddingRight:0}}>
+                    <span className="sec-tag">Treatments today</span>
+                    <div className="sec-line"/>
+                  </div>
+                  {todayTreatments.map(tx=>{
+                    const done = (tx.completedDates||[]).includes(activeDate);
+                    return (
+                      <div key={tx.id} className={`treatment-banner${done?" done":""}`}
+                        onClick={()=>setSelectedPlan({type:"treatment",data:tx})}>
+                        <div className="tb-dot"/>
+                        <div className="tb-text">{tx.name||"Treatment"}</div>
+                        {tx.location&&<div style={{fontSize:".7rem",color:"#9AB0A4",marginLeft:"auto"}}>📍 {tx.location}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
               );
             })()}
             <div className="sec-label" style={{paddingBottom:8}}>
@@ -5131,7 +5165,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
           <>
             {/* ── Plans header ── */}
             <div className="sec-head">
-              <div className="sec-title">Plans</div>
+              <div className="sec-title">Routines</div>
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
                 <button className="ghost-btn" style={{fontSize:".72rem",padding:"4px 8px"}}
                   onClick={()=>setPlansViewMode(p=>p==="carousel"?"list":"carousel")}>
@@ -5198,26 +5232,52 @@ Respond ONLY with valid JSON (no markdown, no explanation):
               const PlanCardCarousel=({s})=>{
                 const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
                 const recurDays=(s.days||[]).sort().map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
+                const itemTime = it.time||"both";
+                const linkedProd = s.linkedProductId ? products.find(p=>p.id===s.linkedProductId) : null;
+                const cardBg = itemTime==="day"
+                  ? "linear-gradient(160deg,#FDF0D5,#F2C96B)"
+                  : itemTime==="night"
+                  ? "linear-gradient(160deg,#0F1B35,#1A2E55)"
+                  : "linear-gradient(160deg,#FDF0D5 0%,#F2C96B 35%,#4A7AB5 65%,#0F1B35 100%)";
+                const isNight = itemTime==="night";
+                const isBoth = itemTime==="both";
+                const textColor = isNight ? "rgba(255,255,255,.88)" : "#1A2820";
+                const subColor = isNight ? "rgba(255,255,255,.52)" : "#6B8C7A";
+                const endedBg = isNight ? "rgba(255,255,255,.12)" : "rgba(71,102,90,.12)";
+                const endedColor = isNight ? "rgba(255,255,255,.55)" : "#4A5E50";
+                const editStroke = isNight ? "rgba(255,255,255,.7)" : "#4A5E50";
+                const editBg = isNight ? "rgba(255,255,255,.15)" : "rgba(255,255,255,.9)";
                 return (
                   <div style={{flexShrink:0,width:148,position:"relative"}}>
                     <div onClick={()=>setSelectedPlan({type:"plan",data:s})}
-                      style={{background:"rgba(255,255,255,.92)",border:"1px solid rgba(255,255,255,.9)",borderRadius:16,padding:"14px 12px 10px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:s.ended_at?.55:1,height:"100%"}}>
-                      <div style={{fontSize:"1.6rem",textAlign:"center"}}>{it.emoji}</div>
-                      <div style={{fontSize:".82rem",fontWeight:500,color:"#1A2820",textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{it.label}</div>
+                      style={{background:cardBg,borderRadius:16,padding:"14px 12px 10px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:s.ended_at?.55:1,height:"100%",position:"relative",overflow:"hidden"}}>
+                      {(isNight||isBoth)&&<div style={{position:"absolute",inset:0,background:"radial-gradient(1.5px 1.5px at 15% 20%,rgba(255,255,255,.8),transparent),radial-gradient(1px 1px at 55% 12%,rgba(255,255,255,.7),transparent),radial-gradient(1.5px 1.5px at 80% 30%,rgba(255,255,255,.65),transparent),radial-gradient(1px 1px at 35% 55%,rgba(255,255,255,.5),transparent),radial-gradient(1.5px 1.5px at 70% 70%,rgba(255,255,255,.45),transparent),radial-gradient(1px 1px at 20% 80%,rgba(255,255,255,.55),transparent)",pointerEvents:"none"}}/>}
+                      {linkedProd
+                        ? <div style={{width:48,height:48,borderRadius:10,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto",overflow:"hidden",flexShrink:0}}>
+                            {linkedProd.image||linkedProd.media_url
+                              ? <img src={linkedProd.media_url||linkedProd.image} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                              : <span style={{fontSize:"1.4rem"}}>{it.emoji}</span>}
+                          </div>
+                        : <div style={{fontSize:"1.6rem",textAlign:"center"}}>{it.emoji}</div>
+                      }
+                      <div style={{fontSize:".82rem",fontWeight:500,color:textColor,textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",position:"relative"}}>
+                        {linkedProd ? linkedProd.name : it.label}
+                      </div>
+                      {linkedProd&&<div style={{fontSize:".62rem",color:subColor,textAlign:"center",position:"relative"}}>{it.label}</div>}
                       {s.ended_at
-                        ?<div style={{fontSize:".6rem",color:"#4A5E50",textAlign:"center",background:"rgba(71,102,90,.12)",borderRadius:10,padding:"2px 6px"}}>Ended</div>
-                        :<div style={{fontSize:".64rem",color:"#6B8C7A",textAlign:"center"}}>
+                        ?<div style={{fontSize:".6rem",color:endedColor,textAlign:"center",background:endedBg,borderRadius:10,padding:"2px 6px",position:"relative"}}>Ended</div>
+                        :<div style={{fontSize:".64rem",color:subColor,textAlign:"center",position:"relative"}}>
                           {(s.days||[]).length===7?"Every day":recurDays||`${(s.dates||[]).length} date${(s.dates||[]).length!==1?"s":""}`}
                         </div>
                       }
-                      {s.endDate&&!s.ended_at&&<div style={{fontSize:".58rem",color:"#9AB0A4",textAlign:"center"}}>until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>}
+                      {s.endDate&&!s.ended_at&&<div style={{fontSize:".58rem",color:subColor,textAlign:"center",position:"relative"}}>until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>}
                     </div>
                     <button onClick={e=>{e.stopPropagation();setSelectedPlan({type:"plan",data:{...s,_editMode:true}});}}
                       style={{position:"absolute",top:8,right:8,width:26,height:26,borderRadius:"50%",
-                        background:"rgba(255,255,255,.9)",border:"1px solid rgba(255,255,255,.8)",
+                        background:editBg,border:"1px solid rgba(255,255,255,.3)",
                         display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",
-                        boxShadow:"0 1px 4px rgba(0,0,0,.08)"}}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4A5E50" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        boxShadow:"0 1px 4px rgba(0,0,0,.12)"}}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={editStroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                         <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                       </svg>
@@ -5393,7 +5453,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
           </>
         )}
         <nav className="bottom-nav">
-          {[["log","⌂","Log"],["history","◻","History"],["plan","◈","Plans"],["frequency","◷","Stats"]].map(([v,icon,lbl])=>(
+          {[["log","⌂","Log"],["history","◻","History"],["plan","◈","Routines"],["frequency","◷","Stats"]].map(([v,icon,lbl])=>(
             <button key={v} className={`bnav ${view===v?"active":""}`} onClick={()=>setView(v)}>
               <span className="bnav-icon">{icon}</span>
               <div className="bnav-dot"/>
