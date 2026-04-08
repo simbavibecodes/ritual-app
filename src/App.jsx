@@ -110,10 +110,11 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .log-fpill.active{color:rgba(255,255,255,.92);border-bottom-color:rgba(255,255,255,.7)}
 
 /* ── Morning / Night section cards ── */
-.log-section{border-radius:18px;padding:12px 12px 10px;margin:14px 14px 12px;position:relative;overflow:hidden}
+.log-section{border-radius:18px;padding:12px 12px 10px;margin:14px 14px 12px;position:relative;overflow:hidden;isolation:isolate}
 .log-section.morning{background:rgba(238,248,242,.88);border:1px solid rgba(200,235,215,.7)}
 .log-section.night{background:rgba(15,27,53,.52);border:1px solid rgba(15,27,53,.4)}
-.log-section.night::before{content:'';position:absolute;inset:0;background:radial-gradient(1.5px 1.5px at 10% 12%,rgba(255,255,255,.9),transparent),radial-gradient(2px 2px at 32% 8%,rgba(255,255,255,.8),transparent),radial-gradient(1.5px 1.5px at 65% 14%,rgba(255,255,255,.85),transparent),radial-gradient(1px 1px at 82% 22%,rgba(255,255,255,.65),transparent),radial-gradient(2px 2px at 20% 38%,rgba(255,255,255,.6),transparent),radial-gradient(1px 1px at 50% 32%,rgba(255,255,255,.7),transparent),radial-gradient(1.5px 1.5px at 75% 50%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 40% 62%,rgba(255,255,255,.5),transparent),radial-gradient(2px 2px at 88% 68%,rgba(255,255,255,.65),transparent),radial-gradient(1px 1px at 25% 78%,rgba(255,255,255,.55),transparent),radial-gradient(1.5px 1.5px at 60% 82%,rgba(255,255,255,.45),transparent),radial-gradient(1px 1px at 6% 55%,rgba(255,255,255,.6),transparent),radial-gradient(2px 2px at 95% 42%,rgba(255,255,255,.5),transparent);pointer-events:none}
+.log-section.morning::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 88% 10%,rgba(255,218,130,.2),transparent 52%),radial-gradient(ellipse at 10% 85%,rgba(180,225,255,.12),transparent 45%);pointer-events:none;z-index:0}
+.log-section.night::before{content:'';position:absolute;inset:0;background:radial-gradient(1.5px 1.5px at 10% 12%,rgba(255,255,255,.9),transparent),radial-gradient(2px 2px at 32% 8%,rgba(255,255,255,.8),transparent),radial-gradient(1.5px 1.5px at 65% 14%,rgba(255,255,255,.85),transparent),radial-gradient(1px 1px at 82% 22%,rgba(255,255,255,.65),transparent),radial-gradient(2px 2px at 20% 38%,rgba(255,255,255,.6),transparent),radial-gradient(1px 1px at 50% 32%,rgba(255,255,255,.7),transparent),radial-gradient(1.5px 1.5px at 75% 50%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 40% 62%,rgba(255,255,255,.5),transparent),radial-gradient(2px 2px at 88% 68%,rgba(255,255,255,.65),transparent),radial-gradient(1px 1px at 25% 78%,rgba(255,255,255,.55),transparent),radial-gradient(1.5px 1.5px at 60% 82%,rgba(255,255,255,.45),transparent),radial-gradient(1px 1px at 6% 55%,rgba(255,255,255,.6),transparent),radial-gradient(2px 2px at 95% 42%,rgba(255,255,255,.5),transparent);pointer-events:none;z-index:2}
 .log-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;position:relative;z-index:1}
 .log-section-title{font-family:'Cormorant Garamond',serif;font-size:.95rem;font-weight:600;letter-spacing:.04em;display:flex;align-items:center;gap:6px}
 .log-section.morning .log-section-title{color:rgba(30,52,40,.82)}
@@ -158,8 +159,8 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .pc-card:active{transform:scale(.98)}
 .pc-card.done{background:rgba(200,225,210,.75);border-color:rgba(160,205,180,.7)}
 .pc-card.done .pc-name{text-decoration:line-through;text-decoration-color:rgba(40,90,60,.35);color:rgba(80,130,100,.75)}
-.log-section.morning .pc-card.done{background:rgba(155,205,175,.45);border-color:rgba(120,180,150,.5)}
-.log-section.morning .pc-card.done .pc-name{color:rgba(40,90,60,.55);text-decoration-color:rgba(40,90,60,.4)}
+.log-section.morning .pc-card.done{background:rgba(80,140,100,.18);border-color:rgba(50,110,75,.28)}
+.log-section.morning .pc-card.done .pc-name{color:rgba(30,70,45,.82);text-decoration:line-through;text-decoration-color:rgba(30,70,45,.75);text-decoration-thickness:2px}
 .pc-img{width:48px;height:48px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .placeholder-svg{width:32px;height:32px;opacity:.55}
 .pc-img.g{background:#D8EBE0}
@@ -193,7 +194,7 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .save-btn:disabled{opacity:.35;cursor:not-allowed}
 
 /* ── Bottom nav ── */
-.bottom-nav{position:fixed;bottom:0;left:max(0px,calc(50% - 340px));right:max(0px,calc(50% - 340px));z-index:100;display:flex;justify-content:space-around;align-items:center;padding:10px 0 max(20px,calc(10px + env(safe-area-inset-bottom)));background:rgba(50,75,58,.5);backdrop-filter:blur(28px) saturate(1.4);border-top:1px solid rgba(255,255,255,.14)}
+.bottom-nav{position:fixed;bottom:0;left:max(0px,calc(50% - 340px));right:max(0px,calc(50% - 340px));z-index:100;display:flex;justify-content:space-around;align-items:center;padding:6px 0 max(12px,calc(6px + env(safe-area-inset-bottom)));background:rgba(50,75,58,.5);backdrop-filter:blur(28px) saturate(1.4);border-top:1px solid rgba(255,255,255,.14)}
 .bnav{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;background:none;border:none;padding:4px 18px}
 .bnav-icon{font-size:18px;color:rgba(255,255,255,.38);transition:color .15s;line-height:1}
 .bnav.active .bnav-icon{color:#fff}
@@ -564,19 +565,19 @@ function ManageItemsModal({ type, section, items, products, onAdd, onRemove, onE
 
   const ProductPicker = ({ value, onChange, show, onToggle }) => (
     <div>
-      <button onClick={onToggle} style={{width:"100%",background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.14)",borderRadius:10,padding:"8px 12px",color:value?undefined:"rgba(255,255,255,.35)",fontSize:".76rem",cursor:"pointer",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <button onClick={onToggle} style={{width:"100%",background:"#F8FAF8",border:"1px solid #EEF4F0",borderRadius:10,padding:"8px 12px",color:value?"#1A2820":"#9AB0A4",fontSize:".76rem",cursor:"pointer",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <span>{value ? (products||[]).find(p=>p.id===value)?.name||"Unknown product" : "Link to a product (optional)"}</span>
         {value && <span onClick={e=>{e.stopPropagation();onChange(null);}} style={{fontSize:".9rem",opacity:.5,padding:"0 4px"}}>×</span>}
       </button>
-      {show&&<div style={{maxHeight:160,overflowY:"auto",background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)",borderRadius:10,marginTop:4}}>
-        {!(products||[]).length&&<div style={{padding:"10px 12px",fontSize:".75rem",color:"rgba(255,255,255,.35)",textAlign:"center"}}>No products yet</div>}
+      {show&&<div style={{maxHeight:160,overflowY:"auto",background:"#fff",border:"1px solid #EEF4F0",borderRadius:10,marginTop:4}}>
+        {!(products||[]).length&&<div style={{padding:"10px 12px",fontSize:".75rem",color:"#9AB0A4",textAlign:"center"}}>No products yet</div>}
         {(products||[]).map(p=>(
           <div key={p.id} onClick={()=>{onChange(p.id);onToggle();}}
-            style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",cursor:"pointer",borderBottom:"1px solid rgba(255,255,255,.06)",background:value===p.id?"rgba(255,255,255,.1)":undefined}}>
-            {p.image?<img src={p.image} alt={p.name} style={{width:28,height:28,borderRadius:6,objectFit:"cover",flexShrink:0}}/>:<div style={{width:28,height:28,borderRadius:6,background:"rgba(255,255,255,.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem",flexShrink:0}}>🧴</div>}
+            style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",cursor:"pointer",borderBottom:"1px solid #F0F6F2",background:value===p.id?"#EEF4F0":undefined}}>
+            {p.image?<img src={p.image} alt={p.name} style={{width:28,height:28,borderRadius:6,objectFit:"cover",flexShrink:0}}/>:<div style={{width:28,height:28,borderRadius:6,background:"#EEF4F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem",flexShrink:0}}>🧴</div>}
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:".75rem",color:"rgba(255,255,255,.85)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
-              {p.brand&&<div style={{fontSize:".62rem",color:"rgba(255,255,255,.4)"}}>{p.brand}</div>}
+              <div style={{fontSize:".75rem",color:"#1A2820",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
+              {p.brand&&<div style={{fontSize:".62rem",color:"#9AB0A4"}}>{p.brand}</div>}
             </div>
           </div>
         ))}
@@ -615,11 +616,11 @@ function ManageItemsModal({ type, section, items, products, onAdd, onRemove, onE
 
         <hr className="modal-hr"/>
         <div className="modal-sub">Current steps ({items.length})</div>
-        {!items.length&&<div style={{textAlign:"center",color:"#3A3830",fontStyle:"italic",padding:"12px 0",fontSize:".86rem"}}>None yet</div>}
+        {!items.length&&<div style={{textAlign:"center",color:"#9AB0A4",fontStyle:"italic",padding:"12px 0",fontSize:".86rem"}}>None yet</div>}
         {items.map(it=>(
           <div key={it.id}>
             {editingId===it.id ? (
-              <div style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.14)",borderRadius:12,padding:"10px 13px",marginBottom:8}}>
+              <div style={{background:"#F8FAF8",border:"1px solid #EEF4F0",borderRadius:12,padding:"10px 13px",marginBottom:8}}>
                 <div className="row" style={{marginBottom:8}}>
                   <button className="epick-btn" onClick={()=>setShowEditPick(p=>!p)}>{editEmoji}</button>
                   <input className="ifield" value={editLabel} onChange={e=>setEditLabel(e.target.value)}
@@ -640,7 +641,7 @@ function ManageItemsModal({ type, section, items, products, onAdd, onRemove, onE
                 ))}</div>}
                 <div style={{display:"flex",gap:8}}>
                   <button className="confirm-btn" onClick={saveEdit} disabled={!editLabel.trim()} style={{flex:1}}>Save</button>
-                  <button onClick={cancelEdit} style={{background:"none",border:"1px solid rgba(255,255,255,.14)",borderRadius:10,padding:"9px 16px",fontSize:".78rem",color:"rgba(255,255,255,.5)",cursor:"pointer",flex:1}}>Cancel</button>
+                  <button onClick={cancelEdit} style={{background:"none",border:"1px solid #D0E4DA",borderRadius:10,padding:"9px 16px",fontSize:".78rem",color:"#9AB0A4",cursor:"pointer",flex:1}}>Cancel</button>
                 </div>
               </div>
             ) : (
@@ -3275,18 +3276,18 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
           <div className="modal-top" style={{justifyContent:"flex-end"}}>
             <button className="modal-x" onClick={onClose}>×</button>
           </div>
-          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.5rem",fontStyle:"italic",color:"#D4C8B8",marginBottom:6}}>What are you planning?</div>
-          <div style={{fontSize:".78rem",color:"#5A5248",marginBottom:28}}>Choose a category to get started</div>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.5rem",fontStyle:"italic",color:"#1A2820",marginBottom:6}}>What are you planning?</div>
+          <div style={{fontSize:".78rem",color:"#9AB0A4",marginBottom:28}}>Choose a category to get started</div>
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             {[["🌿","Skin Routine","Plan your skin care steps","skin"],["✨","Hair Routine","Plan your hair care steps","hair"],["💉","Treatment","Schedule a treatment session","treatment"]].map(([emoji,label,sub,type])=>(
               <button key={type} onClick={()=>{
                 if(type==="treatment"){ setEditTx({id:uid(),name:"",type:"skin",dates:[]}); setScreen("editTreatment"); }
                 else { setEditing(e=>({...e,itemIds:[],_category:type})); setScreen("editPlan"); }
-              }} style={{display:"flex",alignItems:"center",gap:14,background:"#1A1917",border:"1.5px solid #252320",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",transition:"all .15s",fontFamily:"'DM Sans',sans-serif"}}>
+              }} style={{display:"flex",alignItems:"center",gap:14,background:"#F8FAF8",border:"1px solid #EEF4F0",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",transition:"all .15s",fontFamily:"'DM Sans',sans-serif"}}>
                 <span style={{fontSize:"1.6rem"}}>{emoji}</span>
                 <div>
-                  <div style={{fontSize:".9rem",color:"#D4C8B8",fontWeight:500}}>{label}</div>
-                  <div style={{fontSize:".74rem",color:"#5A5248",marginTop:2}}>{sub}</div>
+                  <div style={{fontSize:".9rem",color:"#1A2820",fontWeight:500}}>{label}</div>
+                  <div style={{fontSize:".74rem",color:"#9AB0A4",marginTop:2}}>{sub}</div>
                 </div>
               </button>
             ))}
@@ -3327,53 +3328,53 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
         <div className="modal" style={{padding:"22px 20px 20px"}}>
           {/* Header row: title + close */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#D4C8B8"}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#1A2820"}}>
               {editing.ended_at?"Past Plan":"Active Plan"}
             </div>
             <button className="modal-x" onClick={onClose}>×</button>
           </div>
           {/* Item — prominent */}
-          {it&&<div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16,padding:"12px 14px",background:"#1A1917",borderRadius:16,border:"1.5px solid #252320"}}>
-            <div style={{width:44,height:44,borderRadius:12,background:"#222019",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem",flexShrink:0}}>{it.emoji}</div>
+          {it&&<div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16,padding:"12px 14px",background:"#F8FAF8",borderRadius:16,border:"1px solid #EEF4F0"}}>
+            <div style={{width:44,height:44,borderRadius:12,background:"#EEF4F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem",flexShrink:0}}>{it.emoji}</div>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:"1rem",fontWeight:500,color:"#D4C8B8",lineHeight:1.2}}>{it.label}</div>
-              <div style={{fontSize:".72rem",color:"#9a7050",marginTop:3}}>
+              <div style={{fontSize:"1rem",fontWeight:500,color:"#1A2820",lineHeight:1.2}}>{it.label}</div>
+              <div style={{fontSize:".72rem",color:"#9AB0A4",marginTop:3}}>
                 {(editing.days||[]).length===7?"Every day":recurDays?`Every ${recurDays}`:dateCount>0?`${dateCount} date${dateCount!==1?"s":""}`:editing.startDate?"One-off":"—"}
-                {editing.startDate&&<span style={{color:"#b8a090"}}> · from {parse(editing.startDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>}
-                {editing.endDate&&!editing.ended_at&&<span style={{color:"#b8a090"}}> · until {parse(editing.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
-                {editing.ended_at&&<span style={{color:"#b8a090"}}> · ended {parse(editing.ended_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
+                {editing.startDate&&<span style={{color:"#6B8C7A"}}> · from {parse(editing.startDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>}
+                {editing.endDate&&!editing.ended_at&&<span style={{color:"#6B8C7A"}}> · until {parse(editing.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
+                {editing.ended_at&&<span style={{color:"#6B8C7A"}}> · ended {parse(editing.ended_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
               </div>
             </div>
-            {editing.ended_at&&<div style={{fontSize:".6rem",background:"#252320",color:"#5A5248",borderRadius:10,padding:"2px 8px",flexShrink:0}}>Ended</div>}
+            {editing.ended_at&&<div style={{fontSize:".6rem",background:"#EEF4F0",color:"#9AB0A4",borderRadius:10,padding:"2px 8px",flexShrink:0}}>Ended</div>}
           </div>}
           {/* Linked product */}
-          {linkedProd&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,padding:"10px 12px",background:"#0F0E0C",borderRadius:12,border:"1px solid #1E1C1A"}}>
-            <div style={{width:34,height:34,borderRadius:9,overflow:"hidden",background:"#1E1C1A",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".85rem"}}>
+          {linkedProd&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,padding:"10px 12px",background:"#F8FAF8",borderRadius:12,border:"1px solid #EEF4F0"}}>
+            <div style={{width:34,height:34,borderRadius:9,overflow:"hidden",background:"#EEF4F0",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".85rem"}}>
               {(linkedProd.image||linkedProd.media_url)?<img src={linkedProd.image||linkedProd.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>🧴</span>}
             </div>
             <div>
-              <div style={{fontSize:".6rem",letterSpacing:".08em",textTransform:"uppercase",color:"#3A3830",marginBottom:1}}>Product</div>
-              <div style={{fontSize:".82rem",color:"#D4C8B8"}}>{linkedProd.name}</div>
+              <div style={{fontSize:".6rem",letterSpacing:".08em",textTransform:"uppercase",color:"#9AB0A4",marginBottom:1}}>Product</div>
+              <div style={{fontSize:".82rem",color:"#1A2820"}}>{linkedProd.name}</div>
             </div>
           </div>}
           {/* Completion */}
           {completion&&<div style={{marginBottom:14}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#3A3830"}}>Completion</div>
-              <div style={{fontSize:".82rem",color:"#D4C8B8",fontWeight:500}}>{completion.done}/{completion.total} <span style={{color:"#3A3830",fontWeight:400}}>({pct}%)</span></div>
+              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#9AB0A4"}}>Completion</div>
+              <div style={{fontSize:".82rem",color:"#1A2820",fontWeight:500}}>{completion.done}/{completion.total} <span style={{color:"#9AB0A4",fontWeight:400}}>({pct}%)</span></div>
             </div>
-            <div style={{height:5,borderRadius:4,background:"#252320",overflow:"hidden"}}>
-              <div style={{height:"100%",width:`${pct}%`,borderRadius:4,background:"linear-gradient(90deg,#d4a090,#C8B8A0)",transition:"width .4s"}}/>
+            <div style={{height:5,borderRadius:4,background:"#EEF4F0",overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${pct}%`,borderRadius:4,background:"#7EC49A",transition:"width .4s"}}/>
             </div>
           </div>}
           {/* No start date note for recurring plans */}
           {!hasStartDate&&(editing.days||[]).length>0&&!completion&&<div style={{fontSize:".72rem",color:"#2A2820",fontStyle:"italic",marginBottom:14,textAlign:"center"}}>Add a start date to track completion rate</div>}
           {/* End Plan */}
-          {!editing.ended_at&&isExisting&&<button className="ghost-btn" style={{width:"100%",color:"#C8B8A0",fontSize:".82rem",marginBottom:12}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>}
+          {!editing.ended_at&&isExisting&&<button className="ghost-btn" style={{width:"100%",color:"#6B8C7A",fontSize:".82rem",marginBottom:12}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>}
           {/* Edit + Delete row */}
           {isExisting&&<div style={{display:"flex",gap:8}}>
             <button onClick={()=>startEditPlan(editing)}
-              style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px",background:"#0F0E0C",border:"1.5px solid #252320",borderRadius:12,cursor:"pointer",color:"#8A8070",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif"}}>
+              style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px",background:"#F8FAF8",border:"1.5px solid #EEF4F0",borderRadius:12,cursor:"pointer",color:"#1A2820",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif"}}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -3402,7 +3403,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
               <div className="modal-title">{schedules.find(s=>s.id===editing.id)?"Edit Plan":"New Plan"}</div>
             </div>
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              {schedules.find(s=>s.id===editing.id)&&!editing.ended_at&&<button className="ghost-btn" style={{fontSize:".75rem",padding:"4px 10px",color:"#C8B8A0"}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>}
+              {schedules.find(s=>s.id===editing.id)&&!editing.ended_at&&<button className="ghost-btn" style={{fontSize:".75rem",padding:"4px 10px",color:"#6B8C7A"}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>}
               {schedules.find(s=>s.id===editing.id)&&<button className="del-btn" onClick={()=>{onDelete(editing.id);onClose();}}>Delete</button>}
               <button className="modal-x" onClick={onClose}>×</button>
             </div>
@@ -3414,9 +3415,9 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                 const it=allItems.find(x=>x.id===id);
                 if(!it) return null;
                 return (
-                  <div key={id} className="m-item" style={{background:"#222019",border:"1.5px solid #C8B8A0",marginBottom:0,cursor:"default"}}>
+                  <div key={id} className="m-item" style={{background:"#F8FAF8",border:"1.5px solid #7EC49A",marginBottom:0,cursor:"default"}}>
                     <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-                    <span className="m-item-lbl" style={{color:"#D4C8B8",fontWeight:500}}>{it.label}</span>
+                    <span className="m-item-lbl" style={{color:"#1A2820",fontWeight:500}}>{it.label}</span>
                   </div>
                 );
               })}
@@ -3429,11 +3430,11 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                 {(editing._category==="hair"?hairItems:editing._category==="skin"?skinItems:allItems).map(it=>{
                   const on=(editing.itemIds||[]).includes(it.id);
                   return (
-                    <div key={it.id} className="m-item" style={{cursor:"pointer",background:on?"#222019":"#1A1917",border:on?"1.5px solid #C8B8A0":"1px solid #252320",marginBottom:0}}
+                    <div key={it.id} className="m-item" style={{cursor:"pointer",background:on?"#EEF4F0":"#F8FAF8",border:on?"1.5px solid #7EC49A":"1px solid #EEF4F0",marginBottom:0}}
                       onClick={()=>toggleItemSel(it.id)}>
                       <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-                      <span className="m-item-lbl" style={{color:on?"#D4C8B8":"#D4C8B8",fontWeight:on?500:400}}>{it.label}</span>
-                      <div style={{width:16,height:16,borderRadius:"50%",border:`1.5px solid ${on?"#C8B8A0":"#252320"}`,background:on?"#C8B8A0":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      <span className="m-item-lbl" style={{color:"#1A2820",fontWeight:on?500:400}}>{it.label}</span>
+                      <div style={{width:16,height:16,borderRadius:"50%",border:`1.5px solid ${on?"#7EC49A":"#D0E4DA"}`,background:on?"#7EC49A":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                         {on&&<svg width="9" height="7" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                       </div>
                     </div>
@@ -3495,12 +3496,12 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
               <div style={{marginBottom:14}}>
                 <div className="modal-sub" style={{marginBottom:6}}>Linked product <span style={{fontWeight:400,color:"#2A2820"}}>(optional)</span></div>
                 {linked?(
-                  <div style={{display:"flex",alignItems:"center",gap:10,background:"#1A1917",border:"1.5px solid #252320",borderRadius:12,padding:"8px 10px"}}>
-                    <div style={{width:32,height:32,borderRadius:8,overflow:"hidden",background:"#1E1C1A",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,background:"#F8FAF8",border:"1px solid #EEF4F0",borderRadius:12,padding:"8px 10px"}}>
+                    <div style={{width:32,height:32,borderRadius:8,overflow:"hidden",background:"#EEF4F0",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem"}}>
                       {(linked.image||linked.media_url)?<img src={linked.image||linked.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>🧴</span>}
                     </div>
-                    <span style={{flex:1,fontSize:".82rem",color:"#D4C8B8"}}>{linked.name}</span>
-                    <button onClick={()=>setEditing(ed=>({...ed,linkedProductId:""}))} style={{background:"none",border:"none",color:"#3A3830",cursor:"pointer",fontSize:".9rem",padding:"0 4px"}}>×</button>
+                    <span style={{flex:1,fontSize:".82rem",color:"#1A2820"}}>{linked.name}</span>
+                    <button onClick={()=>setEditing(ed=>({...ed,linkedProductId:""}))} style={{background:"none",border:"none",color:"#9AB0A4",cursor:"pointer",fontSize:".9rem",padding:"0 4px"}}>×</button>
                   </div>
                 ):(
                   <button className="ghost-btn" style={{width:"100%",fontSize:".78rem"}} onClick={()=>setShowProductPick(p=>!p)}>{showProductPick?"Cancel":"+ Link a product"}</button>
@@ -3509,8 +3510,8 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                   const [pickSearch, setPickSearch] = [editing._pickSearch||"", v=>setEditing(ed=>({...ed,_pickSearch:v}))];
                   const filtered=allPickable.filter(p=>p.name.toLowerCase().includes(pickSearch.toLowerCase())||(p.brand||"").toLowerCase().includes(pickSearch.toLowerCase()));
                   return (
-                    <div style={{border:"1px solid #252320",borderRadius:12,marginTop:6,background:"#fff",overflow:"hidden"}}>
-                      <div style={{padding:"6px 10px",borderBottom:"1px solid #252320"}}>
+                    <div style={{border:"1px solid #EEF4F0",borderRadius:12,marginTop:6,background:"#fff",overflow:"hidden"}}>
+                      <div style={{padding:"6px 10px",borderBottom:"1px solid #EEF4F0"}}>
                         <input className="ifield" style={{width:"100%",fontSize:".74rem",padding:"5px 8px"}}
                           placeholder="Search products…" value={pickSearch}
                           onChange={e=>setEditing(ed=>({...ed,_pickSearch:e.target.value}))}/>
@@ -3518,17 +3519,17 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                       <div style={{maxHeight:160,overflowY:"auto"}}>
                         {filtered.map(p=>(
                           <div key={p.id} onClick={()=>{setEditing(ed=>({...ed,linkedProductId:p.id,_pickSearch:""}));setShowProductPick(false);}}
-                            style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",cursor:"pointer",borderBottom:"1px solid #f8f0ec"}}>
-                            <div style={{width:28,height:28,borderRadius:7,overflow:"hidden",background:"#1E1C1A",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".75rem"}}>
+                            style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",cursor:"pointer",borderBottom:"1px solid #F0F6F2"}}>
+                            <div style={{width:28,height:28,borderRadius:7,overflow:"hidden",background:"#EEF4F0",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".75rem"}}>
                               {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>🧴</span>}
                             </div>
                             <div style={{flex:1}}>
-                              <div style={{fontSize:".8rem",color:"#D4C8B8"}}>{p.name}</div>
-                              {p._fromWishlist&&<div style={{fontSize:".62rem",color:"#3A3830"}}>Wishlist</div>}
+                              <div style={{fontSize:".8rem",color:"#1A2820"}}>{p.name}</div>
+                              {p._fromWishlist&&<div style={{fontSize:".62rem",color:"#9AB0A4"}}>Wishlist</div>}
                             </div>
                           </div>
                         ))}
-                        {filtered.length===0&&<div style={{padding:"12px",fontSize:".76rem",color:"#3A3830",textAlign:"center",fontStyle:"italic"}}>No products found</div>}
+                        {filtered.length===0&&<div style={{padding:"12px",fontSize:".76rem",color:"#9AB0A4",textAlign:"center",fontStyle:"italic"}}>No products found</div>}
                       </div>
                     </div>
                   );
@@ -3612,20 +3613,20 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="📍 Location"
               value={editTx.location||""} onChange={e=>setEditTx(t=>({...t,location:e.target.value}))}/>
             <TypeToggle/>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.15rem",color:"#D4C8B8",marginBottom:14,fontStyle:"italic"}}>When is this treatment?</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.15rem",color:"#1A2820",marginBottom:14,fontStyle:"italic"}}>When is this treatment?</div>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <button onClick={()=>setTxMode("past")} style={{display:"flex",alignItems:"center",gap:14,background:"#1A1917",border:"1.5px solid #252320",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
+              <button onClick={()=>setTxMode("past")} style={{display:"flex",alignItems:"center",gap:14,background:"#F8FAF8",border:"1px solid #EEF4F0",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
                 <span style={{fontSize:"1.5rem"}}>📅</span>
                 <div>
-                  <div style={{fontSize:".9rem",color:"#D4C8B8",fontWeight:500}}>Register a past treatment</div>
-                  <div style={{fontSize:".74rem",color:"#5A5248",marginTop:2}}>Log something you've already had</div>
+                  <div style={{fontSize:".9rem",color:"#1A2820",fontWeight:500}}>Register a past treatment</div>
+                  <div style={{fontSize:".74rem",color:"#9AB0A4",marginTop:2}}>Log something you've already had</div>
                 </div>
               </button>
-              <button onClick={()=>setTxMode("upcoming")} style={{display:"flex",alignItems:"center",gap:14,background:"#1A1917",border:"1.5px solid #252320",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
+              <button onClick={()=>setTxMode("upcoming")} style={{display:"flex",alignItems:"center",gap:14,background:"#F8FAF8",border:"1px solid #EEF4F0",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
                 <span style={{fontSize:"1.5rem"}}>💉</span>
                 <div>
-                  <div style={{fontSize:".9rem",color:"#D4C8B8",fontWeight:500}}>Plan an upcoming treatment</div>
-                  <div style={{fontSize:".74rem",color:"#5A5248",marginTop:2}}>Schedule something coming up</div>
+                  <div style={{fontSize:".9rem",color:"#1A2820",fontWeight:500}}>Plan an upcoming treatment</div>
+                  <div style={{fontSize:".74rem",color:"#9AB0A4",marginTop:2}}>Schedule something coming up</div>
                 </div>
               </button>
             </div>
@@ -3702,7 +3703,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             onRangeEnd={range=>{ setEditTx(t=>({...t,dates:[...new Set([...t.dates,...range])]})); setCalRangeStart(null); }}
             needleDates={editTx.completedDates||[]}
           />
-          {(editTx.completedDates||[]).length>0&&<div style={{fontSize:".7rem",color:"#5A5248",marginBottom:10}}>💉 marks a completed past session</div>}
+          {(editTx.completedDates||[]).length>0&&<div style={{fontSize:".7rem",color:"#9AB0A4",marginBottom:10}}>💉 marks a completed past session</div>}
           <div style={{display:"flex",gap:8}}>
             <button className="save-btn" onClick={()=>doSaveUpcoming(false)} disabled={!canSaveFinal} style={{flex:1,opacity:canSaveFinal?1:.4}}>
               {isExisting?"Save Changes":"Schedule"}
@@ -3740,7 +3741,7 @@ function FreqModal({ allItems, tracked, period, onToggle, onPeriod, onClose }) {
           <div key={it.id} className={`freq-toggle-item ${tracked.includes(it.id)?"on":""}`} onClick={()=>onToggle(it.id)}>
             <div className="fti-check">{tracked.includes(it.id)&&<CheckIcon/>}</div>
             <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-            <span style={{fontSize:".86rem",color:"#D4C8B8",flex:1}}>{it.label}</span>
+            <span style={{fontSize:".86rem",color:"#1A2820",flex:1}}>{it.label}</span>
           </div>
         ))}
       </div>
@@ -3981,38 +3982,33 @@ function getBottleSvg(item) {
   const isTube = /spf|sunscreen|tretinoin|retinol|tube/i.test(l);
   const bgClass = isTube || /serum|vitamin|acid|oil|eye|lash|drop/i.test(l) ? "g" :
                   isPump || isJar ? "br" : "bl";
-  const stroke = bgClass === "g" ? "#243D30" : bgClass === "br" ? "#7A5840" : "#4A7A9B";
+  const stroke = bgClass === "g" ? "#3D6B52" : bgClass === "br" ? "#8A6448" : "#4A7A9B";
 
   if (isJar) return {
-    svg: <svg className="placeholder-svg" viewBox="0 0 40 32" fill="none">
-      <rect x="6" y="12" width="28" height="16" rx="6" stroke={stroke} strokeWidth="1.5"/>
-      <rect x="8" y="7" width="24" height="6" rx="3" stroke={stroke} strokeWidth="1.3"/>
-      <path d="M12 20h16" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".4"/>
-      <path d="M14 24h12" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".3"/>
+    svg: <svg className="placeholder-svg" viewBox="0 0 36 28" fill="none">
+      <rect x="4" y="12" width="28" height="13" rx="5" stroke={stroke} strokeWidth="1"/>
+      <rect x="6" y="7" width="24" height="6" rx="3" stroke={stroke} strokeWidth="1"/>
+      <line x1="4" y1="17" x2="32" y2="17" stroke={stroke} strokeWidth=".6" opacity=".35"/>
     </svg>,
     bgClass
   };
   if (isPump) return {
-    svg: <svg className="placeholder-svg" viewBox="0 0 28 48" fill="none">
-      <rect x="7" y="20" width="14" height="24" rx="5" stroke={stroke} strokeWidth="1.5"/>
-      <path d="M14 20v-8" stroke={stroke} strokeWidth="1.5" strokeLinecap="round"/>
-      <path d="M14 12H9a2 2 0 000 4h2" stroke={stroke} strokeWidth="1.3" strokeLinecap="round"/>
-      <circle cx="14" cy="18" r="2" stroke={stroke} strokeWidth="1.2"/>
-      <path d="M10 31h8" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".4"/>
-      <path d="M10 35h5" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".3"/>
+    svg: <svg className="placeholder-svg" viewBox="0 0 24 44" fill="none">
+      <rect x="5" y="18" width="14" height="22" rx="5" stroke={stroke} strokeWidth="1"/>
+      <path d="M12 18v-9" stroke={stroke} strokeWidth="1" strokeLinecap="round"/>
+      <path d="M12 9h-5a1.5 1.5 0 000 3h1.5" stroke={stroke} strokeWidth="1" strokeLinecap="round"/>
+      <rect x="9" y="15" width="6" height="4" rx="2" stroke={stroke} strokeWidth=".8"/>
     </svg>,
     bgClass
   };
-  // default: dropper / serum
+  // default: serum / dropper
   return {
-    svg: <svg className="placeholder-svg" viewBox="0 0 32 48" fill="none">
-      <rect x="11" y="16" width="10" height="26" rx="5" stroke={stroke} strokeWidth="1.5"/>
-      <path d="M14 16V10M18 16V10" stroke={stroke} strokeWidth="1.5" strokeLinecap="round"/>
-      <rect x="12" y="7" width="8" height="4" rx="2" stroke={stroke} strokeWidth="1.3"/>
-      <path d="M16 7V4" stroke={stroke} strokeWidth="1.3" strokeLinecap="round"/>
-      <circle cx="16" cy="3" r="1.5" stroke={stroke} strokeWidth="1.2"/>
-      <path d="M13 28h6" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".4"/>
-      <path d="M13 32h4" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".3"/>
+    svg: <svg className="placeholder-svg" viewBox="0 0 20 44" fill="none">
+      <rect x="6" y="16" width="8" height="24" rx="4" stroke={stroke} strokeWidth="1"/>
+      <path d="M10 16v-7" stroke={stroke} strokeWidth="1" strokeLinecap="round"/>
+      <rect x="7.5" y="7" width="5" height="3.5" rx="1.5" stroke={stroke} strokeWidth=".9"/>
+      <path d="M10 7v-2.5" stroke={stroke} strokeWidth=".9" strokeLinecap="round"/>
+      <circle cx="10" cy="3.5" r="1.2" stroke={stroke} strokeWidth=".9"/>
     </svg>,
     bgClass
   };
@@ -4024,6 +4020,8 @@ export default function App({ user }) {
   const [activeTab,   setActiveTab]   = useState("skin");
   const [logFilter,   setLogFilter]   = useState("all");
   const activeDayRef = useRef(null);
+  const weekStripRef = useRef(null);
+  const [wdayW, setWdayW] = useState(0);
   const [editSection, setEditSection] = useState("morning");
   const [collapsedSections, setCollapsedSections] = useState({morning:false,night:false});
   const toggleSection = key => setCollapsedSections(p=>({...p,[key]:!p[key]}));
@@ -4067,7 +4065,13 @@ export default function App({ user }) {
 
   // Persist current page across refreshes
   useEffect(() => { sessionStorage.setItem('ritual_view', view); }, [view]);
-  useEffect(() => { activeDayRef.current?.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' }); }, [activeDate]);
+  useEffect(() => { activeDayRef.current?.scrollIntoView({ behavior:'auto', inline:'center', block:'nearest' }); }, [activeDate]);
+  useEffect(() => {
+    const measure = () => { if (weekStripRef.current) setWdayW(weekStripRef.current.clientWidth / 7); };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
   useEffect(() => {
     if (pageView) sessionStorage.setItem('ritual_pageView', pageView);
     else sessionStorage.removeItem('ritual_pageView');
@@ -4821,7 +4825,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
               const DOW_SHORT = ["Su","Mo","Tu","We","Th","Fr","Sa"];
               const weekDates = Array.from({length:30}, (_,i) => shiftD(today, i-23));
               return (
-                <div className="week-strip">
+                <div className="week-strip" ref={weekStripRef}>
                   {weekDates.map((d) => {
                     const isActive = d === activeDate;
                     const isToday = d === today;
@@ -4839,7 +4843,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                     const cx = sz/2, cy = sz/2;
                     const circumference = 2 * Math.PI * r;
                     return (
-                      <div key={d} ref={isActive?activeDayRef:null} className="wday" onClick={()=>{if(!isFuture)setActiveDate(d);}}>
+                      <div key={d} ref={isActive?activeDayRef:null} className="wday" style={wdayW?{width:wdayW}:{}} onClick={()=>setActiveDate(d)}>
                         <span className={`wday-lbl ${isActive?"active-lbl":""}`}>{isToday?"Today":dowLabel}</span>
                         <div className="wday-ring">
                           <svg width={sz} height={sz} viewBox={`0 0 ${sz} ${sz}`} style={{transition:"width .18s,height .18s"}}>
@@ -4904,6 +4908,29 @@ Respond ONLY with valid JSON (no markdown, no explanation):
 
 
             {(()=>{
+              const todayTreatments = treatments.filter(tx => tx.dates && tx.dates.includes(activeDate));
+              if(!todayTreatments.length) return null;
+              return (
+                <div style={{margin:"0 14px 4px"}}>
+                  <div className="sec-label" style={{paddingTop:4,paddingBottom:6,paddingLeft:0,paddingRight:0}}>
+                    <span className="sec-tag">Treatments today</span>
+                    <div className="sec-line"/>
+                  </div>
+                  {todayTreatments.map(tx=>{
+                    const done = (tx.completedDates||[]).includes(activeDate);
+                    return (
+                      <div key={tx.id} className={`treatment-banner${done?" done":""}`}
+                        onClick={()=>setSelectedPlan({type:"treatment",data:tx})}>
+                        <div className="tb-dot"/>
+                        <div className="tb-text">{tx.name||"Treatment"}</div>
+                        {tx.location&&<div style={{fontSize:".7rem",color:"#9AB0A4",marginLeft:"auto"}}>📍 {tx.location}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+            {(()=>{
               const allRoutines = [
                 ...skinR.map(it=>({...it,_tab:"skin"})),
                 ...hairR.map(it=>({...it,_tab:"hair"}))
@@ -4911,11 +4938,16 @@ Respond ONLY with valid JSON (no markdown, no explanation):
               const filterFn = it => logFilter==="all" || it._tab===logFilter;
               const e2 = getE(activeDate);
 
-              const getLinkedProduct = (itemId) => products.find(p=>p.id===(
-                [...skinR,...hairR].find(r=>r.id===itemId)?.productId
-              ));
+              const getLinkedProduct = (itemId) => {
+                const routineItem = [...skinR,...hairR].find(r=>r.id===itemId);
+                const productId = routineItem?.productId
+                  || schedules.find(s=>s.itemId===itemId)?.linkedProductId;
+                return products.find(p=>p.id===productId);
+              };
 
+              const isFutureDate = activeDate > today;
               const completeSectionItems = (sectionItems) => {
+                if (isFutureDate) return;
                 const skinItems = sectionItems.filter(it=>it._tab==="skin");
                 const hairItems = sectionItems.filter(it=>it._tab==="hair");
                 const skinDone = e2.skin||[];
@@ -4971,10 +5003,10 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                 const {svg, bgClass} = getBottleSvg(it);
                 return (
                   <div key={it._tab+it.id} className={`pc-card ${isDone?"done":""}`}
-                    onClick={()=>toggleItem(activeDate,it._tab,it.id)}>
-                    {linkedProd?.image
-                      ? <div className="pc-img" style={{background:"rgba(255,255,255,.15)",overflow:"hidden"}}>
-                          <img src={linkedProd.image} alt={linkedProd.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                    onClick={()=>{ if(!isFutureDate) toggleItem(activeDate,it._tab,it.id); }}>
+                    {(linkedProd?.media_url||linkedProd?.image)
+                      ? <div className="pc-img" style={{background:"rgba(255,255,255,.15)",overflow:"hidden",borderRadius:12}}>
+                          <img src={linkedProd.media_url||linkedProd.image} alt={linkedProd.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
                         </div>
                       : <div className={`pc-img ${bgClass}`}>{svg}</div>
                     }
@@ -5131,7 +5163,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
           <>
             {/* ── Plans header ── */}
             <div className="sec-head">
-              <div className="sec-title">Plans</div>
+              <div className="sec-title">Routines</div>
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
                 <button className="ghost-btn" style={{fontSize:".72rem",padding:"4px 8px"}}
                   onClick={()=>setPlansViewMode(p=>p==="carousel"?"list":"carousel")}>
@@ -5198,26 +5230,52 @@ Respond ONLY with valid JSON (no markdown, no explanation):
               const PlanCardCarousel=({s})=>{
                 const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
                 const recurDays=(s.days||[]).sort().map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
+                const itemTime = it.time||"both";
+                const linkedProd = s.linkedProductId ? products.find(p=>p.id===s.linkedProductId) : null;
+                const cardBg = itemTime==="day"
+                  ? "linear-gradient(160deg,#FDF0D5,#F2C96B)"
+                  : itemTime==="night"
+                  ? "linear-gradient(160deg,#0F1B35,#1A2E55)"
+                  : "linear-gradient(160deg,#FDF0D5 0%,#F2C96B 35%,#4A7AB5 65%,#0F1B35 100%)";
+                const isNight = itemTime==="night";
+                const isBoth = itemTime==="both";
+                const textColor = isNight ? "rgba(255,255,255,.88)" : "#1A2820";
+                const subColor = isNight ? "rgba(255,255,255,.52)" : "#6B8C7A";
+                const endedBg = isNight ? "rgba(255,255,255,.12)" : "rgba(71,102,90,.12)";
+                const endedColor = isNight ? "rgba(255,255,255,.55)" : "#4A5E50";
+                const editStroke = isNight ? "rgba(255,255,255,.7)" : "#4A5E50";
+                const editBg = isNight ? "rgba(255,255,255,.15)" : "rgba(255,255,255,.9)";
                 return (
                   <div style={{flexShrink:0,width:148,position:"relative"}}>
                     <div onClick={()=>setSelectedPlan({type:"plan",data:s})}
-                      style={{background:"rgba(255,255,255,.92)",border:"1px solid rgba(255,255,255,.9)",borderRadius:16,padding:"14px 12px 10px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:s.ended_at?.55:1,height:"100%"}}>
-                      <div style={{fontSize:"1.6rem",textAlign:"center"}}>{it.emoji}</div>
-                      <div style={{fontSize:".82rem",fontWeight:500,color:"#1A2820",textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{it.label}</div>
+                      style={{background:cardBg,borderRadius:16,padding:"14px 12px 10px",cursor:"pointer",display:"flex",flexDirection:"column",gap:6,opacity:s.ended_at?.55:1,height:"100%",position:"relative",overflow:"hidden"}}>
+                      {(isNight||isBoth)&&<div style={{position:"absolute",inset:0,background:"radial-gradient(1.5px 1.5px at 15% 20%,rgba(255,255,255,.8),transparent),radial-gradient(1px 1px at 55% 12%,rgba(255,255,255,.7),transparent),radial-gradient(1.5px 1.5px at 80% 30%,rgba(255,255,255,.65),transparent),radial-gradient(1px 1px at 35% 55%,rgba(255,255,255,.5),transparent),radial-gradient(1.5px 1.5px at 70% 70%,rgba(255,255,255,.45),transparent),radial-gradient(1px 1px at 20% 80%,rgba(255,255,255,.55),transparent)",pointerEvents:"none"}}/>}
+                      {linkedProd
+                        ? <div style={{width:48,height:48,borderRadius:10,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto",overflow:"hidden",flexShrink:0}}>
+                            {linkedProd.image||linkedProd.media_url
+                              ? <img src={linkedProd.media_url||linkedProd.image} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                              : <span style={{fontSize:"1.4rem"}}>{it.emoji}</span>}
+                          </div>
+                        : <div style={{fontSize:"1.6rem",textAlign:"center"}}>{it.emoji}</div>
+                      }
+                      <div style={{fontSize:".82rem",fontWeight:500,color:textColor,textAlign:"center",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",position:"relative"}}>
+                        {linkedProd ? linkedProd.name : it.label}
+                      </div>
+                      {linkedProd&&<div style={{fontSize:".62rem",color:subColor,textAlign:"center",position:"relative"}}>{it.label}</div>}
                       {s.ended_at
-                        ?<div style={{fontSize:".6rem",color:"#4A5E50",textAlign:"center",background:"rgba(71,102,90,.12)",borderRadius:10,padding:"2px 6px"}}>Ended</div>
-                        :<div style={{fontSize:".64rem",color:"#6B8C7A",textAlign:"center"}}>
+                        ?<div style={{fontSize:".6rem",color:endedColor,textAlign:"center",background:endedBg,borderRadius:10,padding:"2px 6px",position:"relative"}}>Ended</div>
+                        :<div style={{fontSize:".64rem",color:subColor,textAlign:"center",position:"relative"}}>
                           {(s.days||[]).length===7?"Every day":recurDays||`${(s.dates||[]).length} date${(s.dates||[]).length!==1?"s":""}`}
                         </div>
                       }
-                      {s.endDate&&!s.ended_at&&<div style={{fontSize:".58rem",color:"#9AB0A4",textAlign:"center"}}>until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>}
+                      {s.endDate&&!s.ended_at&&<div style={{fontSize:".58rem",color:subColor,textAlign:"center",position:"relative"}}>until {parse(s.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>}
                     </div>
                     <button onClick={e=>{e.stopPropagation();setSelectedPlan({type:"plan",data:{...s,_editMode:true}});}}
                       style={{position:"absolute",top:8,right:8,width:26,height:26,borderRadius:"50%",
-                        background:"rgba(255,255,255,.9)",border:"1px solid rgba(255,255,255,.8)",
+                        background:editBg,border:"1px solid rgba(255,255,255,.3)",
                         display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",
-                        boxShadow:"0 1px 4px rgba(0,0,0,.08)"}}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4A5E50" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        boxShadow:"0 1px 4px rgba(0,0,0,.12)"}}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={editStroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                         <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                       </svg>
@@ -5393,7 +5451,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
           </>
         )}
         <nav className="bottom-nav">
-          {[["log","⌂","Log"],["history","◻","History"],["plan","◈","Plans"],["frequency","◷","Stats"]].map(([v,icon,lbl])=>(
+          {[["log","⌂","Log"],["plan","◈","Routines"],["history","◻","History"],["frequency","◷","Stats"]].map(([v,icon,lbl])=>(
             <button key={v} className={`bnav ${view===v?"active":""}`} onClick={()=>setView(v)}>
               <span className="bnav-icon">{icon}</span>
               <div className="bnav-dot"/>
