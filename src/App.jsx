@@ -3230,7 +3230,7 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
   );
 }
 
-function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsProp, schedules, treatments, entries, products, wishlist, today, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose, onAddItem, initialPlan, initialTreatment }) {
+function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsProp, schedules, treatments, entries, products, wishlist, today, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose, onAddItem, onEditItem, initialPlan, initialTreatment }) {
   const _today = today || fmt(new Date());
   const [screen, setScreen]=useState(initialPlan?(initialPlan._editMode?"editPlan":"viewPlan"):initialTreatment?"editTreatment":"chooseType"); // chooseType | viewPlan | editPlan | editTreatment
   const [editing, setEditing]=useState(initialPlan?{...initialPlan,itemIds:initialPlan.itemIds||[initialPlan.itemId].filter(Boolean),dates:initialPlan.dates||[],startDate:initialPlan.startDate||"",endDate:initialPlan.endDate||"",linkedProductId:initialPlan.linkedProductId||""}:{id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),endDate:"",linkedProductId:"",reminder:false,time:"08:00",location:""});
@@ -3276,7 +3276,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
           <div className="modal-top" style={{justifyContent:"flex-end"}}>
             <button className="modal-x" onClick={onClose}>×</button>
           </div>
-          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.5rem",fontStyle:"italic",color:"#1A2820",marginBottom:6}}>What are you planning?</div>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.5rem",fontStyle:"italic",color:"#1A2820",marginBottom:6}}>What's the routine?</div>
           <div style={{fontSize:".78rem",color:"#9AB0A4",marginBottom:28}}>Choose a category to get started</div>
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             {[["🌿","Skin Routine","Plan your skin care steps","skin"],["✨","Hair Routine","Plan your hair care steps","hair"],["💉","Treatment","Schedule a treatment session","treatment"]].map(([emoji,label,sub,type])=>(
@@ -3329,7 +3329,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
           {/* Header row: title + close */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#1A2820"}}>
-              {editing.ended_at?"Past Plan":"Active Plan"}
+              {editing.ended_at?"Past Routine":"Active Routine"}
             </div>
             <button className="modal-x" onClick={onClose}>×</button>
           </div>
@@ -3370,7 +3370,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
           {/* No start date note for recurring plans */}
           {!hasStartDate&&(editing.days||[]).length>0&&!completion&&<div style={{fontSize:".72rem",color:"#2A2820",fontStyle:"italic",marginBottom:14,textAlign:"center"}}>Add a start date to track completion rate</div>}
           {/* End Plan */}
-          {!editing.ended_at&&isExisting&&<button className="ghost-btn" style={{width:"100%",color:"#6B8C7A",fontSize:".82rem",marginBottom:12}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>}
+          {!editing.ended_at&&isExisting&&<button className="ghost-btn" style={{width:"100%",color:"#6B8C7A",fontSize:".82rem",marginBottom:12}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Routine</button>}
           {/* Edit + Delete row */}
           {isExisting&&<div style={{display:"flex",gap:8}}>
             <button onClick={()=>startEditPlan(editing)}
@@ -3379,7 +3379,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                 <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
               </svg>
-              Edit Plan
+              Edit Routine
             </button>
             <button onClick={()=>{onDelete(editing.id);onClose();}}
               style={{flex:1,padding:"10px",background:"none",border:"1.5px solid #f0d0c8",borderRadius:12,cursor:"pointer",color:"#8A5A50",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif"}}>
@@ -3400,24 +3400,45 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
           <div className="modal-top">
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               {!schedules.find(s=>s.id===editing.id)&&!initialPlan&&<button className="ghost-btn" style={{padding:"4px 10px",fontSize:".75rem"}} onClick={()=>setScreen("chooseType")}>← Back</button>}
-              <div className="modal-title">{schedules.find(s=>s.id===editing.id)?"Edit Plan":"New Plan"}</div>
+              <div className="modal-title">{schedules.find(s=>s.id===editing.id)?"Edit Routine":"New Routine"}</div>
             </div>
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              {schedules.find(s=>s.id===editing.id)&&!editing.ended_at&&<button className="ghost-btn" style={{fontSize:".75rem",padding:"4px 10px",color:"#6B8C7A"}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>}
+              {schedules.find(s=>s.id===editing.id)&&!editing.ended_at&&<button className="ghost-btn" style={{fontSize:".75rem",padding:"4px 10px",color:"#6B8C7A"}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Routine</button>}
               {schedules.find(s=>s.id===editing.id)&&<button className="del-btn" onClick={()=>{onDelete(editing.id);onClose();}}>Delete</button>}
               <button className="modal-x" onClick={onClose}>×</button>
             </div>
           </div>
           {schedules.find(s=>s.id===editing.id)?(
-            // Editing existing — show step name only, not selectable
+            // Editing existing — show item with inline AM/PM + tracked controls
             <div style={{marginBottom:14}}>
               {(editing.itemIds||[]).map(id=>{
                 const it=allItems.find(x=>x.id===id);
                 if(!it) return null;
+                const itTime=it.time||"both";
+                const itTracked=it.tracked!==false;
                 return (
-                  <div key={id} className="m-item" style={{background:"#F8FAF8",border:"1.5px solid #7EC49A",marginBottom:0,cursor:"default"}}>
-                    <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-                    <span className="m-item-lbl" style={{color:"#1A2820",fontWeight:500}}>{it.label}</span>
+                  <div key={id} style={{background:"#F8FAF8",border:"1px solid #EEF4F0",borderRadius:14,padding:"10px 14px",marginBottom:8}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                      <span style={{fontSize:"1rem"}}>{it.emoji}</span>
+                      <span style={{flex:1,fontSize:".9rem",color:"#1A2820",fontWeight:500}}>{it.label}</span>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                      <span style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#9AB0A4",marginRight:2}}>Time</span>
+                      {[["day","AM"],["night","PM"],["both","Both"]].map(([v,l])=>(
+                        <button key={v} onClick={()=>onEditItem&&onEditItem(id,{time:v})}
+                          style={{padding:"3px 10px",borderRadius:20,fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",border:"1px solid",transition:"all .15s",
+                            background:itTime===v?"#1E3428":"transparent",
+                            color:itTime===v?"#fff":"#6B8C7A",
+                            borderColor:itTime===v?"#1E3428":"#D0E4DA"}}>{l}</button>
+                      ))}
+                      <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:6}}>
+                        <span style={{fontSize:".7rem",color:"#9AB0A4"}}>Track</span>
+                        <div onClick={()=>onEditItem&&onEditItem(id,{tracked:!itTracked})}
+                          style={{width:32,height:18,borderRadius:9,background:itTracked?"#1E3428":"#D0E4DA",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
+                          <div style={{width:14,height:14,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:itTracked?16:2,transition:"left .2s"}}/>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -3425,7 +3446,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
           ):(
             // New plan — full selectable list
             <>
-              <div className="modal-sub">Steps — select one or more</div>
+              <div className="modal-sub">Select items for this routine</div>
               <div style={{marginBottom:8,display:"flex",flexDirection:"column",gap:6}}>
                 {(editing._category==="hair"?hairItems:editing._category==="skin"?skinItems:allItems).map(it=>{
                   const on=(editing.itemIds||[]).includes(it.id);
@@ -3444,7 +3465,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
               {onAddItem&&<div style={{marginBottom:14}}>
                 <div className="row" style={{gap:6}}>
                   <button className="epick-btn" onClick={()=>setShowNewStepEmoji(p=>!p)}>{newStepEmoji}</button>
-                  <input className="ifield" style={{flex:1}} placeholder="Add a new step…" value={newStepLabel}
+                  <input className="ifield" style={{flex:1}} placeholder="Add new item…" value={newStepLabel}
                     onChange={e=>setNewStepLabel(e.target.value)}
                     onKeyDown={e=>{
                       if(e.key==="Enter"&&newStepLabel.trim()){
@@ -3566,7 +3587,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
           {editing.reminder&&<div style={{marginBottom:14}}>
             <input type="time" className="time-input" value={editing.time} onChange={e=>setEditing(ed=>({...ed,time:e.target.value}))}/>
           </div>}
-          <button className="save-btn" onClick={savePlan} disabled={!canSave} style={{opacity:canSave?1:.4}}>Save Plan</button>
+          <button className="save-btn" onClick={savePlan} disabled={!canSave} style={{opacity:canSave?1:.4}}>Save</button>
         </div>
       </div>
     );
@@ -5205,13 +5226,29 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                 const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
                 const recurDays=(s.days||[]).sort().map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
                 const dateCount=(s.dates||[]).length;
+                const itemTime=it.time||"both";
+                const linkedProd=s.linkedProductId?products.find(p=>p.id===s.linkedProductId):null;
+                const accentColor=itemTime==="day"?"#F2C96B":itemTime==="night"?"#4A7AB5":"linear-gradient(180deg,#F2C96B,#4A7AB5)";
+                const timePill=itemTime==="day"?"AM":itemTime==="night"?"PM":"AM·PM";
                 return (
-                  <div className="sched-card" style={{cursor:"pointer",marginBottom:8,opacity:s.ended_at?.4:1}} onClick={()=>setSelectedPlan({type:"plan",data:s})}>
-                    <div className="sched-top">
-                      <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-                      <div style={{flex:1}}>
-                        <div className="sched-label">{it.label}{s.ended_at&&<span style={{fontSize:".62rem",background:"rgba(71,102,90,.15)",color:"#4A5E50",borderRadius:10,padding:"1px 7px",marginLeft:6}}>Ended</span>}</div>
-                        <div style={{fontSize:".71rem",color:"#6B8C7A",marginTop:2}}>
+                  <div style={{cursor:"pointer",marginBottom:8,opacity:s.ended_at?.4:1,background:"rgba(255,255,255,.82)",border:"1px solid rgba(255,255,255,.9)",borderRadius:14,overflow:"hidden",display:"flex"}}
+                    onClick={()=>setSelectedPlan({type:"plan",data:s})}>
+                    <div style={{width:4,flexShrink:0,background:itemTime==="both"?"linear-gradient(180deg,#F2C96B 40%,#4A7AB5 100%)":accentColor}}/>
+                    <div style={{flex:1,padding:"10px 12px",display:"flex",alignItems:"center",gap:10}}>
+                      {linkedProd?(
+                        <div style={{width:36,height:36,borderRadius:8,overflow:"hidden",background:"#EEF4F0",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                          {linkedProd.image||linkedProd.media_url?<img src={linkedProd.media_url||linkedProd.image} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:".9rem"}}>{it.emoji}</span>}
+                        </div>
+                      ):(
+                        <span style={{fontSize:"1.2rem",flexShrink:0}}>{it.emoji}</span>
+                      )}
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+                          <span style={{fontSize:".86rem",fontWeight:500,color:"#1A2820"}}>{linkedProd?linkedProd.name:it.label}</span>
+                          {s.ended_at&&<span style={{fontSize:".58rem",background:"rgba(71,102,90,.12)",color:"#4A5E50",borderRadius:8,padding:"1px 6px",flexShrink:0}}>Ended</span>}
+                        </div>
+                        {linkedProd&&<div style={{fontSize:".72rem",color:"#9AB0A4",marginBottom:2}}>{it.label}</div>}
+                        <div style={{fontSize:".71rem",color:"#6B8C7A"}}>
                           {(s.days||[]).length===7?<span>Every day</span>:recurDays&&<span>Every {recurDays}</span>}
                           {recurDays&&dateCount>0&&<span> · </span>}
                           {dateCount>0&&<span>{dateCount} date{dateCount!==1?"s":""}</span>}
@@ -5221,8 +5258,11 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                           {s.location&&<span> · <span style={{cursor:"pointer",color:"#243D30",textDecoration:"underline"}} onClick={e=>{e.stopPropagation();openUrl(`https://www.google.com/maps/search/${encodeURIComponent(s.location)}`);}}>📍 {s.location}</span></span>}
                         </div>
                       </div>
+                      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
+                        <span style={{fontSize:".6rem",background:itemTime==="night"?"rgba(74,122,181,.15)":itemTime==="day"?"rgba(242,201,107,.25)":"rgba(200,200,200,.2)",color:itemTime==="night"?"#4A7AB5":itemTime==="day"?"#9A7A30":"#6B8C7A",borderRadius:8,padding:"2px 7px",fontWeight:500}}>{timePill}</span>
+                        {s.reminder&&!s.ended_at&&<span style={{fontSize:".6rem",color:"#9AB0A4"}}>🔔 {s.time}</span>}
+                      </div>
                     </div>
-                    {s.reminder&&!s.ended_at&&<div className="sched-reminder">🔔 at {s.time}</div>}
                   </div>
                 );
               };
@@ -5239,8 +5279,8 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                   : "linear-gradient(160deg,#FDF0D5 0%,#F2C96B 35%,#4A7AB5 65%,#0F1B35 100%)";
                 const isNight = itemTime==="night";
                 const isBoth = itemTime==="both";
-                const textColor = isNight ? "rgba(255,255,255,.88)" : "#1A2820";
-                const subColor = isNight ? "rgba(255,255,255,.52)" : "#6B8C7A";
+                const textColor = (isNight||isBoth) ? "rgba(255,255,255,.88)" : "#1A2820";
+                const subColor = (isNight||isBoth) ? "rgba(255,255,255,.52)" : "#6B8C7A";
                 const endedBg = isNight ? "rgba(255,255,255,.12)" : "rgba(71,102,90,.12)";
                 const endedColor = isNight ? "rgba(255,255,255,.55)" : "#4A5E50";
                 const editStroke = isNight ? "rgba(255,255,255,.7)" : "#4A5E50";
@@ -5347,7 +5387,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                 if(!planItems.length&&!txItems.length) return null;
                 const total=planItems.length+txItems.length;
                 return (
-                  <div style={{marginBottom:16,background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:18,padding:"14px 14px 10px"}}>
+                  <div style={{marginBottom:16,background:"rgba(255,255,255,.26)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.35)",borderRadius:18,padding:"14px 14px 10px"}}>
                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:allTxForSection.length?6:10}}>
                       <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)",fontWeight:600}}>{label}</div>
                     </div>
@@ -5377,7 +5417,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
               return (
                 <>
                   {(skinPlans.length>0||skinTreatments.length>0)&&(
-                    <div style={{marginBottom:16,background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:18,padding:"14px 14px 6px"}}>
+                    <div style={{marginBottom:16,background:"rgba(255,255,255,.26)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.35)",borderRadius:18,padding:"14px 14px 6px"}}>
                       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
                         <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)",fontWeight:600}}>Skin</div>
                         {skinTreatments.length>0&&<TxFilterBar/>}
@@ -5387,7 +5427,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                     </div>
                   )}
                   {(hairPlans.length>0||hairTreatments.length>0)&&(
-                    <div style={{marginBottom:16,background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:18,padding:"14px 14px 6px"}}>
+                    <div style={{marginBottom:16,background:"rgba(255,255,255,.26)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.35)",borderRadius:18,padding:"14px 14px 6px"}}>
                       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
                         <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)",fontWeight:600}}>Hair</div>
                         {hairTreatments.length>0&&<TxFilterBar/>}
@@ -5483,10 +5523,11 @@ Respond ONLY with valid JSON (no markdown, no explanation):
         onSaveTreatment={async tx=>{ await saveTreatment(tx); setSelectedPlan(null); }}
         onDeleteTreatment={id=>{ confirmDeleteTreatment(id); setSelectedPlan(null); }}
         onAddItem={(type,item)=>addItem(type,item)}
+        onEditItem={(id,changes)=>{ const type=skinR.find(r=>r.id===id)?"skin":"hair"; editItem(type,id,changes); }}
         onClose={()=>setSelectedPlan(null)}
         initialPlan={selectedPlan.type==="plan"?selectedPlan.data:null}
         initialTreatment={selectedPlan.type==="treatment"?selectedPlan.data:null}/>}
-      {modal==="plan"&&<PlanModal allItems={allItems} skinItems={skinR} hairItems={hairR} schedules={schedules} treatments={treatments} onSave={saveSched} onSaveMany={saveSchedMany} onDelete={deleteSched} onSaveTreatment={saveTreatment} onDeleteTreatment={deleteTreatment} onAddItem={(type,item)=>addItem(type,item)} onClose={()=>setModal(null)}/>}
+      {modal==="plan"&&<PlanModal allItems={allItems} skinItems={skinR} hairItems={hairR} schedules={schedules} treatments={treatments} onSave={saveSched} onSaveMany={saveSchedMany} onDelete={deleteSched} onSaveTreatment={saveTreatment} onDeleteTreatment={deleteTreatment} onAddItem={(type,item)=>addItem(type,item)} onEditItem={(id,changes)=>{ const type=skinR.find(r=>r.id===id)?"skin":"hair"; editItem(type,id,changes); }} onClose={()=>setModal(null)}/>}
       {modal==="freq"&&<FreqModal allItems={allItems} tracked={freqTracked} period={freqPeriod} onToggle={async id=>{ const newTracked=freqTracked.includes(id)?freqTracked.filter(x=>x!==id):[...freqTracked,id]; setFreqTracked(newTracked); if(user) await supabase.from('freq_settings').upsert({user_id:user.id,period:freqPeriod,tracked:newTracked,updated_at:new Date().toISOString()},{onConflict:'user_id'}); }} onPeriod={async p=>{ setFreqPeriod(p); await persist({freqPeriod:p}); }} onClose={()=>setModal(null)}/>}
       {modal==="dayEdit"&&selectedDay&&<DayEditModal date={selectedDay} entry={getE(selectedDay)} skinRoutines={skinR} hairRoutines={hairR} onSave={data=>saveDayEdit(selectedDay,data)} onClose={()=>setModal(null)}/>}
       {modal==="rangeApply"&&rangeStart&&rangeEnd&&<RangeApplyModal rangeStart={rangeStart} rangeEnd={rangeEnd} skinRoutines={skinR} hairRoutines={hairR} onApply={applyRange} onClose={()=>{ setModal(null); setRangeStart(null); setRangeEnd(null); setRangeMode(false); }}/>}
