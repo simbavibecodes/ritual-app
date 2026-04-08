@@ -110,7 +110,7 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .log-fpill.active{color:rgba(255,255,255,.92);border-bottom-color:rgba(255,255,255,.7)}
 
 /* ── Morning / Night section cards ── */
-.log-section{border-radius:18px;padding:12px 12px 10px;margin:14px 14px 12px;position:relative;overflow:hidden}
+.log-section{border-radius:18px;padding:12px 12px 10px;margin:14px 14px 12px;position:relative;overflow:hidden;isolation:isolate}
 .log-section.morning{background:rgba(238,248,242,.88);border:1px solid rgba(200,235,215,.7)}
 .log-section.night{background:rgba(15,27,53,.52);border:1px solid rgba(15,27,53,.4)}
 .log-section.morning::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 88% 10%,rgba(255,218,130,.2),transparent 52%),radial-gradient(ellipse at 10% 85%,rgba(180,225,255,.12),transparent 45%);pointer-events:none;z-index:0}
@@ -159,8 +159,8 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .pc-card:active{transform:scale(.98)}
 .pc-card.done{background:rgba(200,225,210,.75);border-color:rgba(160,205,180,.7)}
 .pc-card.done .pc-name{text-decoration:line-through;text-decoration-color:rgba(40,90,60,.35);color:rgba(80,130,100,.75)}
-.log-section.morning .pc-card.done{background:rgba(100,160,120,.22);border-color:rgba(60,120,85,.3);opacity:.5}
-.log-section.morning .pc-card.done .pc-name{color:rgba(30,70,45,.7);text-decoration-color:rgba(30,70,45,.6)}
+.log-section.morning .pc-card.done{background:rgba(80,140,100,.18);border-color:rgba(50,110,75,.28)}
+.log-section.morning .pc-card.done .pc-name{color:rgba(30,70,45,.82);text-decoration:line-through;text-decoration-color:rgba(30,70,45,.75);text-decoration-thickness:2px}
 .pc-img{width:48px;height:48px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .placeholder-svg{width:32px;height:32px;opacity:.55}
 .pc-img.g{background:#D8EBE0}
@@ -565,19 +565,19 @@ function ManageItemsModal({ type, section, items, products, onAdd, onRemove, onE
 
   const ProductPicker = ({ value, onChange, show, onToggle }) => (
     <div>
-      <button onClick={onToggle} style={{width:"100%",background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.14)",borderRadius:10,padding:"8px 12px",color:value?undefined:"rgba(255,255,255,.35)",fontSize:".76rem",cursor:"pointer",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <button onClick={onToggle} style={{width:"100%",background:"#F8FAF8",border:"1px solid #EEF4F0",borderRadius:10,padding:"8px 12px",color:value?"#1A2820":"#9AB0A4",fontSize:".76rem",cursor:"pointer",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <span>{value ? (products||[]).find(p=>p.id===value)?.name||"Unknown product" : "Link to a product (optional)"}</span>
         {value && <span onClick={e=>{e.stopPropagation();onChange(null);}} style={{fontSize:".9rem",opacity:.5,padding:"0 4px"}}>×</span>}
       </button>
-      {show&&<div style={{maxHeight:160,overflowY:"auto",background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)",borderRadius:10,marginTop:4}}>
-        {!(products||[]).length&&<div style={{padding:"10px 12px",fontSize:".75rem",color:"rgba(255,255,255,.35)",textAlign:"center"}}>No products yet</div>}
+      {show&&<div style={{maxHeight:160,overflowY:"auto",background:"#fff",border:"1px solid #EEF4F0",borderRadius:10,marginTop:4}}>
+        {!(products||[]).length&&<div style={{padding:"10px 12px",fontSize:".75rem",color:"#9AB0A4",textAlign:"center"}}>No products yet</div>}
         {(products||[]).map(p=>(
           <div key={p.id} onClick={()=>{onChange(p.id);onToggle();}}
-            style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",cursor:"pointer",borderBottom:"1px solid rgba(255,255,255,.06)",background:value===p.id?"rgba(255,255,255,.1)":undefined}}>
-            {p.image?<img src={p.image} alt={p.name} style={{width:28,height:28,borderRadius:6,objectFit:"cover",flexShrink:0}}/>:<div style={{width:28,height:28,borderRadius:6,background:"rgba(255,255,255,.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem",flexShrink:0}}>🧴</div>}
+            style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",cursor:"pointer",borderBottom:"1px solid #F0F6F2",background:value===p.id?"#EEF4F0":undefined}}>
+            {p.image?<img src={p.image} alt={p.name} style={{width:28,height:28,borderRadius:6,objectFit:"cover",flexShrink:0}}/>:<div style={{width:28,height:28,borderRadius:6,background:"#EEF4F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem",flexShrink:0}}>🧴</div>}
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:".75rem",color:"rgba(255,255,255,.85)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
-              {p.brand&&<div style={{fontSize:".62rem",color:"rgba(255,255,255,.4)"}}>{p.brand}</div>}
+              <div style={{fontSize:".75rem",color:"#1A2820",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
+              {p.brand&&<div style={{fontSize:".62rem",color:"#9AB0A4"}}>{p.brand}</div>}
             </div>
           </div>
         ))}
@@ -616,11 +616,11 @@ function ManageItemsModal({ type, section, items, products, onAdd, onRemove, onE
 
         <hr className="modal-hr"/>
         <div className="modal-sub">Current steps ({items.length})</div>
-        {!items.length&&<div style={{textAlign:"center",color:"#3A3830",fontStyle:"italic",padding:"12px 0",fontSize:".86rem"}}>None yet</div>}
+        {!items.length&&<div style={{textAlign:"center",color:"#9AB0A4",fontStyle:"italic",padding:"12px 0",fontSize:".86rem"}}>None yet</div>}
         {items.map(it=>(
           <div key={it.id}>
             {editingId===it.id ? (
-              <div style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.14)",borderRadius:12,padding:"10px 13px",marginBottom:8}}>
+              <div style={{background:"#F8FAF8",border:"1px solid #EEF4F0",borderRadius:12,padding:"10px 13px",marginBottom:8}}>
                 <div className="row" style={{marginBottom:8}}>
                   <button className="epick-btn" onClick={()=>setShowEditPick(p=>!p)}>{editEmoji}</button>
                   <input className="ifield" value={editLabel} onChange={e=>setEditLabel(e.target.value)}
@@ -641,7 +641,7 @@ function ManageItemsModal({ type, section, items, products, onAdd, onRemove, onE
                 ))}</div>}
                 <div style={{display:"flex",gap:8}}>
                   <button className="confirm-btn" onClick={saveEdit} disabled={!editLabel.trim()} style={{flex:1}}>Save</button>
-                  <button onClick={cancelEdit} style={{background:"none",border:"1px solid rgba(255,255,255,.14)",borderRadius:10,padding:"9px 16px",fontSize:".78rem",color:"rgba(255,255,255,.5)",cursor:"pointer",flex:1}}>Cancel</button>
+                  <button onClick={cancelEdit} style={{background:"none",border:"1px solid #D0E4DA",borderRadius:10,padding:"9px 16px",fontSize:".78rem",color:"#9AB0A4",cursor:"pointer",flex:1}}>Cancel</button>
                 </div>
               </div>
             ) : (
@@ -3276,18 +3276,18 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
           <div className="modal-top" style={{justifyContent:"flex-end"}}>
             <button className="modal-x" onClick={onClose}>×</button>
           </div>
-          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.5rem",fontStyle:"italic",color:"#D4C8B8",marginBottom:6}}>What are you planning?</div>
-          <div style={{fontSize:".78rem",color:"#5A5248",marginBottom:28}}>Choose a category to get started</div>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.5rem",fontStyle:"italic",color:"#1A2820",marginBottom:6}}>What are you planning?</div>
+          <div style={{fontSize:".78rem",color:"#9AB0A4",marginBottom:28}}>Choose a category to get started</div>
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             {[["🌿","Skin Routine","Plan your skin care steps","skin"],["✨","Hair Routine","Plan your hair care steps","hair"],["💉","Treatment","Schedule a treatment session","treatment"]].map(([emoji,label,sub,type])=>(
               <button key={type} onClick={()=>{
                 if(type==="treatment"){ setEditTx({id:uid(),name:"",type:"skin",dates:[]}); setScreen("editTreatment"); }
                 else { setEditing(e=>({...e,itemIds:[],_category:type})); setScreen("editPlan"); }
-              }} style={{display:"flex",alignItems:"center",gap:14,background:"#1A1917",border:"1.5px solid #252320",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",transition:"all .15s",fontFamily:"'DM Sans',sans-serif"}}>
+              }} style={{display:"flex",alignItems:"center",gap:14,background:"#F8FAF8",border:"1px solid #EEF4F0",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",transition:"all .15s",fontFamily:"'DM Sans',sans-serif"}}>
                 <span style={{fontSize:"1.6rem"}}>{emoji}</span>
                 <div>
-                  <div style={{fontSize:".9rem",color:"#D4C8B8",fontWeight:500}}>{label}</div>
-                  <div style={{fontSize:".74rem",color:"#5A5248",marginTop:2}}>{sub}</div>
+                  <div style={{fontSize:".9rem",color:"#1A2820",fontWeight:500}}>{label}</div>
+                  <div style={{fontSize:".74rem",color:"#9AB0A4",marginTop:2}}>{sub}</div>
                 </div>
               </button>
             ))}
@@ -3328,53 +3328,53 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
         <div className="modal" style={{padding:"22px 20px 20px"}}>
           {/* Header row: title + close */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#D4C8B8"}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#1A2820"}}>
               {editing.ended_at?"Past Plan":"Active Plan"}
             </div>
             <button className="modal-x" onClick={onClose}>×</button>
           </div>
           {/* Item — prominent */}
-          {it&&<div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16,padding:"12px 14px",background:"#1A1917",borderRadius:16,border:"1.5px solid #252320"}}>
-            <div style={{width:44,height:44,borderRadius:12,background:"#222019",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem",flexShrink:0}}>{it.emoji}</div>
+          {it&&<div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16,padding:"12px 14px",background:"#F8FAF8",borderRadius:16,border:"1px solid #EEF4F0"}}>
+            <div style={{width:44,height:44,borderRadius:12,background:"#EEF4F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem",flexShrink:0}}>{it.emoji}</div>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:"1rem",fontWeight:500,color:"#D4C8B8",lineHeight:1.2}}>{it.label}</div>
-              <div style={{fontSize:".72rem",color:"#9a7050",marginTop:3}}>
+              <div style={{fontSize:"1rem",fontWeight:500,color:"#1A2820",lineHeight:1.2}}>{it.label}</div>
+              <div style={{fontSize:".72rem",color:"#9AB0A4",marginTop:3}}>
                 {(editing.days||[]).length===7?"Every day":recurDays?`Every ${recurDays}`:dateCount>0?`${dateCount} date${dateCount!==1?"s":""}`:editing.startDate?"One-off":"—"}
-                {editing.startDate&&<span style={{color:"#b8a090"}}> · from {parse(editing.startDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>}
-                {editing.endDate&&!editing.ended_at&&<span style={{color:"#b8a090"}}> · until {parse(editing.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
-                {editing.ended_at&&<span style={{color:"#b8a090"}}> · ended {parse(editing.ended_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
+                {editing.startDate&&<span style={{color:"#6B8C7A"}}> · from {parse(editing.startDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>}
+                {editing.endDate&&!editing.ended_at&&<span style={{color:"#6B8C7A"}}> · until {parse(editing.endDate).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
+                {editing.ended_at&&<span style={{color:"#6B8C7A"}}> · ended {parse(editing.ended_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
               </div>
             </div>
-            {editing.ended_at&&<div style={{fontSize:".6rem",background:"#252320",color:"#5A5248",borderRadius:10,padding:"2px 8px",flexShrink:0}}>Ended</div>}
+            {editing.ended_at&&<div style={{fontSize:".6rem",background:"#EEF4F0",color:"#9AB0A4",borderRadius:10,padding:"2px 8px",flexShrink:0}}>Ended</div>}
           </div>}
           {/* Linked product */}
-          {linkedProd&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,padding:"10px 12px",background:"#0F0E0C",borderRadius:12,border:"1px solid #1E1C1A"}}>
-            <div style={{width:34,height:34,borderRadius:9,overflow:"hidden",background:"#1E1C1A",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".85rem"}}>
+          {linkedProd&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,padding:"10px 12px",background:"#F8FAF8",borderRadius:12,border:"1px solid #EEF4F0"}}>
+            <div style={{width:34,height:34,borderRadius:9,overflow:"hidden",background:"#EEF4F0",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".85rem"}}>
               {(linkedProd.image||linkedProd.media_url)?<img src={linkedProd.image||linkedProd.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>🧴</span>}
             </div>
             <div>
-              <div style={{fontSize:".6rem",letterSpacing:".08em",textTransform:"uppercase",color:"#3A3830",marginBottom:1}}>Product</div>
-              <div style={{fontSize:".82rem",color:"#D4C8B8"}}>{linkedProd.name}</div>
+              <div style={{fontSize:".6rem",letterSpacing:".08em",textTransform:"uppercase",color:"#9AB0A4",marginBottom:1}}>Product</div>
+              <div style={{fontSize:".82rem",color:"#1A2820"}}>{linkedProd.name}</div>
             </div>
           </div>}
           {/* Completion */}
           {completion&&<div style={{marginBottom:14}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#3A3830"}}>Completion</div>
-              <div style={{fontSize:".82rem",color:"#D4C8B8",fontWeight:500}}>{completion.done}/{completion.total} <span style={{color:"#3A3830",fontWeight:400}}>({pct}%)</span></div>
+              <div style={{fontSize:".6rem",letterSpacing:".1em",textTransform:"uppercase",color:"#9AB0A4"}}>Completion</div>
+              <div style={{fontSize:".82rem",color:"#1A2820",fontWeight:500}}>{completion.done}/{completion.total} <span style={{color:"#9AB0A4",fontWeight:400}}>({pct}%)</span></div>
             </div>
-            <div style={{height:5,borderRadius:4,background:"#252320",overflow:"hidden"}}>
-              <div style={{height:"100%",width:`${pct}%`,borderRadius:4,background:"linear-gradient(90deg,#d4a090,#C8B8A0)",transition:"width .4s"}}/>
+            <div style={{height:5,borderRadius:4,background:"#EEF4F0",overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${pct}%`,borderRadius:4,background:"#7EC49A",transition:"width .4s"}}/>
             </div>
           </div>}
           {/* No start date note for recurring plans */}
           {!hasStartDate&&(editing.days||[]).length>0&&!completion&&<div style={{fontSize:".72rem",color:"#2A2820",fontStyle:"italic",marginBottom:14,textAlign:"center"}}>Add a start date to track completion rate</div>}
           {/* End Plan */}
-          {!editing.ended_at&&isExisting&&<button className="ghost-btn" style={{width:"100%",color:"#C8B8A0",fontSize:".82rem",marginBottom:12}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>}
+          {!editing.ended_at&&isExisting&&<button className="ghost-btn" style={{width:"100%",color:"#6B8C7A",fontSize:".82rem",marginBottom:12}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>}
           {/* Edit + Delete row */}
           {isExisting&&<div style={{display:"flex",gap:8}}>
             <button onClick={()=>startEditPlan(editing)}
-              style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px",background:"#0F0E0C",border:"1.5px solid #252320",borderRadius:12,cursor:"pointer",color:"#8A8070",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif"}}>
+              style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px",background:"#F8FAF8",border:"1.5px solid #EEF4F0",borderRadius:12,cursor:"pointer",color:"#1A2820",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif"}}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -3403,7 +3403,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
               <div className="modal-title">{schedules.find(s=>s.id===editing.id)?"Edit Plan":"New Plan"}</div>
             </div>
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              {schedules.find(s=>s.id===editing.id)&&!editing.ended_at&&<button className="ghost-btn" style={{fontSize:".75rem",padding:"4px 10px",color:"#C8B8A0"}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>}
+              {schedules.find(s=>s.id===editing.id)&&!editing.ended_at&&<button className="ghost-btn" style={{fontSize:".75rem",padding:"4px 10px",color:"#6B8C7A"}} onClick={()=>{onSave({...editing,itemId:editing.itemIds?.[0]||editing.itemId,ended_at:fmt(new Date())});onClose();}}>End Plan</button>}
               {schedules.find(s=>s.id===editing.id)&&<button className="del-btn" onClick={()=>{onDelete(editing.id);onClose();}}>Delete</button>}
               <button className="modal-x" onClick={onClose}>×</button>
             </div>
@@ -3415,9 +3415,9 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                 const it=allItems.find(x=>x.id===id);
                 if(!it) return null;
                 return (
-                  <div key={id} className="m-item" style={{background:"#222019",border:"1.5px solid #C8B8A0",marginBottom:0,cursor:"default"}}>
+                  <div key={id} className="m-item" style={{background:"#F8FAF8",border:"1.5px solid #7EC49A",marginBottom:0,cursor:"default"}}>
                     <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-                    <span className="m-item-lbl" style={{color:"#D4C8B8",fontWeight:500}}>{it.label}</span>
+                    <span className="m-item-lbl" style={{color:"#1A2820",fontWeight:500}}>{it.label}</span>
                   </div>
                 );
               })}
@@ -3430,11 +3430,11 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                 {(editing._category==="hair"?hairItems:editing._category==="skin"?skinItems:allItems).map(it=>{
                   const on=(editing.itemIds||[]).includes(it.id);
                   return (
-                    <div key={it.id} className="m-item" style={{cursor:"pointer",background:on?"#222019":"#1A1917",border:on?"1.5px solid #C8B8A0":"1px solid #252320",marginBottom:0}}
+                    <div key={it.id} className="m-item" style={{cursor:"pointer",background:on?"#EEF4F0":"#F8FAF8",border:on?"1.5px solid #7EC49A":"1px solid #EEF4F0",marginBottom:0}}
                       onClick={()=>toggleItemSel(it.id)}>
                       <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-                      <span className="m-item-lbl" style={{color:on?"#D4C8B8":"#D4C8B8",fontWeight:on?500:400}}>{it.label}</span>
-                      <div style={{width:16,height:16,borderRadius:"50%",border:`1.5px solid ${on?"#C8B8A0":"#252320"}`,background:on?"#C8B8A0":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      <span className="m-item-lbl" style={{color:"#1A2820",fontWeight:on?500:400}}>{it.label}</span>
+                      <div style={{width:16,height:16,borderRadius:"50%",border:`1.5px solid ${on?"#7EC49A":"#D0E4DA"}`,background:on?"#7EC49A":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                         {on&&<svg width="9" height="7" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                       </div>
                     </div>
@@ -3496,12 +3496,12 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
               <div style={{marginBottom:14}}>
                 <div className="modal-sub" style={{marginBottom:6}}>Linked product <span style={{fontWeight:400,color:"#2A2820"}}>(optional)</span></div>
                 {linked?(
-                  <div style={{display:"flex",alignItems:"center",gap:10,background:"#1A1917",border:"1.5px solid #252320",borderRadius:12,padding:"8px 10px"}}>
-                    <div style={{width:32,height:32,borderRadius:8,overflow:"hidden",background:"#1E1C1A",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,background:"#F8FAF8",border:"1px solid #EEF4F0",borderRadius:12,padding:"8px 10px"}}>
+                    <div style={{width:32,height:32,borderRadius:8,overflow:"hidden",background:"#EEF4F0",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem"}}>
                       {(linked.image||linked.media_url)?<img src={linked.image||linked.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>🧴</span>}
                     </div>
-                    <span style={{flex:1,fontSize:".82rem",color:"#D4C8B8"}}>{linked.name}</span>
-                    <button onClick={()=>setEditing(ed=>({...ed,linkedProductId:""}))} style={{background:"none",border:"none",color:"#3A3830",cursor:"pointer",fontSize:".9rem",padding:"0 4px"}}>×</button>
+                    <span style={{flex:1,fontSize:".82rem",color:"#1A2820"}}>{linked.name}</span>
+                    <button onClick={()=>setEditing(ed=>({...ed,linkedProductId:""}))} style={{background:"none",border:"none",color:"#9AB0A4",cursor:"pointer",fontSize:".9rem",padding:"0 4px"}}>×</button>
                   </div>
                 ):(
                   <button className="ghost-btn" style={{width:"100%",fontSize:".78rem"}} onClick={()=>setShowProductPick(p=>!p)}>{showProductPick?"Cancel":"+ Link a product"}</button>
@@ -3510,8 +3510,8 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                   const [pickSearch, setPickSearch] = [editing._pickSearch||"", v=>setEditing(ed=>({...ed,_pickSearch:v}))];
                   const filtered=allPickable.filter(p=>p.name.toLowerCase().includes(pickSearch.toLowerCase())||(p.brand||"").toLowerCase().includes(pickSearch.toLowerCase()));
                   return (
-                    <div style={{border:"1px solid #252320",borderRadius:12,marginTop:6,background:"#fff",overflow:"hidden"}}>
-                      <div style={{padding:"6px 10px",borderBottom:"1px solid #252320"}}>
+                    <div style={{border:"1px solid #EEF4F0",borderRadius:12,marginTop:6,background:"#fff",overflow:"hidden"}}>
+                      <div style={{padding:"6px 10px",borderBottom:"1px solid #EEF4F0"}}>
                         <input className="ifield" style={{width:"100%",fontSize:".74rem",padding:"5px 8px"}}
                           placeholder="Search products…" value={pickSearch}
                           onChange={e=>setEditing(ed=>({...ed,_pickSearch:e.target.value}))}/>
@@ -3519,17 +3519,17 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                       <div style={{maxHeight:160,overflowY:"auto"}}>
                         {filtered.map(p=>(
                           <div key={p.id} onClick={()=>{setEditing(ed=>({...ed,linkedProductId:p.id,_pickSearch:""}));setShowProductPick(false);}}
-                            style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",cursor:"pointer",borderBottom:"1px solid #f8f0ec"}}>
-                            <div style={{width:28,height:28,borderRadius:7,overflow:"hidden",background:"#1E1C1A",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".75rem"}}>
+                            style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",cursor:"pointer",borderBottom:"1px solid #F0F6F2"}}>
+                            <div style={{width:28,height:28,borderRadius:7,overflow:"hidden",background:"#EEF4F0",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".75rem"}}>
                               {(p.image||p.media_url)?<img src={p.image||p.media_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>🧴</span>}
                             </div>
                             <div style={{flex:1}}>
-                              <div style={{fontSize:".8rem",color:"#D4C8B8"}}>{p.name}</div>
-                              {p._fromWishlist&&<div style={{fontSize:".62rem",color:"#3A3830"}}>Wishlist</div>}
+                              <div style={{fontSize:".8rem",color:"#1A2820"}}>{p.name}</div>
+                              {p._fromWishlist&&<div style={{fontSize:".62rem",color:"#9AB0A4"}}>Wishlist</div>}
                             </div>
                           </div>
                         ))}
-                        {filtered.length===0&&<div style={{padding:"12px",fontSize:".76rem",color:"#3A3830",textAlign:"center",fontStyle:"italic"}}>No products found</div>}
+                        {filtered.length===0&&<div style={{padding:"12px",fontSize:".76rem",color:"#9AB0A4",textAlign:"center",fontStyle:"italic"}}>No products found</div>}
                       </div>
                     </div>
                   );
@@ -3613,20 +3613,20 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="📍 Location"
               value={editTx.location||""} onChange={e=>setEditTx(t=>({...t,location:e.target.value}))}/>
             <TypeToggle/>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.15rem",color:"#D4C8B8",marginBottom:14,fontStyle:"italic"}}>When is this treatment?</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.15rem",color:"#1A2820",marginBottom:14,fontStyle:"italic"}}>When is this treatment?</div>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <button onClick={()=>setTxMode("past")} style={{display:"flex",alignItems:"center",gap:14,background:"#1A1917",border:"1.5px solid #252320",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
+              <button onClick={()=>setTxMode("past")} style={{display:"flex",alignItems:"center",gap:14,background:"#F8FAF8",border:"1px solid #EEF4F0",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
                 <span style={{fontSize:"1.5rem"}}>📅</span>
                 <div>
-                  <div style={{fontSize:".9rem",color:"#D4C8B8",fontWeight:500}}>Register a past treatment</div>
-                  <div style={{fontSize:".74rem",color:"#5A5248",marginTop:2}}>Log something you've already had</div>
+                  <div style={{fontSize:".9rem",color:"#1A2820",fontWeight:500}}>Register a past treatment</div>
+                  <div style={{fontSize:".74rem",color:"#9AB0A4",marginTop:2}}>Log something you've already had</div>
                 </div>
               </button>
-              <button onClick={()=>setTxMode("upcoming")} style={{display:"flex",alignItems:"center",gap:14,background:"#1A1917",border:"1.5px solid #252320",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
+              <button onClick={()=>setTxMode("upcoming")} style={{display:"flex",alignItems:"center",gap:14,background:"#F8FAF8",border:"1px solid #EEF4F0",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
                 <span style={{fontSize:"1.5rem"}}>💉</span>
                 <div>
-                  <div style={{fontSize:".9rem",color:"#D4C8B8",fontWeight:500}}>Plan an upcoming treatment</div>
-                  <div style={{fontSize:".74rem",color:"#5A5248",marginTop:2}}>Schedule something coming up</div>
+                  <div style={{fontSize:".9rem",color:"#1A2820",fontWeight:500}}>Plan an upcoming treatment</div>
+                  <div style={{fontSize:".74rem",color:"#9AB0A4",marginTop:2}}>Schedule something coming up</div>
                 </div>
               </button>
             </div>
@@ -3703,7 +3703,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             onRangeEnd={range=>{ setEditTx(t=>({...t,dates:[...new Set([...t.dates,...range])]})); setCalRangeStart(null); }}
             needleDates={editTx.completedDates||[]}
           />
-          {(editTx.completedDates||[]).length>0&&<div style={{fontSize:".7rem",color:"#5A5248",marginBottom:10}}>💉 marks a completed past session</div>}
+          {(editTx.completedDates||[]).length>0&&<div style={{fontSize:".7rem",color:"#9AB0A4",marginBottom:10}}>💉 marks a completed past session</div>}
           <div style={{display:"flex",gap:8}}>
             <button className="save-btn" onClick={()=>doSaveUpcoming(false)} disabled={!canSaveFinal} style={{flex:1,opacity:canSaveFinal?1:.4}}>
               {isExisting?"Save Changes":"Schedule"}
@@ -3741,7 +3741,7 @@ function FreqModal({ allItems, tracked, period, onToggle, onPeriod, onClose }) {
           <div key={it.id} className={`freq-toggle-item ${tracked.includes(it.id)?"on":""}`} onClick={()=>onToggle(it.id)}>
             <div className="fti-check">{tracked.includes(it.id)&&<CheckIcon/>}</div>
             <span style={{fontSize:"1rem"}}>{it.emoji}</span>
-            <span style={{fontSize:".86rem",color:"#D4C8B8",flex:1}}>{it.label}</span>
+            <span style={{fontSize:".86rem",color:"#1A2820",flex:1}}>{it.label}</span>
           </div>
         ))}
       </div>
