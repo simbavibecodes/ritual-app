@@ -128,9 +128,9 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .pc-cat-tag{display:inline-block;font-size:.58rem;font-weight:600;letter-spacing:.05em;text-transform:lowercase;color:rgba(80,80,80,.48);background:rgba(0,0,0,.05);border-radius:8px;padding:1px 5px;margin-top:2px;line-height:1.4}
 
 /* ── Week strip ── */
-.week-strip{display:flex;gap:2px;padding:18px 14px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.week-strip{display:flex;gap:0;padding:18px 0 0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .week-strip::-webkit-scrollbar{display:none}
-.wday{flex-shrink:0;width:46px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;position:relative}
+.wday{flex-shrink:0;width:calc(100vw / 7);display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;position:relative}
 .wday-lbl{font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);font-weight:600}
 .wday-lbl.active-lbl{color:rgba(255,255,255,.95);font-weight:700}
 .wday-ring{position:relative;display:flex;align-items:center;justify-content:center}
