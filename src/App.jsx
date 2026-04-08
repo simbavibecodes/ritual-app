@@ -114,7 +114,7 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .log-section.morning{background:rgba(238,248,242,.88);border:1px solid rgba(200,235,215,.7)}
 .log-section.night{background:rgba(15,27,53,.52);border:1px solid rgba(15,27,53,.4)}
 .log-section.morning::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 88% 10%,rgba(255,218,130,.2),transparent 52%),radial-gradient(ellipse at 10% 85%,rgba(180,225,255,.12),transparent 45%);pointer-events:none;z-index:0}
-.log-section.night::before{content:'';position:absolute;inset:0;background:radial-gradient(1.5px 1.5px at 10% 12%,rgba(255,255,255,.9),transparent),radial-gradient(2px 2px at 32% 8%,rgba(255,255,255,.8),transparent),radial-gradient(1.5px 1.5px at 65% 14%,rgba(255,255,255,.85),transparent),radial-gradient(1px 1px at 82% 22%,rgba(255,255,255,.65),transparent),radial-gradient(2px 2px at 20% 38%,rgba(255,255,255,.6),transparent),radial-gradient(1px 1px at 50% 32%,rgba(255,255,255,.7),transparent),radial-gradient(1.5px 1.5px at 75% 50%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 40% 62%,rgba(255,255,255,.5),transparent),radial-gradient(2px 2px at 88% 68%,rgba(255,255,255,.65),transparent),radial-gradient(1px 1px at 25% 78%,rgba(255,255,255,.55),transparent),radial-gradient(1.5px 1.5px at 60% 82%,rgba(255,255,255,.45),transparent),radial-gradient(1px 1px at 6% 55%,rgba(255,255,255,.6),transparent),radial-gradient(2px 2px at 95% 42%,rgba(255,255,255,.5),transparent);pointer-events:none;z-index:0}
+.log-section.night::before{content:'';position:absolute;inset:0;background:radial-gradient(1.5px 1.5px at 10% 12%,rgba(255,255,255,.9),transparent),radial-gradient(2px 2px at 32% 8%,rgba(255,255,255,.8),transparent),radial-gradient(1.5px 1.5px at 65% 14%,rgba(255,255,255,.85),transparent),radial-gradient(1px 1px at 82% 22%,rgba(255,255,255,.65),transparent),radial-gradient(2px 2px at 20% 38%,rgba(255,255,255,.6),transparent),radial-gradient(1px 1px at 50% 32%,rgba(255,255,255,.7),transparent),radial-gradient(1.5px 1.5px at 75% 50%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 40% 62%,rgba(255,255,255,.5),transparent),radial-gradient(2px 2px at 88% 68%,rgba(255,255,255,.65),transparent),radial-gradient(1px 1px at 25% 78%,rgba(255,255,255,.55),transparent),radial-gradient(1.5px 1.5px at 60% 82%,rgba(255,255,255,.45),transparent),radial-gradient(1px 1px at 6% 55%,rgba(255,255,255,.6),transparent),radial-gradient(2px 2px at 95% 42%,rgba(255,255,255,.5),transparent);pointer-events:none;z-index:2}
 .log-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;position:relative;z-index:1}
 .log-section-title{font-family:'Cormorant Garamond',serif;font-size:.95rem;font-weight:600;letter-spacing:.04em;display:flex;align-items:center;gap:6px}
 .log-section.morning .log-section-title{color:rgba(30,52,40,.82)}
@@ -159,8 +159,8 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .pc-card:active{transform:scale(.98)}
 .pc-card.done{background:rgba(200,225,210,.75);border-color:rgba(160,205,180,.7)}
 .pc-card.done .pc-name{text-decoration:line-through;text-decoration-color:rgba(40,90,60,.35);color:rgba(80,130,100,.75)}
-.log-section.morning .pc-card.done{background:rgba(155,205,175,.45);border-color:rgba(120,180,150,.5)}
-.log-section.morning .pc-card.done .pc-name{color:rgba(40,90,60,.55);text-decoration-color:rgba(40,90,60,.4)}
+.log-section.morning .pc-card.done{background:rgba(100,160,120,.22);border-color:rgba(60,120,85,.3);opacity:.5}
+.log-section.morning .pc-card.done .pc-name{color:rgba(30,70,45,.7);text-decoration-color:rgba(30,70,45,.6)}
 .pc-img{width:48px;height:48px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .placeholder-svg{width:32px;height:32px;opacity:.55}
 .pc-img.g{background:#D8EBE0}
@@ -3982,38 +3982,33 @@ function getBottleSvg(item) {
   const isTube = /spf|sunscreen|tretinoin|retinol|tube/i.test(l);
   const bgClass = isTube || /serum|vitamin|acid|oil|eye|lash|drop/i.test(l) ? "g" :
                   isPump || isJar ? "br" : "bl";
-  const stroke = bgClass === "g" ? "#243D30" : bgClass === "br" ? "#7A5840" : "#4A7A9B";
+  const stroke = bgClass === "g" ? "#3D6B52" : bgClass === "br" ? "#8A6448" : "#4A7A9B";
 
   if (isJar) return {
-    svg: <svg className="placeholder-svg" viewBox="0 0 40 32" fill="none">
-      <rect x="6" y="12" width="28" height="16" rx="6" stroke={stroke} strokeWidth="1.5"/>
-      <rect x="8" y="7" width="24" height="6" rx="3" stroke={stroke} strokeWidth="1.3"/>
-      <path d="M12 20h16" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".4"/>
-      <path d="M14 24h12" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".3"/>
+    svg: <svg className="placeholder-svg" viewBox="0 0 36 28" fill="none">
+      <rect x="4" y="12" width="28" height="13" rx="5" stroke={stroke} strokeWidth="1"/>
+      <rect x="6" y="7" width="24" height="6" rx="3" stroke={stroke} strokeWidth="1"/>
+      <line x1="4" y1="17" x2="32" y2="17" stroke={stroke} strokeWidth=".6" opacity=".35"/>
     </svg>,
     bgClass
   };
   if (isPump) return {
-    svg: <svg className="placeholder-svg" viewBox="0 0 28 48" fill="none">
-      <rect x="7" y="20" width="14" height="24" rx="5" stroke={stroke} strokeWidth="1.5"/>
-      <path d="M14 20v-8" stroke={stroke} strokeWidth="1.5" strokeLinecap="round"/>
-      <path d="M14 12H9a2 2 0 000 4h2" stroke={stroke} strokeWidth="1.3" strokeLinecap="round"/>
-      <circle cx="14" cy="18" r="2" stroke={stroke} strokeWidth="1.2"/>
-      <path d="M10 31h8" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".4"/>
-      <path d="M10 35h5" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".3"/>
+    svg: <svg className="placeholder-svg" viewBox="0 0 24 44" fill="none">
+      <rect x="5" y="18" width="14" height="22" rx="5" stroke={stroke} strokeWidth="1"/>
+      <path d="M12 18v-9" stroke={stroke} strokeWidth="1" strokeLinecap="round"/>
+      <path d="M12 9h-5a1.5 1.5 0 000 3h1.5" stroke={stroke} strokeWidth="1" strokeLinecap="round"/>
+      <rect x="9" y="15" width="6" height="4" rx="2" stroke={stroke} strokeWidth=".8"/>
     </svg>,
     bgClass
   };
-  // default: dropper / serum
+  // default: serum / dropper
   return {
-    svg: <svg className="placeholder-svg" viewBox="0 0 32 48" fill="none">
-      <rect x="11" y="16" width="10" height="26" rx="5" stroke={stroke} strokeWidth="1.5"/>
-      <path d="M14 16V10M18 16V10" stroke={stroke} strokeWidth="1.5" strokeLinecap="round"/>
-      <rect x="12" y="7" width="8" height="4" rx="2" stroke={stroke} strokeWidth="1.3"/>
-      <path d="M16 7V4" stroke={stroke} strokeWidth="1.3" strokeLinecap="round"/>
-      <circle cx="16" cy="3" r="1.5" stroke={stroke} strokeWidth="1.2"/>
-      <path d="M13 28h6" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".4"/>
-      <path d="M13 32h4" stroke={stroke} strokeWidth="1" strokeLinecap="round" opacity=".3"/>
+    svg: <svg className="placeholder-svg" viewBox="0 0 20 44" fill="none">
+      <rect x="6" y="16" width="8" height="24" rx="4" stroke={stroke} strokeWidth="1"/>
+      <path d="M10 16v-7" stroke={stroke} strokeWidth="1" strokeLinecap="round"/>
+      <rect x="7.5" y="7" width="5" height="3.5" rx="1.5" stroke={stroke} strokeWidth=".9"/>
+      <path d="M10 7v-2.5" stroke={stroke} strokeWidth=".9" strokeLinecap="round"/>
+      <circle cx="10" cy="3.5" r="1.2" stroke={stroke} strokeWidth=".9"/>
     </svg>,
     bgClass
   };
@@ -4913,6 +4908,29 @@ Respond ONLY with valid JSON (no markdown, no explanation):
 
 
             {(()=>{
+              const todayTreatments = treatments.filter(tx => tx.dates && tx.dates.includes(activeDate));
+              if(!todayTreatments.length) return null;
+              return (
+                <div style={{margin:"0 14px 4px"}}>
+                  <div className="sec-label" style={{paddingTop:4,paddingBottom:6,paddingLeft:0,paddingRight:0}}>
+                    <span className="sec-tag">Treatments today</span>
+                    <div className="sec-line"/>
+                  </div>
+                  {todayTreatments.map(tx=>{
+                    const done = (tx.completedDates||[]).includes(activeDate);
+                    return (
+                      <div key={tx.id} className={`treatment-banner${done?" done":""}`}
+                        onClick={()=>setSelectedPlan({type:"treatment",data:tx})}>
+                        <div className="tb-dot"/>
+                        <div className="tb-text">{tx.name||"Treatment"}</div>
+                        {tx.location&&<div style={{fontSize:".7rem",color:"#9AB0A4",marginLeft:"auto"}}>📍 {tx.location}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+            {(()=>{
               const allRoutines = [
                 ...skinR.map(it=>({...it,_tab:"skin"})),
                 ...hairR.map(it=>({...it,_tab:"hair"}))
@@ -4983,9 +5001,9 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                 return (
                   <div key={it._tab+it.id} className={`pc-card ${isDone?"done":""}`}
                     onClick={()=>{ if(!isFutureDate) toggleItem(activeDate,it._tab,it.id); }}>
-                    {linkedProd?.image
-                      ? <div className="pc-img" style={{background:"rgba(255,255,255,.15)",overflow:"hidden"}}>
-                          <img src={linkedProd.image} alt={linkedProd.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                    {(linkedProd?.media_url||linkedProd?.image)
+                      ? <div className="pc-img" style={{background:"rgba(255,255,255,.15)",overflow:"hidden",borderRadius:12}}>
+                          <img src={linkedProd.media_url||linkedProd.image} alt={linkedProd.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
                         </div>
                       : <div className={`pc-img ${bgClass}`}>{svg}</div>
                     }
@@ -5036,29 +5054,6 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                     </div>
                   )}
                 </>
-              );
-            })()}
-            {(()=>{
-              const todayTreatments = treatments.filter(tx => tx.dates && tx.dates.includes(activeDate));
-              if(!todayTreatments.length) return null;
-              return (
-                <div style={{margin:"0 14px 4px"}}>
-                  <div className="sec-label" style={{paddingTop:4,paddingBottom:6,paddingLeft:0,paddingRight:0}}>
-                    <span className="sec-tag">Treatments today</span>
-                    <div className="sec-line"/>
-                  </div>
-                  {todayTreatments.map(tx=>{
-                    const done = (tx.completedDates||[]).includes(activeDate);
-                    return (
-                      <div key={tx.id} className={`treatment-banner${done?" done":""}`}
-                        onClick={()=>setSelectedPlan({type:"treatment",data:tx})}>
-                        <div className="tb-dot"/>
-                        <div className="tb-text">{tx.name||"Treatment"}</div>
-                        {tx.location&&<div style={{fontSize:".7rem",color:"#9AB0A4",marginLeft:"auto"}}>📍 {tx.location}</div>}
-                      </div>
-                    );
-                  })}
-                </div>
               );
             })()}
             <div className="sec-label" style={{paddingBottom:8}}>
@@ -5453,7 +5448,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
           </>
         )}
         <nav className="bottom-nav">
-          {[["log","⌂","Log"],["history","◻","History"],["plan","◈","Routines"],["frequency","◷","Stats"]].map(([v,icon,lbl])=>(
+          {[["log","⌂","Log"],["plan","◈","Routines"],["history","◻","History"],["frequency","◷","Stats"]].map(([v,icon,lbl])=>(
             <button key={v} className={`bnav ${view===v?"active":""}`} onClick={()=>setView(v)}>
               <span className="bnav-icon">{icon}</span>
               <div className="bnav-dot"/>
