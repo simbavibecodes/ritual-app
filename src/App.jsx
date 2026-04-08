@@ -128,9 +128,9 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .pc-cat-tag{display:inline-block;font-size:.58rem;font-weight:600;letter-spacing:.05em;text-transform:lowercase;color:rgba(80,80,80,.48);background:rgba(0,0,0,.05);border-radius:8px;padding:1px 5px;margin-top:2px;line-height:1.4}
 
 /* ── Week strip ── */
-.week-strip{display:flex;gap:0;padding:18px 0 0;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.week-strip{display:flex;gap:2px;padding:18px 14px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .week-strip::-webkit-scrollbar{display:none}
-.wday{flex-shrink:0;width:calc(100vw / 7);scroll-snap-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;position:relative}
+.wday{flex-shrink:0;width:46px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;position:relative}
 .wday-lbl{font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);font-weight:600}
 .wday-lbl.active-lbl{color:rgba(255,255,255,.95);font-weight:700}
 .wday-ring{position:relative;display:flex;align-items:center;justify-content:center}
@@ -156,8 +156,10 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 /* ── Product card ── */
 .pc-card{display:flex;align-items:center;gap:12px;margin:0 14px 8px;padding:11px 13px;background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.9);border-radius:18px;cursor:pointer;transition:all .22s;user-select:none;box-shadow:0 2px 10px rgba(0,0,0,.06)}
 .pc-card:active{transform:scale(.98)}
-.pc-card.done{background:rgba(220,235,224,.88);border-color:rgba(194,217,204,.8)}
-.pc-card.done .pc-name{text-decoration:line-through;text-decoration-color:rgba(61,107,82,.4);color:#8AA290}
+.pc-card.done{background:rgba(200,225,210,.75);border-color:rgba(160,205,180,.7)}
+.pc-card.done .pc-name{text-decoration:line-through;text-decoration-color:rgba(40,90,60,.35);color:rgba(80,130,100,.75)}
+.log-section.morning .pc-card.done{background:rgba(155,205,175,.45);border-color:rgba(120,180,150,.5)}
+.log-section.morning .pc-card.done .pc-name{color:rgba(40,90,60,.55);text-decoration-color:rgba(40,90,60,.4)}
 .pc-img{width:48px;height:48px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .placeholder-svg{width:32px;height:32px;opacity:.55}
 .pc-img.g{background:#D8EBE0}
