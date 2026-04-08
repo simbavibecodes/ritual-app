@@ -94,8 +94,8 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .lux-hdr{display:flex;justify-content:space-between;align-items:flex-start;padding:calc(20px + env(safe-area-inset-top)) 18px 0}
 .lux-hdr-avatar{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 .lux-hdr-mid{flex:1;padding:0 12px}
-.lux-greeting{font-size:12px;color:rgba(255,255,255,.65);font-weight:400;margin-bottom:1px}
-.lux-name{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:400;font-style:italic;color:#fff;letter-spacing:-.01em;line-height:1.1}
+.lux-greeting{font-size:14px;color:rgba(255,255,255,.65);font-weight:400;margin-bottom:2px}
+.lux-name{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:400;font-style:italic;color:#fff;letter-spacing:-.01em;line-height:1.1}
 .lux-tagline{font-size:11px;color:rgba(255,255,255,.55);margin-top:3px;font-weight:300}
 .lux-hdr-bell{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 
@@ -106,7 +106,7 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 
 /* ── Log view filter — text links ── */
 .log-filter-row{display:flex;gap:20px;padding:18px 18px 4px;justify-content:flex-start}
-.log-fpill{background:none;border:none;border-bottom:1.5px solid transparent;font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.38);cursor:pointer;padding:3px 0 4px;transition:all .18s;font-family:'DM Sans',sans-serif}
+.log-fpill{background:none;border:none;border-bottom:1.5px solid transparent;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.38);cursor:pointer;padding:3px 0 4px;transition:all .18s;font-family:'DM Sans',sans-serif}
 .log-fpill.active{color:rgba(255,255,255,.92);border-bottom-color:rgba(255,255,255,.7)}
 
 /* ── Morning / Night section cards ── */
@@ -134,7 +134,7 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .wday{flex-shrink:0;width:calc(100vw / 7);display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;position:relative}
 .wday-lbl{font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);font-weight:600}
 .wday-lbl.active-lbl{color:rgba(255,255,255,.95);font-weight:700}
-.wday-ring{position:relative;display:flex;align-items:center;justify-content:center}
+.wday-ring{position:relative;display:flex;align-items:center;justify-content:center;min-height:44px}
 .wday-heart{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);font-size:7px;color:rgba(255,255,255,.75);line-height:1}
 .wday-today-dot{position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.55)}
 
@@ -186,7 +186,10 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .notes-area{width:100%;min-height:72px;background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.9);border-radius:14px;padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:.86rem;color:#1A2820;resize:vertical;outline:none;transition:border .18s;line-height:1.6}
 .notes-area:focus{border-color:rgba(255,255,255,1)}
 .notes-area::placeholder{color:#9AB0A4;font-style:italic}
-.notes-toolbar{display:none}
+.notes-toolbar{display:flex;align-items:center;gap:8px;margin-top:6px}
+.photo-upload-btn{background:none;border:1px solid #DDE8E2;border-radius:10px;padding:5px 12px;font-size:.72rem;color:#5A7060;cursor:pointer;font-family:'DM Sans',sans-serif}
+.photo-upload-btn:hover{background:#EEF4F0}
+.photo-input{display:none}
 
 /* ── Save ── */
 .save-btn{width:calc(100% - 28px);margin:14px 14px 0;display:block;background:#243D30;color:#fff;border:none;border-radius:18px;padding:17px;font-family:'DM Sans',sans-serif;font-size:.76rem;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:background .2s;box-shadow:0 8px 28px rgba(36,61,48,.32)}
@@ -431,6 +434,14 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 .spend-row:last-child{border-bottom:none}
 .spend-label{color:#5A7060}
 .spend-val{color:#243D30;font-weight:500}
+/* ── Streak Sheet ── */
+.streak-sheet-overlay{position:fixed;inset:0;background:rgba(20,34,26,.7);z-index:400;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(12px)}
+.streak-sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:680px;padding:28px 24px max(36px,calc(20px + env(safe-area-inset-bottom)));animation:sheetUp .28s cubic-bezier(.4,0,.2,1)}
+.streak-num{font-family:'Cormorant Garamond',serif;font-size:3.5rem;font-weight:300;color:#243D30;line-height:1;text-align:center;margin-bottom:4px}
+.streak-label{font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:#9AB0A4;text-align:center;margin-bottom:20px}
+.streak-msg{font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:#1A2820;text-align:center;line-height:1.5;margin-bottom:8px;font-style:italic}
+.streak-skipped{font-size:.78rem;color:#9AB0A4;text-align:center;line-height:1.5;margin-bottom:20px}
+.streak-close{width:100%;background:#243D30;color:#fff;border:none;border-radius:14px;padding:14px;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;font-family:'DM Sans',sans-serif}
 `;
 
 function CheckIcon() {
@@ -494,7 +505,7 @@ function PhotoNotes({ notes, photos, onNotesChange, onPhotosChange, hidePhotos }
   const removePhoto = (id) => onPhotosChange(prev => prev.filter(p => p.id !== id));
   return (
     <div className="notes-wrap">
-      <textarea className="notes-area" placeholder="Any reactions, new products, skin concerns…"
+      <textarea className="notes-area" placeholder="Reactions, observations, products tried… (today only)"
         value={notes} onChange={e=>onNotesChange(e.target.value)}/>
       <div className="notes-toolbar">
         <button className="photo-upload-btn" onClick={()=>fileRef.current.click()}>
@@ -537,6 +548,7 @@ function ManageItemsModal({ type, section, items, products, onAdd, onRemove, onE
   const [editProdId, setEditProdId] = useState(null);
   const [showEditPick, setShowEditPick] = useState(false);
   const [showEditProdPick, setShowEditProdPick] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(true);
   const ref = useRef();
   useEffect(()=>{ setTimeout(()=>ref.current?.focus(),80); },[]);
 
@@ -593,7 +605,7 @@ function ManageItemsModal({ type, section, items, products, onAdd, onRemove, onE
           <button className="modal-x" onClick={onClose}>×</button>
         </div>
 
-        <div className="modal-sub">Add a step</div>
+        <div className="modal-sub">Add an item</div>
         <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:18}}>
           <div className="row">
             <button className="epick-btn" onClick={()=>setShowPick(p=>!p)}>{emoji}</button>
@@ -602,7 +614,7 @@ function ManageItemsModal({ type, section, items, products, onAdd, onRemove, onE
             <button className="confirm-btn" onClick={doAdd} disabled={!label.trim()}>+ Add</button>
           </div>
           <div style={{display:"flex",gap:6}}>
-            {[["day","AM"],["night","PM"],["both","Both"]].map(([v,l])=>(
+            {[["day","AM"],["night","PM"],["both","AM & PM"]].map(([v,l])=>(
               <button key={v} className={`dow-chip ${time===v?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".74rem"}}
                 onClick={()=>setTime(v)}>{l}</button>
             ))}
@@ -615,9 +627,12 @@ function ManageItemsModal({ type, section, items, products, onAdd, onRemove, onE
         </div>
 
         <hr className="modal-hr"/>
-        <div className="modal-sub">Current steps ({items.length})</div>
-        {!items.length&&<div style={{textAlign:"center",color:"#9AB0A4",fontStyle:"italic",padding:"12px 0",fontSize:".86rem"}}>None yet</div>}
-        {items.map(it=>(
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8,cursor:"pointer"}} onClick={()=>setShowCurrent(p=>!p)}>
+          <div className="modal-sub" style={{marginBottom:0}}>Current items ({items.length})</div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9AB0A4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{transform:showCurrent?"rotate(0deg)":"rotate(-90deg)",transition:"transform .2s"}}><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        {showCurrent&&!items.length&&<div style={{textAlign:"center",color:"#9AB0A4",fontStyle:"italic",padding:"12px 0",fontSize:".86rem"}}>None yet</div>}
+        {showCurrent&&items.map(it=>(
           <div key={it.id}>
             {editingId===it.id ? (
               <div style={{background:"#F8FAF8",border:"1px solid #EEF4F0",borderRadius:12,padding:"10px 13px",marginBottom:8}}>
@@ -627,7 +642,7 @@ function ManageItemsModal({ type, section, items, products, onAdd, onRemove, onE
                     onKeyDown={e=>e.key==="Enter"&&saveEdit()} autoFocus/>
                 </div>
                 <div style={{display:"flex",gap:6,marginBottom:8}}>
-                  {[["day","AM"],["night","PM"],["both","Both"]].map(([v,l])=>(
+                  {[["day","AM"],["night","PM"],["both","AM & PM"]].map(([v,l])=>(
                     <button key={v} className={`dow-chip ${editTime===v?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".74rem"}}
                       onClick={()=>setEditTime(v)}>{l}</button>
                   ))}
@@ -681,10 +696,10 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
     <div className="overlay" onClick={onCancel}>
       <div className="modal" style={{maxWidth:320,textAlign:"center",padding:"32px 24px"}} onClick={e=>e.stopPropagation()}>
         <div style={{fontSize:"1.5rem",marginBottom:12}}>🗑️</div>
-        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",color:"#D4C8B8",marginBottom:8}}>Are you sure?</div>
-        <div style={{fontSize:".84rem",color:"#5A5248",marginBottom:24,lineHeight:1.5}}>{message}</div>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",color:"#1A2820",marginBottom:8}}>Are you sure?</div>
+        <div style={{fontSize:".84rem",color:"#5A7060",marginBottom:24,lineHeight:1.5}}>{message}</div>
         <div style={{display:"flex",gap:10}}>
-          <button onClick={onCancel} style={{flex:1,background:"none",border:"1.5px solid #252320",borderRadius:12,padding:"11px",fontSize:".82rem",color:"#5A5248",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+          <button onClick={onCancel} style={{flex:1,background:"none",border:"1.5px solid #EEF4F0",borderRadius:12,padding:"11px",fontSize:".82rem",color:"#9AB0A4",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
           <button onClick={onConfirm} style={{flex:1,background:"#8A5A50",border:"none",borderRadius:12,padding:"11px",fontSize:".82rem",color:"#fff",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".06em"}}>Delete</button>
         </div>
       </div>
@@ -3191,14 +3206,14 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
     }
   };
   return (
-    <div style={{background:"#1A1917",border:"1px solid #252320",borderRadius:12,overflow:"hidden",marginBottom:14}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderBottom:"1px solid #222019"}}>
-        <button onClick={()=>setCalM(p=>{const d=new Date(p.y,p.m-1,1);return{y:d.getFullYear(),m:d.getMonth()};})} style={{background:"none",border:"none",cursor:"pointer",color:"#C8B8A0",fontSize:"1rem",padding:"2px 8px"}}>‹</button>
-        <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",color:"#D4C8B8"}}>{monthLabel}</span>
-        <button onClick={()=>setCalM(p=>{const d=new Date(p.y,p.m+1,1);return{y:d.getFullYear(),m:d.getMonth()};})} style={{background:"none",border:"none",cursor:"pointer",color:"#C8B8A0",fontSize:"1rem",padding:"2px 8px"}}>›</button>
+    <div style={{background:"#F8FAF8",border:"1px solid #EEF4F0",borderRadius:12,overflow:"hidden",marginBottom:14}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderBottom:"1px solid #EEF4F0"}}>
+        <button onClick={()=>setCalM(p=>{const d=new Date(p.y,p.m-1,1);return{y:d.getFullYear(),m:d.getMonth()};})} style={{background:"none",border:"none",cursor:"pointer",color:"#243D30",fontSize:"1rem",padding:"2px 8px"}}>‹</button>
+        <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",color:"#1A2820"}}>{monthLabel}</span>
+        <button onClick={()=>setCalM(p=>{const d=new Date(p.y,p.m+1,1);return{y:d.getFullYear(),m:d.getMonth()};})} style={{background:"none",border:"none",cursor:"pointer",color:"#243D30",fontSize:"1rem",padding:"2px 8px"}}>›</button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",textAlign:"center",padding:"6px 8px 2px"}}>
-        {["Mo","Tu","We","Th","Fr","Sa","Su"].map(d=><div key={d} style={{fontSize:".62rem",color:"#3A3830",fontWeight:500,letterSpacing:".04em"}}>{d}</div>)}
+        {["Mo","Tu","We","Th","Fr","Sa","Su"].map(d=><div key={d} style={{fontSize:".62rem",color:"#9AB0A4",fontWeight:500,letterSpacing:".04em"}}>{d}</div>)}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",padding:"2px 8px 10px",gap:2}}>
         {cells.map((d,i)=>{
@@ -3212,10 +3227,10 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
               onMouseEnter={()=>rangeMode&&setHov(d)}
               onMouseLeave={()=>setHov(null)}
               style={{aspectRatio:1,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:"50%",fontSize:".78rem",cursor:"pointer",position:"relative",
-                background:sel?"#C8B8A0":isPending?"#c08870":prev?"#222019":"transparent",
-                color:sel||isPending?"#fff":"#D4C8B8",fontWeight:sel?600:400,
-                border:d===today&&!sel?"1.5px solid #C8B8A0":"none",
-                boxShadow:isPending?"0 0 0 2px #fff,0 0 0 4px #C8B8A0":"none"}}>
+                background:sel?"#243D30":isPending?"#3D6B52":prev?"#EEF4F0":"transparent",
+                color:sel||isPending?"#fff":"#1A2820",fontWeight:sel?600:400,
+                border:d===today&&!sel?"1.5px solid #243D30":"none",
+                boxShadow:isPending?"0 0 0 2px #fff,0 0 0 4px #243D30":"none"}}>
               {parse(d).getDate()}
               {isNeedle&&<span style={{position:"absolute",bottom:1,right:1,fontSize:".42rem",lineHeight:1,pointerEvents:"none"}}>💉</span>}
             </div>
@@ -3383,7 +3398,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             </button>
             <button onClick={()=>{onDelete(editing.id);onClose();}}
               style={{flex:1,padding:"10px",background:"none",border:"1.5px solid #f0d0c8",borderRadius:12,cursor:"pointer",color:"#8A5A50",fontSize:".8rem",fontFamily:"'DM Sans',sans-serif"}}>
-              Delete Plan
+              Delete Routine
             </button>
           </div>}
         </div>
@@ -3424,7 +3439,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                       <span style={{fontSize:".65rem",letterSpacing:".08em",textTransform:"uppercase",color:"#9AB0A4",marginRight:2}}>Time</span>
-                      {[["day","AM"],["night","PM"],["both","Both"]].map(([v,l])=>(
+                      {[["day","AM"],["night","PM"],["both","AM & PM"]].map(([v,l])=>(
                         <button key={v} onClick={()=>onEditItem&&onEditItem(id,{time:v})}
                           style={{padding:"3px 10px",borderRadius:20,fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",border:"1px solid",transition:"all .15s",
                             background:itTime===v?"#1E3428":"transparent",
@@ -3499,7 +3514,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             <div style={{flex:1}}>
               <div className="modal-sub" style={{marginBottom:4}}>Start date</div>
               <input type="date" className="time-input" style={{width:"100%"}}
-                value={editing.startDate||fmt(new Date())}
+                value={editing.startDate||""}
                 onChange={e=>setEditing(ed=>({...ed,startDate:e.target.value}))}/>
             </div>
             <div style={{flex:1}}>
@@ -3525,7 +3540,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                     <button onClick={()=>setEditing(ed=>({...ed,linkedProductId:""}))} style={{background:"none",border:"none",color:"#9AB0A4",cursor:"pointer",fontSize:".9rem",padding:"0 4px"}}>×</button>
                   </div>
                 ):(
-                  <button className="ghost-btn" style={{width:"100%",fontSize:".78rem"}} onClick={()=>setShowProductPick(p=>!p)}>{showProductPick?"Cancel":"+ Link a product"}</button>
+                  <button style={{width:"100%",fontSize:".78rem",background:"#F8FAF8",border:"1px solid #DDE8E2",borderRadius:10,padding:"9px 14px",color:"#5A7060",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",textAlign:"left"}} onClick={()=>setShowProductPick(p=>!p)}>{showProductPick?"Cancel":"+ Link a product"}</button>
                 )}
                 {showProductPick&&!linked&&(()=>{
                   const [pickSearch, setPickSearch] = [editing._pickSearch||"", v=>setEditing(ed=>({...ed,_pickSearch:v}))];
@@ -3561,8 +3576,12 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
           <div className="modal-sub" style={{marginBottom:8}}>Every — leave blank for one-off</div>
           <div className="toggle-row" style={{marginBottom:8}}>
             <div><div className="toggle-lbl">Every day</div></div>
-            <Toggle on={editing.days.length===7} onChange={v=>setEditing(e=>({...e,days:v?[0,1,2,3,4,5,6]:[]}))}/>
+            <Toggle on={editing.days.length===7} onChange={v=>setEditing(e=>({...e,days:v?[0,1,2,3,4,5,6]:[],everyOtherDay:false}))}/>
           </div>
+          {editing.days.length!==7&&<div className="toggle-row" style={{marginBottom:8}}>
+            <div><div className="toggle-lbl">Every other day</div><div className="toggle-sub">Alternating days from start date</div></div>
+            <Toggle on={!!editing.everyOtherDay} onChange={v=>setEditing(e=>({...e,everyOtherDay:v,days:v?[]:e.days}))}/>
+          </div>}
           {editing.days.length!==7&&<div className="dow-row" style={{marginBottom:10}}>
             {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d,i)=>{
               const dow=[1,2,3,4,5,6,0][i];
@@ -3948,6 +3967,39 @@ function HairLengthCard({ hairLengths, setHairLengths, saveHairLength }) {
   );
 }
 
+function StreakSheet({ data, onClose }) {
+  if (!data) return null;
+  const {streak, pct, skipped} = data;
+  const msgs = [
+    "Your skin thanks you for showing up.",
+    "Consistency is the real luxury.",
+    "Every drop counts.",
+    "Small rituals, lasting results.",
+    "You're building something beautiful."
+  ];
+  const msg = msgs[streak % msgs.length];
+  return (
+    <div className="streak-sheet-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="streak-sheet">
+        <div className="streak-num">{streak}</div>
+        <div className="streak-label">{streak===1?"day streak":"day streak"}</div>
+        <div className="streak-msg">{msg}</div>
+        {skipped.length>0&&(
+          <div className="streak-skipped">
+            {skipped.length===1
+              ? `You skipped ${skipped[0]} — no worries, tomorrow is a new day.`
+              : `You skipped ${skipped.slice(0,-1).join(", ")} and ${skipped.slice(-1)[0]} — a gentle reminder for next time.`}
+          </div>
+        )}
+        <div style={{height:4,borderRadius:2,background:"#EEF4F0",overflow:"hidden",marginBottom:20}}>
+          <div style={{height:"100%",width:`${pct}%`,background:"#7EC49A",borderRadius:2,transition:"width .6s ease"}}/>
+        </div>
+        <button className="streak-close" onClick={onClose}>Done</button>
+      </div>
+    </div>
+  );
+}
+
 function RitualDebrief({ debrief, onClose }) {
   if (!debrief) return null;
   return (
@@ -4055,6 +4107,7 @@ export default function App({ user }) {
   const [freqPeriod,  setFreqPeriod]  = useState("year");
   const [modal,       setModal]       = useState(null);
   const [debrief,     setDebrief]     = useState(null); // null | {loading:true} | {heading,done,skipped}
+  const [streakSheet, setStreakSheet] = useState(null); // null | {streak, pct, skipped:[]}
   const [sessionSkipped, setSessionSkipped] = useState([]); // item ids explicitly skipped this session
   const [calMonth,    setCalMonth]    = useState({y:new Date().getFullYear(),m:new Date().getMonth()});
   const [selectedDay, setSelectedDay] = useState(today);
@@ -4307,49 +4360,15 @@ export default function App({ user }) {
   const saveEntry=async()=>{
     const e = getE(activeDate);
     await persistEntry(activeDate, e);
-    showT("✓ Entry saved");
-    // Trigger AI debrief
-    const routines = activeTab==="skin" ? skinR : hairR;
-    const doneItems = routines.filter(it => (activeTab==="skin" ? e.skin : e.hair)?.includes(it.id));
-    const skippedItems = routines.filter(it => !(activeTab==="skin" ? e.skin : e.hair)?.includes(it.id));
-    if (!doneItems.length && !skippedItems.length) return;
-    setDebrief({ loading: true });
-    try {
-      const prompt = `You are a luxury skincare & haircare ritual coach. The user just completed their ${activeTab} ritual log.
-
-Done today: ${doneItems.map(it => `${it.emoji} ${it.label}`).join(", ") || "nothing"}
-Skipped today: ${skippedItems.map(it => `${it.emoji} ${it.label}`).join(", ") || "nothing"}
-
-Respond ONLY with valid JSON (no markdown, no explanation):
-{
-  "heading": "A short poetic sentence (max 12 words) affirming what they did, or gently encouraging if they skipped a lot. No exclamation marks.",
-  "done": [{"name": "product name", "insight": "1–2 sentence insight about what this product does for them and why consistency matters. Warm, knowledgeable, luxury tone."}],
-  "skipped": [{"name": "product name", "nudge": "1 sentence — what this product helps with and a gentle reminder to use it next time. Never judgmental."}]
-}`;
-      const res = await fetch("/api/claude", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-haiku-4-5-20251001",
-          max_tokens: 600,
-          messages: [{ role: "user", content: prompt }],
-          userId: user?.id,
-          action: "ritual_debrief"
-        })
-      });
-      const data = await res.json();
-      const text = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
-      const match = text.match(/\{[\s\S]*\}/);
-      if (match) {
-        const parsed = JSON.parse(match[0]);
-        setDebrief(parsed);
-      } else {
-        setDebrief(null);
-      }
-    } catch(err) {
-      console.error("Debrief error:", err);
-      setDebrief(null);
-    }
+    // Compute streak
+    let streak=0, d=today;
+    while(true){const ev=getE(d);if(ev.skin?.length||ev.hair?.length){streak++;d=shiftD(d,-1);}else break;}
+    // Compute skipped
+    const allR=[...skinR,...hairR];
+    const doneIds=[...(e.skin||[]),...(e.hair||[])];
+    const skipped=allR.filter(it=>!doneIds.includes(it.id)).map(it=>it.label);
+    const pct=allR.length>0?Math.round(doneIds.length/allR.length*100):0;
+    setStreakSheet({streak,pct,skipped});
   };
   const persistRoutines = async (newSkin, newHair) => {
     if (!user) return;
@@ -4967,10 +4986,12 @@ Respond ONLY with valid JSON (no markdown, no explanation):
               };
 
               const isFutureDate = activeDate > today;
-              const completeSectionItems = (sectionItems) => {
+              const completeSectionItems = (sectionItems, sectionKey) => {
                 if (isFutureDate) return;
-                const skinItems = sectionItems.filter(it=>it._tab==="skin");
-                const hairItems = sectionItems.filter(it=>it._tab==="hair");
+                // Exclude "both" items — they cross-appear in both sections; complete individually
+                const exclusive = sectionItems.filter(it=>(it.time||"both")===(sectionKey==="morning"?"day":"night"));
+                const skinItems = exclusive.filter(it=>it._tab==="skin");
+                const hairItems = exclusive.filter(it=>it._tab==="hair");
                 const skinDone = e2.skin||[];
                 const hairDone = e2.hair||[];
                 const allDone = skinItems.every(it=>skinDone.includes(it.id)) && hairItems.every(it=>hairDone.includes(it.id));
@@ -5032,7 +5053,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                       : <div className={`pc-img ${bgClass}`}>{svg}</div>
                     }
                     <div className="pc-info">
-                      <div className="pc-brand" style={{fontSize:".62rem",opacity:.55,lineHeight:1.3}}>{linkedProd?.brand||it.emoji}</div>
+                      <div className="pc-brand" style={{fontSize:".62rem",opacity:.55,lineHeight:1.3}}>{it.label}</div>
                       <div className="pc-name">{linkedProd?.name||it.label}</div>
                       <div className="pc-cat-tag">{it._tab}</div>
                     </div>
@@ -5054,10 +5075,10 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                       <div className="log-section-head" onClick={()=>toggleSection("morning")} style={{cursor:"pointer"}}>
                         <div className="log-section-title"><SunIcon/> Morning <ChevronIcon collapsed={collapsedSections.morning}/></div>
                         <div className="log-section-actions" onClick={e=>e.stopPropagation()}>
-                          {!collapsedSections.morning&&<button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(morningItems);}}>
-                            {morningItems.every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"↩ Undo":"✓ All done"}
+                          {!collapsedSections.morning&&<button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(morningItems,"morning");}}>
+                            {morningItems.filter(it=>(it.time||"both")==="day").every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"↩ Undo":"✓ All done"}
                           </button>}
-                          <button className="log-sec-edit-btn" onClick={e=>{e.stopPropagation();setEditSection("morning");setModal("manageItems");}}><PencilIcon/></button>
+                          {!collapsedSections.morning&&<button className="log-sec-edit-btn" onClick={e=>{e.stopPropagation();setEditSection("morning");setModal("manageItems");}}><PencilIcon/></button>}
                         </div>
                       </div>
                       {!collapsedSections.morning && morningItems.map(renderCard)}
@@ -5068,10 +5089,10 @@ Respond ONLY with valid JSON (no markdown, no explanation):
                       <div className="log-section-head" onClick={()=>toggleSection("night")} style={{cursor:"pointer"}}>
                         <div className="log-section-title"><MoonIcon/> Evening <ChevronIcon collapsed={collapsedSections.night}/></div>
                         <div className="log-section-actions" onClick={e=>e.stopPropagation()}>
-                          {!collapsedSections.night&&<button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(nightItems);}}>
-                            {nightItems.every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"↩ Undo":"✓ All done"}
+                          {!collapsedSections.night&&<button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(nightItems,"night");}}>
+                            {nightItems.filter(it=>(it.time||"both")==="night").every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"↩ Undo":"✓ All done"}
                           </button>}
-                          <button className="log-sec-edit-btn" onClick={e=>{e.stopPropagation();setEditSection("night");setModal("manageItems");}}><PencilIcon/></button>
+                          {!collapsedSections.night&&<button className="log-sec-edit-btn" onClick={e=>{e.stopPropagation();setEditSection("night");setModal("manageItems");}}><PencilIcon/></button>}
                         </div>
                       </div>
                       {!collapsedSections.night && nightItems.map(renderCard)}
@@ -5088,7 +5109,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
               {MOODS.map(m=><button key={m} className={`mood-chip ${(activeTab==="skin"?entry.skin_mood:entry.hair_mood)===m?"on":""}`} onClick={()=>setMoodVal(activeDate,activeTab,m)}>{m}</button>)}
             </div>
             <div className="sec-label" style={{paddingTop:16,paddingBottom:8}}>
-              <span className="sec-tag">Notes</span>
+              <span className="sec-tag">How did your skin feel today?</span>
               <div className="sec-line"/>
             </div>
             <PhotoNotes notes={activeTab==="skin"?entry.skin_notes:entry.hair_notes} photos={curPhotos}
@@ -5568,6 +5589,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
         }}/>}
       {confirmDelete&&<ConfirmDialog message={confirmDelete.message} onConfirm={()=>{confirmDelete.onConfirm();setConfirmDelete(null);}} onCancel={()=>setConfirmDelete(null)}/>}
       {debrief&&<RitualDebrief debrief={debrief} onClose={()=>setDebrief(null)}/>}
+      {streakSheet&&<StreakSheet data={streakSheet} onClose={()=>setStreakSheet(null)}/>}
 
       {sideMenuEl}
     </div>
