@@ -111,24 +111,26 @@ body{font-family:'DM Sans',sans-serif;min-height:100vh;color:#1A2820;
 
 /* ── Morning / Night section cards ── */
 .log-section{border-radius:18px;padding:12px 12px 10px;margin:14px 14px 12px;position:relative;overflow:hidden}
-.log-section.morning{background:linear-gradient(135deg,rgba(255,148,74,.88) 0%,rgba(238,90,140,.86) 100%);border:1px solid rgba(255,130,100,.3)}
+.log-section.morning{background:rgba(238,248,242,.88);border:1px solid rgba(200,235,215,.7)}
 .log-section.night{background:rgba(15,27,53,.52);border:1px solid rgba(15,27,53,.4)}
 .log-section.night::before{content:'';position:absolute;inset:0;background:radial-gradient(1.5px 1.5px at 10% 12%,rgba(255,255,255,.9),transparent),radial-gradient(2px 2px at 32% 8%,rgba(255,255,255,.8),transparent),radial-gradient(1.5px 1.5px at 65% 14%,rgba(255,255,255,.85),transparent),radial-gradient(1px 1px at 82% 22%,rgba(255,255,255,.65),transparent),radial-gradient(2px 2px at 20% 38%,rgba(255,255,255,.6),transparent),radial-gradient(1px 1px at 50% 32%,rgba(255,255,255,.7),transparent),radial-gradient(1.5px 1.5px at 75% 50%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 40% 62%,rgba(255,255,255,.5),transparent),radial-gradient(2px 2px at 88% 68%,rgba(255,255,255,.65),transparent),radial-gradient(1px 1px at 25% 78%,rgba(255,255,255,.55),transparent),radial-gradient(1.5px 1.5px at 60% 82%,rgba(255,255,255,.45),transparent),radial-gradient(1px 1px at 6% 55%,rgba(255,255,255,.6),transparent),radial-gradient(2px 2px at 95% 42%,rgba(255,255,255,.5),transparent);pointer-events:none}
 .log-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;position:relative;z-index:1}
 .log-section-title{font-family:'Cormorant Garamond',serif;font-size:.95rem;font-weight:600;letter-spacing:.04em;display:flex;align-items:center;gap:6px}
-.log-section.morning .log-section-title{color:rgba(255,255,255,.95)}
+.log-section.morning .log-section-title{color:rgba(30,52,40,.82)}
 .log-section.night .log-section-title{color:rgba(255,255,255,.88)}
 .log-section-actions{display:flex;align-items:center;gap:8px}
-.log-sec-complete-btn{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:12px;padding:4px 11px;font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .15s;color:rgba(255,255,255,.92)}
+.log-sec-complete-btn{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.32);border-radius:12px;padding:4px 11px;font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .15s;color:rgba(255,255,255,.9)}
+.log-section.morning .log-sec-complete-btn{background:rgba(30,52,40,.08);border-color:rgba(30,52,40,.2);color:rgba(30,52,40,.78)}
 .log-sec-edit-btn{background:none;border:none;cursor:pointer;padding:2px;display:flex;align-items:center;opacity:.6;transition:opacity .15s;color:rgba(255,255,255,.85)}
+.log-section.morning .log-sec-edit-btn{color:rgba(30,52,40,.58)}
 .log-sec-edit-btn:active{opacity:.8}
 .log-section .pc-card{position:relative;z-index:1}
 .pc-cat-tag{display:inline-block;font-size:.58rem;font-weight:600;letter-spacing:.05em;text-transform:lowercase;color:rgba(80,80,80,.48);background:rgba(0,0,0,.05);border-radius:8px;padding:1px 5px;margin-top:2px;line-height:1.4}
 
 /* ── Week strip ── */
-.week-strip{display:flex;gap:2px;padding:18px 14px 0;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.week-strip{display:flex;gap:0;padding:18px 0 0;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .week-strip::-webkit-scrollbar{display:none}
-.wday{flex-shrink:0;width:46px;scroll-snap-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;position:relative}
+.wday{flex-shrink:0;width:calc(100vw / 7);scroll-snap-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;position:relative}
 .wday-lbl{font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);font-weight:600}
 .wday-lbl.active-lbl{color:rgba(255,255,255,.95);font-weight:700}
 .wday-ring{position:relative;display:flex;align-items:center;justify-content:center}
@@ -4815,7 +4817,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
           <>
             {(()=>{
               const DOW_SHORT = ["Su","Mo","Tu","We","Th","Fr","Sa"];
-              const weekDates = Array.from({length:68}, (_,i) => shiftD(today, i-60));
+              const weekDates = Array.from({length:30}, (_,i) => shiftD(today, i-23));
               return (
                 <div className="week-strip">
                   {weekDates.map((d) => {
