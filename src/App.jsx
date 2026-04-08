@@ -4938,9 +4938,12 @@ Respond ONLY with valid JSON (no markdown, no explanation):
               const filterFn = it => logFilter==="all" || it._tab===logFilter;
               const e2 = getE(activeDate);
 
-              const getLinkedProduct = (itemId) => products.find(p=>p.id===(
-                [...skinR,...hairR].find(r=>r.id===itemId)?.productId
-              ));
+              const getLinkedProduct = (itemId) => {
+                const routineItem = [...skinR,...hairR].find(r=>r.id===itemId);
+                const productId = routineItem?.productId
+                  || schedules.find(s=>s.itemId===itemId)?.linkedProductId;
+                return products.find(p=>p.id===productId);
+              };
 
               const isFutureDate = activeDate > today;
               const completeSectionItems = (sectionItems) => {
