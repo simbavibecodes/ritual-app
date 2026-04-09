@@ -5198,6 +5198,48 @@ export default function App({ user }) {
                 </div>
               );
             })()}
+
+            {/* ── Habit Frequency ── */}
+            <hr style={{border:"none",borderTop:"1px solid rgba(255,255,255,.12)",margin:"20px 14px"}}/>
+            <div className="sec-head">
+              <div className="sec-title">Habit Frequency</div>
+              <button className="ghost-btn" onClick={()=>setModal("freq")}>⚙️ Configure</button>
+            </div>
+            <div className="period-row">
+              {["week","month","year"].map(p=>(
+                <button key={p} className={`period-chip ${freqPeriod===p?"on":""}`}
+                  onClick={async()=>{ setFreqPeriod(p); await supabase.from('freq_settings').upsert({user_id:user.id,period:p,tracked:freqTracked,updated_at:new Date().toISOString()},{onConflict:'user_id'}); }}>
+                  This {p[0].toUpperCase()+p.slice(1)}
+                </button>
+              ))}
+            </div>
+            {!freqTracked.length?(
+              <div style={{textAlign:"center",padding:"32px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No habits tracked — tap Configure</div>
+            ):freqTracked.map(id=>{
+              const it=allItems.find(x=>x.id===id); if(!it) return null;
+              const {count,possible}=freqStats(id);
+              const pct=possible>0?Math.round((count/possible)*100):0;
+              return (
+                <div key={id} className="freq-card">
+                  <div className="freq-top">
+                    <span className="freq-emoji">{it.emoji}</span>
+                    <span className="freq-label">{it.label}</span>
+                    <span className="freq-count">{count} / {possible} days</span>
+                  </div>
+                  <div className="freq-bar-bg"><div className="freq-bar-fill" style={{width:`${pct}%`}}/></div>
+                  <div className="freq-sub">{pct}% of days {freqRange().label}</div>
+                </div>
+              );
+            })}
+            {treatments.length>0&&<>
+              <div className="sec-head" style={{marginTop:28}}>
+                <div className="sec-title">Treatment History</div>
+              </div>
+              {treatments.map(tx=>{
+                const done=tx.completedDates||[];
+                return (<TreatmentHistoryCard key={tx.id} tx={tx} doneDates={done}/>);
+              })}
+            </>}
           </>
         )}
 
@@ -5213,16 +5255,6 @@ export default function App({ user }) {
                 </button>
                 <button className="ghost-btn" onClick={()=>setModal("plan")}>+ Add</button>
               </div>
-            </div>
-            {/* ── Products shortcut ── */}
-            <div style={{margin:"0 14px 16px",display:"flex",alignItems:"center",gap:10,background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.2)",borderRadius:14,padding:"11px 14px",cursor:"pointer"}}
-              onClick={()=>setPageView("products")}>
-              <span style={{fontSize:"1.1rem"}}>💄</span>
-              <div style={{flex:1}}>
-                <div style={{fontSize:".82rem",color:"rgba(255,255,255,.9)",fontWeight:500}}>My Products</div>
-                <div style={{fontSize:".68rem",color:"rgba(255,255,255,.5)",marginTop:1}}>{products.length} product{products.length!==1?"s":""} in your library</div>
-              </div>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
 
             {/* ── Filter tabs ── */}
@@ -5471,66 +5503,54 @@ export default function App({ user }) {
               );
             })()}
 
-            {/* ── Habit Frequency (merged into Insights) ── */}
-            <hr style={{border:"none",borderTop:"1px solid rgba(255,255,255,.12)",margin:"20px 14px"}}/>
+            {/* ── My Products ── */}
+            <hr style={{border:"none",borderTop:"1px solid rgba(255,255,255,.12)",margin:"24px 14px 16px"}}/>
             <div className="sec-head">
-              <div className="sec-title">Habit Frequency</div>
-              <button className="ghost-btn" onClick={()=>setModal("freq")}>⚙️ Configure</button>
+              <div className="sec-title">My Products</div>
+              <button className="ghost-btn" onClick={()=>setPageView("products")}>Manage</button>
             </div>
-            <div className="period-row">
-              {["week","month","year"].map(p=>(
-                <button key={p} className={`period-chip ${freqPeriod===p?"on":""}`}
-                  onClick={async()=>{ setFreqPeriod(p); await supabase.from('freq_settings').upsert({user_id:user.id,period:p,tracked:freqTracked,updated_at:new Date().toISOString()},{onConflict:'user_id'}); }}>
-                  This {p[0].toUpperCase()+p.slice(1)}
-                </button>
-              ))}
-            </div>
-            {!freqTracked.length?(
-              <div style={{textAlign:"center",padding:"32px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No habits tracked — tap Configure</div>
-            ):freqTracked.map(id=>{
-              const it=allItems.find(x=>x.id===id); if(!it) return null;
-              const {count,possible}=freqStats(id);
-              const pct=possible>0?Math.round((count/possible)*100):0;
-              return (
-                <div key={id} className="freq-card">
-                  <div className="freq-top">
-                    <span className="freq-emoji">{it.emoji}</span>
-                    <span className="freq-label">{it.label}</span>
-                    <span className="freq-count">{count} / {possible} days</span>
+            {products.length===0?(
+              <div style={{textAlign:"center",padding:"24px 0",color:"rgba(255,255,255,.45)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem"}}>No products yet — tap Manage to add</div>
+            ):(
+              <div style={{display:"flex",flexDirection:"column",gap:8,padding:"0 14px 8px"}}>
+                {products.map(p=>(
+                  <div key={p.id} onClick={()=>setPageView("products")}
+                    style={{display:"flex",alignItems:"center",gap:12,background:"rgba(255,255,255,.88)",border:"1px solid rgba(255,255,255,.9)",borderRadius:14,padding:"10px 13px",cursor:"pointer",boxShadow:"0 2px 8px rgba(0,0,0,.05)"}}>
+                    <div style={{width:40,height:40,borderRadius:10,overflow:"hidden",background:"#EEF4F0",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.2rem"}}>
+                      {(p.image||p.media_url)?<img src={p.image||p.media_url} alt={p.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>🧴</span>}
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:".84rem",color:"#1A2820",fontWeight:500,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
+                      {p.brand&&<div style={{fontSize:".68rem",color:"#9AB0A4",marginTop:1}}>{p.brand}</div>}
+                    </div>
+                    <div style={{fontSize:".66rem",background:"#EEF4F0",color:"#6B8C7A",borderRadius:8,padding:"2px 7px",flexShrink:0,textTransform:"capitalize"}}>{p.category||"skin"}</div>
                   </div>
-                  <div className="freq-bar-bg"><div className="freq-bar-fill" style={{width:`${pct}%`}}/></div>
-                  <div className="freq-sub">{pct}% of days {freqRange().label}</div>
-                </div>
-              );
-            })}
-          {treatments.length>0&&<>
-            <div className="sec-head" style={{marginTop:28}}>
-              <div className="sec-title">Treatment History</div>
-            </div>
-            {treatments.map(tx=>{
-              const done=tx.completedDates||[];
-              return (
-                <TreatmentHistoryCard key={tx.id} tx={tx} doneDates={done}/>
-              );
-            })}
-          </>}
-
+                ))}
+              </div>
+            )}
           </>
         )}
-        <nav className="bottom-nav">
-          {[["log","⌂","Log"],["plan","◈","Routines"],["insights","◎","Insights"],["shopping","◫","Shop"]].map(([v,icon,lbl])=>(
-            <button key={v} className={`bnav ${view===v?"active":""}`} onClick={()=>{
+      </div>
+      )}
+      <nav className="bottom-nav">
+        {[["log","⌂","Log"],["plan","◈","Routines"],["insights","◎","Insights"],["shopping","◫","Shop"]].map(([v,icon,lbl])=>{
+          const isActive = v==="shopping"
+            ? (pageView==="purchases"||pageView==="wishlist")
+            : v==="plan"
+            ? (view===v||pageView==="products")
+            : !pageView&&view===v;
+          return (
+            <button key={v} className={`bnav ${isActive?"active":""}`} onClick={()=>{
               if(v==="shopping"){ setPageView("purchases"); }
-              else setView(v);
+              else { setPageView(null); setView(v); }
             }}>
               <span className="bnav-icon">{icon}</span>
               <div className="bnav-dot"/>
               <span className="bnav-lbl">{lbl}</span>
             </button>
-          ))}
-        </nav>
-      </div>
-      )}
+          );
+        })}
+      </nav>
 
       {modal==="manageItems"&&<ManageItemsModal
         type={activeTab}
