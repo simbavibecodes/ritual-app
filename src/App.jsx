@@ -5122,7 +5122,7 @@ export default function App({ user }) {
           </>
         )}
 
-        {view==="history"&&(
+        {view==="insights"&&(
           <>
 
             <div className="cal-wrap">
@@ -5203,7 +5203,7 @@ export default function App({ user }) {
 
         {view==="plan"&&(
           <>
-            {/* ── Plans header ── */}
+            {/* ── Routines header ── */}
             <div className="sec-head">
               <div className="sec-title">Routines</div>
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -5213,6 +5213,16 @@ export default function App({ user }) {
                 </button>
                 <button className="ghost-btn" onClick={()=>setModal("plan")}>+ Add</button>
               </div>
+            </div>
+            {/* ── Products shortcut ── */}
+            <div style={{margin:"0 14px 16px",display:"flex",alignItems:"center",gap:10,background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.2)",borderRadius:14,padding:"11px 14px",cursor:"pointer"}}
+              onClick={()=>setPageView("products")}>
+              <span style={{fontSize:"1.1rem"}}>💄</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:".82rem",color:"rgba(255,255,255,.9)",fontWeight:500}}>My Products</div>
+                <div style={{fontSize:".68rem",color:"rgba(255,255,255,.5)",marginTop:1}}>{products.length} product{products.length!==1?"s":""} in your library</div>
+              </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
 
             {/* ── Filter tabs ── */}
@@ -5460,11 +5470,9 @@ export default function App({ user }) {
                 </>
               );
             })()}
-          </>
-        )}
 
-        {view==="frequency"&&(
-          <>
+            {/* ── Habit Frequency (merged into Insights) ── */}
+            <hr style={{border:"none",borderTop:"1px solid rgba(255,255,255,.12)",margin:"20px 14px"}}/>
             <div className="sec-head">
               <div className="sec-title">Habit Frequency</div>
               <button className="ghost-btn" onClick={()=>setModal("freq")}>⚙️ Configure</button>
@@ -5507,13 +5515,14 @@ export default function App({ user }) {
             })}
           </>}
 
-          <hr style={{border:"none",borderTop:"1px solid rgba(255,255,255,.15)",margin:"28px 0 20px"}}/>
-          <SpendingSummary purchases={purchases} period={freqPeriod} onGoToPurchases={()=>setPageView("purchases")}/>
           </>
         )}
         <nav className="bottom-nav">
-          {[["log","⌂","Log"],["plan","◈","Routines"],["history","◻","History"],["frequency","◷","Stats"]].map(([v,icon,lbl])=>(
-            <button key={v} className={`bnav ${view===v?"active":""}`} onClick={()=>setView(v)}>
+          {[["log","⌂","Log"],["plan","◈","Routines"],["insights","◎","Insights"],["shopping","◫","Shop"]].map(([v,icon,lbl])=>(
+            <button key={v} className={`bnav ${view===v?"active":""}`} onClick={()=>{
+              if(v==="shopping"){ setPageView("purchases"); }
+              else setView(v);
+            }}>
               <span className="bnav-icon">{icon}</span>
               <div className="bnav-dot"/>
               <span className="bnav-lbl">{lbl}</span>
