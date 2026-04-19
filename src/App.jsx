@@ -812,7 +812,7 @@ function SpendingSummary({ purchases, period, onGoToPurchases }) {
 // ProductSearch removed — Open Beauty Facts data was low quality.
 // Global product autofill will be re-introduced when the in-house catalog has sufficient data.
 
-function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill, onSave, onDelete, onBack, onHome, onMenuOpen }) {
+function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill, onSave, onDelete, onBack, onHome, onMenuOpen, userCategories }) {
   const today = fmt(new Date());
   const thisYear = new Date().getFullYear().toString();
   const [addMode, setAddMode] = useState(null); // null | "source" | "picker" | "form"
@@ -979,10 +979,19 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
         </div>
       )}
 
-      <div style={{display:"flex",gap:6,marginBottom:16}}>
-        {[["all","All"],["skin","🌿 Skin"],["hair","✨ Hair"],["treatment","💉 Treatment"]].map(([v,l])=>(
-          <button key={v} className={`period-chip ${filterCat===v?"on":""}`} style={{flex:1,fontSize:".74rem",padding:"6px 4px"}} onClick={()=>setFilterCat(v)}>{l}</button>
-        ))}
+      <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
+        {(() => {
+          // Build the purchase-filter tabs dynamically from the user's
+          // categories. "treatment" is always appended because treatments
+          // live in the same purchases table but aren't a user category.
+          const cats = (userCategories && userCategories.length > 0) ? userCategories : ["skin","hair"];
+          const tabs = [["all","All"]];
+          cats.forEach(c => tabs.push([c, c.charAt(0).toUpperCase() + c.slice(1)]));
+          tabs.push(["treatment","Treatment"]);
+          return tabs.map(([v,l])=>(
+            <button key={v} className={`period-chip ${filterCat===v?"on":""}`} style={{flex:1,minWidth:64,fontSize:".74rem",padding:"6px 4px"}} onClick={()=>setFilterCat(v)}>{l}</button>
+          ));
+        })()}
       </div>
 
       {/* ── Source picker ── */}
@@ -1107,13 +1116,17 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
               <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editP.name} onChange={e=>setEditP(p=>({...p,name:e.target.value}))} autoFocus/>
               <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={editP.brand||""} onChange={e=>setEditP(p=>({...p,brand:e.target.value}))}/>
               <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL — enables Buy Now" value={editP.link||""} onChange={e=>setEditP(p=>({...p,link:e.target.value}))}/>
-              <div style={{display:"flex",gap:8,marginBottom:10}}>
-                {["skin","hair","treatment"].map(cat=>(
-                  <button key={cat} className={`dow-chip ${editP.category===cat?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".74rem"}}
-                    onClick={()=>setEditP(p=>({...p,category:cat}))}>
-                    {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
-                  </button>
-                ))}
+              <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+                {(() => {
+                  const cats = (userCategories && userCategories.length > 0) ? userCategories : ["skin","hair"];
+                  const opts = [...cats, "treatment"];
+                  return opts.map(cat=>(
+                    <button key={cat} className={`dow-chip ${editP.category===cat?"on":""}`} style={{flex:1,minWidth:70,textAlign:"center",fontSize:".74rem"}}
+                      onClick={()=>setEditP(p=>({...p,category:cat}))}>
+                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    </button>
+                  ));
+                })()}
               </div>
               <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
                 {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
@@ -4092,6 +4105,10 @@ export default function App({ user }) {
   const [view,        setView]        = useState(() => sessionStorage.getItem('ritual_view') || "log");
   const [activeTab,   setActiveTab]   = useState("skin");
   const [logFilter,   setLogFilter]   = useState("all");
+  // User-defined categories loaded from `user_categories`. Defaults to
+  // ["skin","hair"] for existing users (or until the row is loaded) so
+  // all legacy skin/hair logic keeps working. Lowercased.
+  const [userCategories, setUserCategories] = useState(["skin", "hair"]);
   const activeDayRef = useRef(null);
   const weekStripRef = useRef(null);
   const [wdayW, setWdayW] = useState(0);
@@ -4164,6 +4181,7 @@ export default function App({ user }) {
           { data: freqRows },
           { data: hlRows },
           { data: txRows },
+          { data: catRows, error: catErr },
         ] = await Promise.all([
           supabase.from("entries").select("*").eq("user_id", user.id),
           supabase.from("routines").select("*").eq("user_id", user.id),
@@ -4171,7 +4189,14 @@ export default function App({ user }) {
           supabase.from("freq_settings").select("*").eq("user_id", user.id).single(),
           supabase.from("hair_lengths").select("*").eq("user_id", user.id),
           supabase.from("treatments").select("*").eq("user_id", user.id),
+          supabase.from("user_categories").select("*").eq("user_id", user.id).order("order_index", { ascending: true }),
         ]);
+
+        // Resolve user categories. If the user has none (legacy users or the
+        // table doesn't exist yet), fall back to the original skin/hair pair.
+        if (!catErr && catRows && catRows.length > 0) {
+          setUserCategories(catRows.map(r => (r.name || "").toLowerCase()).filter(Boolean));
+        }
 
         if (entryRows) {
           const map = {};
@@ -4785,7 +4810,7 @@ export default function App({ user }) {
   return (
     <div>
       <style>{STYLES}</style>
-      {pageView==="purchases"&&<PurchasesPage purchases={purchases} products={products} wishlist={wishlist} prefill={prefillPurchase} onClearPrefill={()=>setPrefillPurchase(null)} onSave={savePurchase} onDelete={confirmDeletePurchase} onBack={()=>setPageView(null)} onHome={goHome} onMenuOpen={()=>setSideMenu(true)}/>}
+      {pageView==="purchases"&&<PurchasesPage purchases={purchases} products={products} wishlist={wishlist} prefill={prefillPurchase} onClearPrefill={()=>setPrefillPurchase(null)} onSave={savePurchase} onDelete={confirmDeletePurchase} onBack={()=>setPageView(null)} onHome={goHome} onMenuOpen={()=>setSideMenu(true)} userCategories={userCategories}/>}
       {pageView==="products"&&<MyProductsPage
         products={products}
         snapshots={snapshots}
@@ -4847,8 +4872,15 @@ export default function App({ user }) {
             </div>
             <div className="log-filter-row">
               <button className={`log-fpill ${logFilter==="all"?"active":""}`} onClick={()=>setLogFilter("all")}>All</button>
-              <button className={`log-fpill ${logFilter==="skin"?"active":""}`} onClick={()=>setLogFilter("skin")}>Skin</button>
-              <button className={`log-fpill ${logFilter==="hair"?"active":""}`} onClick={()=>setLogFilter("hair")}>Hair</button>
+              {userCategories.map(cat => (
+                <button
+                  key={cat}
+                  className={`log-fpill ${logFilter===cat?"active":""}`}
+                  onClick={()=>setLogFilter(cat)}
+                >
+                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </button>
+              ))}
             </div>
           </>
         ) : (
