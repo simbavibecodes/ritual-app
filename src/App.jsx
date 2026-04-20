@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, Fragment } from "react";
 import { supabase } from "./supabase";
 
 const DEFAULT_SKIN = [
@@ -836,6 +836,8 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
   const [historyItem, setHistoryItem] = useState(null);
 
   const blank = (cat, extra={}) => ({ id:uid(), name:"", brand:"", category:cat, price:"", quantity:"1", date:today, notes:"", tags:[], image:"", link:"", treatment_type:"", product_id:null, ...extra });
+  const catIconFor = c => c==="skin"?"🌿":c==="hair"?"✨":c==="treatment"?"💉":"○";
+  const catLabelFor = c => c==="treatment"?"Treatment":(c?c.charAt(0).toUpperCase()+c.slice(1):"");
 
   useEffect(()=>{
     if (prefill) { setEditP({...prefill, price:String(prefill.price||""), quantity:String(prefill.quantity||1), treatment_type:prefill.treatment_type||"", product_id:prefill.product_id||null}); setAddMode("form"); onClearPrefill&&onClearPrefill(); }
@@ -869,21 +871,28 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
     : (wishlist||[]).filter(p=>!pickerSearch||p.name.toLowerCase().includes(pickerSearch.toLowerCase())||(p.brand||"").toLowerCase().includes(pickerSearch.toLowerCase()));
 
   const YearSplit = ({ps}) => {
-    const skin=ps.filter(p=>p.category==="skin").reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
-    const hair=ps.filter(p=>p.category==="hair").reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
-    const tx=ps.filter(p=>p.category==="treatment").reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0);
-    const total=skin+hair+tx||1;
+    const userCats = (userCategories && userCategories.length) ? userCategories : ["skin","hair"];
+    const dataCats = Array.from(new Set(ps.map(p=>p.category).filter(Boolean)));
+    const extras = dataCats.filter(c => !userCats.includes(c) && c !== "treatment");
+    const cats = [...userCats, ...extras, "treatment"];
+    const sums = cats.map(c => [c,
+      ps.filter(p=>p.category===c).reduce((s,p)=>s+(parseFloat(p.price)||0)*(parseInt(p.quantity)||1),0)
+    ]).filter(([,v]) => v > 0);
+    const total = sums.reduce((t,[,v]) => t+v, 0) || 1;
+    const palette = ["#7EC49A","#A0C0D4","#1E3428","#C8B8A0","#B07A5E","#9A7A30","#6B8C7A","#243D30"];
+    const colorFor = (cat, i) => cat==="skin"?"#7EC49A":cat==="hair"?"#A0C0D4":cat==="treatment"?"#1E3428":palette[(i+3)%palette.length];
+    const labelFor = cat => cat==="treatment"?"Tx":cat.charAt(0).toUpperCase()+cat.slice(1);
     return (
       <div style={{marginTop:8}}>
         <div style={{display:"flex",height:6,borderRadius:4,overflow:"hidden",marginBottom:6}}>
-          {skin>0&&<div style={{flex:skin/total,background:"#7EC49A"}}/>}
-          {hair>0&&<div style={{flex:hair/total,background:"#A0C0D4"}}/>}
-          {tx>0&&<div style={{flex:tx/total,background:"#1E3428"}}/>}
+          {sums.map(([cat,v],i)=>(
+            <div key={cat} style={{flex:v/total,background:colorFor(cat,i)}}/>
+          ))}
         </div>
-        <div style={{display:"flex",gap:10,fontSize:".68rem",color:"rgba(255,255,255,.65)"}}>
-          {skin>0&&<span>Skin ${skin.toFixed(0)}</span>}
-          {hair>0&&<span>Hair ${hair.toFixed(0)}</span>}
-          {tx>0&&<span>Tx ${tx.toFixed(0)}</span>}
+        <div style={{display:"flex",gap:10,fontSize:".68rem",color:"rgba(255,255,255,.65)",flexWrap:"wrap"}}>
+          {sums.map(([cat,v])=>(
+            <span key={cat}>{labelFor(cat)} ${v.toFixed(0)}</span>
+          ))}
         </div>
       </div>
     );
@@ -947,7 +956,7 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
     <div className="purch-card" style={{cursor:"pointer"}} onClick={()=>setHistoryItem(p)}>
       {p.image
         ?<img src={p.image} alt="" style={{width:40,height:40,objectFit:"cover",borderRadius:8,flexShrink:0}}/>
-        :<div style={{fontSize:"1.1rem",flexShrink:0}}>{p.category==="skin"?"🌿":p.category==="treatment"?"💉":"✨"}</div>
+        :<div style={{fontSize:"1.1rem",flexShrink:0}}>{catIconFor(p.category)}</div>
       }
       <div className="purch-info">
         <div className="purch-name">{p.name}</div>
@@ -1006,7 +1015,7 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
         const allProds = [...(products||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)), ...(wishlist||[]).slice().sort((a,b)=>(b.priority||0)-(a.priority||0))];
         const featured = allProds.slice(0,6);
         const pickItem = item => {
-          setEditP(blank(item.category||"skin",{name:item.name,brand:item.brand||"",image:item.image||"",link:item.link||"",price:String(item.price||""),product_id:(products||[]).find(p=>p.id===item.id)?item.id:null}));
+          setEditP(blank(item.category||(userCategories&&userCategories[0])||"skin",{name:item.name,brand:item.brand||"",image:item.image||"",link:item.link||"",price:String(item.price||""),product_id:(products||[]).find(p=>p.id===item.id)?item.id:null}));
           setAddMode("form");
         };
         return (
@@ -1061,7 +1070,7 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
         const q = pickerSearch.toLowerCase();
         const visible = q ? allProds.filter(p=>p.name.toLowerCase().includes(q)||(p.brand||"").toLowerCase().includes(q)) : allProds;
         const pickItem = item => {
-          setEditP(blank(item.category||"skin",{name:item.name,brand:item.brand||"",image:item.image||"",link:item.link||"",price:String(item.price||""),product_id:(products||[]).find(p=>p.id===item.id)?item.id:null}));
+          setEditP(blank(item.category||(userCategories&&userCategories[0])||"skin",{name:item.name,brand:item.brand||"",image:item.image||"",link:item.link||"",price:String(item.price||""),product_id:(products||[]).find(p=>p.id===item.id)?item.id:null}));
           setPickerSearch(""); setAddMode("form");
         };
         return (
@@ -1085,7 +1094,7 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
                 </div>
               ))}
               {/* Add New square */}
-              <div onClick={()=>{setPickerSearch("");setEditP(blank("skin"));setAddMode("form");}}
+              <div onClick={()=>{setPickerSearch("");setEditP(blank((userCategories&&userCategories[0])||"skin"));setAddMode("form");}}
                 style={{width:"calc(33.33% - 7px)",display:"flex",flexDirection:"column",alignItems:"center",gap:5,cursor:"pointer"}}>
                 <div style={{width:"100%",aspectRatio:"1",borderRadius:12,border:"1.5px dashed rgba(255,255,255,.3)",background:"transparent",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>
                   <span style={{fontSize:"1.2rem",color:"rgba(255,255,255,.6)"}}>+</span>
@@ -1236,7 +1245,14 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
 
 
 // ── WISHLIST PAGE ──────────────────────────────────────────────
-function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, onSavePlanned, onDeletePlanned, onMovePlannedToPurchase, onMoveToCart, onBack, onHome, onMenuOpen }) {
+function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, onSavePlanned, onDeletePlanned, onMovePlannedToPurchase, onMoveToCart, onBack, onHome, onMenuOpen, userCategories = [] }) {
+  const _wUserCats = (userCategories && userCategories.length) ? userCategories : ["skin","hair"];
+  const _wDataCats = Array.from(new Set((wishlist||[]).map(w=>w.category).filter(Boolean)));
+  const _wExtra = _wDataCats.filter(c => !_wUserCats.includes(c) && c !== "treatment");
+  const wishCats = [..._wUserCats, ..._wExtra, "treatment"];
+  const wIcon  = c => c==="skin"?"🌿":c==="hair"?"✨":c==="treatment"?"💉":"○";
+  const wLabel = c => c==="treatment"?"Treatment":(c.charAt(0).toUpperCase()+c.slice(1));
+  const wLabelShort = c => c==="treatment"?"Treat":wLabel(c);
   const today = fmt(new Date());
   const [tab, setTab] = useState("wishlist"); // "wishlist" | "staples" | "planned"
   const [showForm, setShowForm] = useState(false);
@@ -1248,7 +1264,7 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
   const [newPlanned, setNewPlanned] = useState(null);
 
   const blankWish = (cat) => ({ id:uid(), name:"", brand:"", category:cat, image:"", link:"", notes:"", tags:[], priority:0 });
-  const blankPlanned = () => ({ id:uid(), name:"", brand:"", category:"skin", image:"", link:"", price:"", notes:"", product_id:null, wishlist_id:null });
+  const blankPlanned = () => ({ id:uid(), name:"", brand:"", category:_wUserCats[0]||"skin", image:"", link:"", price:"", notes:"", product_id:null, wishlist_id:null });
   const saveWish = () => { if(!editItem.name.trim()) return; onSave(editItem); setShowForm(false); setEditItem(null); };
   const savePlanned = () => { if(!newPlanned.name.trim()) return; onSavePlanned(newPlanned); setShowPlannedForm(false); setNewPlanned(null); };
 
@@ -1290,11 +1306,11 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
           <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.2)",borderRadius:16,padding:"18px",marginBottom:16}}>
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"rgba(255,255,255,.8)",marginBottom:14}}>What are you wishing for?</div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
+              {wishCats.map(cat=>(
                 <button key={cat} onClick={()=>{setEditItem(blankWish(cat));setShowForm(true);setChooseCat(false);}}
                   style={{display:"flex",alignItems:"center",gap:12,background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:12,padding:"12px 16px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
-                  <span style={{fontSize:"1.3rem"}}>{emoji}</span>
-                  <span style={{fontSize:".88rem",color:"rgba(255,255,255,.85)",fontWeight:500}}>{label} Product</span>
+                  <span style={{fontSize:"1.3rem"}}>{wIcon(cat)}</span>
+                  <span style={{fontSize:".88rem",color:"rgba(255,255,255,.85)",fontWeight:500}}>{wLabel(cat)} Product</span>
                 </button>
               ))}
               <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".78rem",color:"rgba(255,255,255,.55)",cursor:"pointer",marginTop:4}}>Cancel</button>
@@ -1311,11 +1327,11 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
             <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={editItem.name} onChange={e=>setEditItem(p=>({...p,name:e.target.value}))}/>
             <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={editItem.brand||""} onChange={e=>setEditItem(p=>({...p,brand:e.target.value}))}/>
             <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product URL" value={editItem.link||""} onChange={e=>setEditItem(p=>({...p,link:e.target.value}))}/>
-            <div style={{display:"flex",gap:8,marginBottom:10}}>
-              {["skin","hair","treatment"].map(cat=>(
-                <button key={cat} className={`dow-chip ${editItem.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
+            <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+              {wishCats.map(cat=>(
+                <button key={cat} className={`dow-chip ${editItem.category===cat?"on":""}`} style={{flex:"1 1 auto",fontSize:".74rem",textAlign:"center"}}
                   onClick={()=>setEditItem(p=>({...p,category:cat}))}>
-                  {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
+                  {wIcon(cat)} {wLabelShort(cat)}
                 </button>
               ))}
             </div>
@@ -1347,7 +1363,7 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
           <div key={item.id} className="wish-card">
             {item.image
               ?<img src={item.image} alt="" style={{width:52,height:52,objectFit:"cover",borderRadius:10,flexShrink:0}}/>
-              :<div style={{width:52,height:52,borderRadius:10,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{item.category==="skin"?"🌿":item.category==="treatment"?"💉":"✨"}</div>
+              :<div style={{width:52,height:52,borderRadius:10,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{wIcon(item.category)}</div>
             }
             <div style={{flex:1,minWidth:0}}>
               <div className="wish-name">{item.name}</div>
@@ -1357,7 +1373,7 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
               <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
                 {item.link&&<button onClick={()=>openUrl(item.link)} style={{background:"#1E3428",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
                 <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>onMoveToCart(item)}>✓ Purchased</button>
-                <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setNewPlanned({...blankPlanned(),name:item.name,brand:item.brand||"",category:item.category||"skin",image:item.image||"",link:item.link||"",notes:item.notes||"",wishlist_id:item.id});setShowPlannedForm(true);setTab("planned");}}>📋 Plan</button>
+                <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setNewPlanned({...blankPlanned(),name:item.name,brand:item.brand||"",category:item.category||_wUserCats[0]||"skin",image:item.image||"",link:item.link||"",notes:item.notes||"",wishlist_id:item.id});setShowPlannedForm(true);setTab("planned");}}>📋 Plan</button>
                 <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setEditItem({...item});setShowForm(true);}}>Edit</button>
                 <button className="del-btn" style={{fontSize:".74rem"}} onClick={()=>onDelete(item.id)}>✕</button>
               </div>
@@ -1373,7 +1389,7 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
           <div key={p.id} className="staple-card">
             {p.image
               ?<img src={p.image} alt="" style={{width:52,height:52,objectFit:"cover",borderRadius:10,flexShrink:0}}/>
-              :<div style={{width:52,height:52,borderRadius:10,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{p.category==="skin"?"🌿":"✨"}</div>
+              :<div style={{width:52,height:52,borderRadius:10,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>{wIcon(p.category)}</div>
             }
             <div style={{flex:1,minWidth:0}}>
               <div className="wish-name">⭐ {p.name}</div>
@@ -1381,7 +1397,7 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
               {p.notes&&<div style={{fontSize:".72rem",color:"#6B8C7A",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
               <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
                 {p.link&&<button onClick={()=>openUrl(p.link)} style={{background:"#1E3428",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
-                <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setNewPlanned({...blankPlanned(),name:p.name,brand:p.brand||"",category:p.category||"skin",image:p.image||"",link:p.link||"",price:String(p.price||""),product_id:p.id});setShowPlannedForm(true);setTab("planned");}}>📋 Plan to Buy</button>
+                <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setNewPlanned({...blankPlanned(),name:p.name,brand:p.brand||"",category:p.category||_wUserCats[0]||"skin",image:p.image||"",link:p.link||"",price:String(p.price||""),product_id:p.id});setShowPlannedForm(true);setTab("planned");}}>📋 Plan to Buy</button>
               </div>
             </div>
           </div>
@@ -1410,11 +1426,11 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
             </div>
             <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name *" value={newPlanned.name} onChange={e=>setNewPlanned(p=>({...p,name:e.target.value}))} autoFocus/>
             <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={newPlanned.brand||""} onChange={e=>setNewPlanned(p=>({...p,brand:e.target.value}))}/>
-            <div style={{display:"flex",gap:8,marginBottom:10}}>
-              {["skin","hair","treatment"].map(cat=>(
-                <button key={cat} className={`dow-chip ${newPlanned.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
+            <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+              {wishCats.map(cat=>(
+                <button key={cat} className={`dow-chip ${newPlanned.category===cat?"on":""}`} style={{flex:"1 1 auto",fontSize:".74rem",textAlign:"center"}}
                   onClick={()=>setNewPlanned(p=>({...p,category:cat}))}>
-                  {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
+                  {wIcon(cat)} {wLabelShort(cat)}
                 </button>
               ))}
             </div>
@@ -1434,7 +1450,7 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
               <button onClick={()=>onDeletePlanned(item.id)} style={{position:"absolute",top:6,right:6,background:"none",border:"none",cursor:"pointer",color:"#c09080",fontSize:".76rem",padding:"2px 5px",lineHeight:1,zIndex:1}}>✕</button>
               {item.image
                 ?<img src={item.image} alt="" style={{width:72,height:72,borderRadius:12,objectFit:"cover"}}/>
-                :<div style={{width:72,height:72,borderRadius:12,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2rem"}}>{item.category==="skin"?"🌿":item.category==="treatment"?"💉":"✨"}</div>
+                :<div style={{width:72,height:72,borderRadius:12,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2rem"}}>{wIcon(item.category)}</div>
               }
               <div style={{textAlign:"center",width:"100%"}}>
                 <div style={{fontSize:".82rem",fontWeight:500,color:"#1A2820",lineHeight:1.3,marginBottom:2,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{item.name}</div>
@@ -1451,7 +1467,7 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
 }
 
 // ── MY PRODUCTS PAGE ───────────────────────────────────────────
-function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, isCurrent, onFetchIngredients }) {
+function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, isCurrent, onFetchIngredients, userCategories = [] }) {
   const [status, setStatus] = useState(() => isCurrent ? "confirm_entries" : "loading_auto");
   const [result, setResult] = useState(null);
   const [includeEntries, setIncludeEntries] = useState(true);
@@ -1463,6 +1479,24 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
     .map(sp => products.find(p => p.id === (sp.product_id || sp.id)))
     .filter(Boolean);
 
+  // Group products by whatever categories they actually have. Treatment is
+  // always last; everything else preserves first-seen order.
+  const groupByCat = (arr) => {
+    const seen = new Set();
+    const order = [];
+    arr.forEach(p => {
+      const c = p.category || "other";
+      if (!seen.has(c)) { seen.add(c); order.push(c); }
+    });
+    const hasTx = order.includes("treatment");
+    const rest  = order.filter(c => c !== "treatment");
+    const finalCats = hasTx ? [...rest, "treatment"] : rest;
+    return finalCats.map(c => [c, arr.filter(p => p.category === c)]);
+  };
+  const productGroups = groupByCat(productList);
+  const sectionLabel = (c) => c === "treatment" ? "TREATMENTS" : (c.toUpperCase() + " ROUTINE");
+  const prettyLabel  = (c) => c === "treatment" ? "Treatments" : (c.charAt(0).toUpperCase() + c.slice(1));
+  // Legacy aliases kept in case future code paths look them up.
   const skinProds = productList.filter(p => p.category === "skin");
   const hairProds = productList.filter(p => p.category === "hair");
   const txProds   = productList.filter(p => p.category === "treatment");
@@ -1470,19 +1504,36 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
 
   const stripCitations = text => text ? text.replace(/<cite[^>]*>|<\/cite>/g, "").replace(/\[[\d,\s-]+\]/g, "").trim() : text;
 
+  // Collect notes + moods across both the legacy skin/hair columns and the
+  // by_category JSONB map so user-defined categories show up in the analysis.
+  const collectCatNotes = (e) => {
+    const out = [];
+    const bc = e.byCategory || e.by_category || {};
+    Object.entries(bc).forEach(([cat, v]) => {
+      const label = prettyLabel(cat);
+      if (v?.notes) out.push([label, "notes", v.notes]);
+      if (v?.mood)  out.push([label, "mood",  v.mood]);
+    });
+    // Legacy fallback — only add if by_category didn't already cover them.
+    if (!bc.skin) {
+      if (e.skin_notes) out.push(["Skin", "notes", e.skin_notes]);
+      if (e.skin_mood)  out.push(["Skin", "mood",  e.skin_mood]);
+    }
+    if (!bc.hair) {
+      if (e.hair_notes) out.push(["Hair", "notes", e.hair_notes]);
+      if (e.hair_mood)  out.push(["Hair", "mood",  e.hair_mood]);
+    }
+    return out;
+  };
+
   const getNotes = () => {
     if (!entries || !dateRange) return "";
     const endDate = dateRange.end || new Date().toISOString().slice(0,10);
     return Object.entries(entries)
       .filter(([d]) => d >= dateRange.start && d <= endDate)
-      .map(([d, e]) => {
-        const parts = [];
-        if (e.skin_notes) parts.push("Skin (" + d + "): " + e.skin_notes);
-        if (e.hair_notes) parts.push("Hair (" + d + "): " + e.hair_notes);
-        if (e.skin_mood) parts.push("Skin mood (" + d + "): " + e.skin_mood);
-        if (e.hair_mood) parts.push("Hair mood (" + d + "): " + e.hair_mood);
-        return parts.join(" | ");
-      })
+      .map(([d, e]) => collectCatNotes(e).map(([label, kind, val]) =>
+        kind === "mood" ? `${label} mood (${d}): ${val}` : `${label} (${d}): ${val}`
+      ).join(" | "))
       .filter(Boolean)
       .slice(0, 30)
       .join("\n");
@@ -1491,7 +1542,10 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
   const journalEntryCount = () => {
     if (!entries || !dateRange) return 0;
     const endDate = dateRange.end || new Date().toISOString().slice(0,10);
-    return Object.entries(entries).filter(([d]) => d >= dateRange.start && d <= endDate).filter(([,e]) => e.skin_notes || e.hair_notes).length;
+    return Object.entries(entries)
+      .filter(([d]) => d >= dateRange.start && d <= endDate)
+      .filter(([,e]) => collectCatNotes(e).some(([,kind]) => kind === "notes"))
+      .length;
   };
 
   const doAnalyze = async (useNotes) => {
@@ -1514,9 +1568,11 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
     const freshList = productList.map(p =>
       fetchedMap[p.id] ? { ...p, ingredients: fetchedMap[p.id].ingredients } : p
     );
-    const freshSkin = freshList.filter(p => p.category === "skin");
-    const freshHair = freshList.filter(p => p.category === "hair");
-    const freshTx   = freshList.filter(p => p.category === "treatment");
+    const freshGroups = groupByCat(freshList);
+    const presentCatLabels = freshGroups.map(([c]) => prettyLabel(c).toLowerCase());
+    const catListForIntro = presentCatLabels.length <= 1
+      ? (presentCatLabels[0] || "all")
+      : presentCatLabels.slice(0, -1).join(", ") + " and " + presentCatLabels.slice(-1);
 
     const allHaveIngredients = freshList.every(p => p.ingredients?.length > 0);
     const notes = useNotes ? getNotes() : "";
@@ -1531,13 +1587,13 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
 
     const prompt = [
       "You are a cosmetic formulation expert and dermatologist. Give a sharp, specific, actionable analysis of this routine.",
-      "IMPORTANT: You must analyze ALL products listed below — skin, hair, and treatments. Do not skip any category.",
+      `IMPORTANT: You must analyze ALL products listed below — covering ${catListForIntro}. Do not skip any category.`,
       "Base your analysis on the actual ingredients listed. Do not be vague — name specific ingredients and explain exactly why they matter.",
       "Be direct and opinionated. If something is redundant, a conflict, or missing — say it clearly.",
       "",
-      freshSkin.length > 0 ? "SKIN ROUTINE:\n" + formatDetailed(freshSkin) : "",
-      freshHair.length > 0 ? "HAIR ROUTINE:\n" + formatDetailed(freshHair) : "",
-      freshTx.length > 0   ? "TREATMENTS:\n"   + formatDetailed(freshTx)   : "",
+      ...freshGroups
+        .filter(([,list]) => list.length > 0)
+        .map(([cat,list]) => sectionLabel(cat) + ":\n" + formatDetailed(list)),
       notes ? "\nJOURNAL NOTES (real-world observations):\n" + notes : "",
       "",
       "Respond ONLY with this exact JSON (no markdown, no citations, no preamble):",
@@ -1622,11 +1678,13 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
         const ings = p.ingredients?.length ? ` [${p.ingredients.slice(0,10).join(", ")}]` : "";
         return `${p.name}${p.brand?" by "+p.brand:""}${ings}`;
       }).join("; ");
-      const context = "You are a skincare and haircare formulation expert answering follow-up questions. Be specific, concise, and practical. Use plain text only — no markdown asterisks, no bullet symbols, no citation brackets.\n\n" +
+      const groupLines = productGroups
+        .filter(([,list]) => list.length > 0)
+        .map(([cat,list]) => prettyLabel(cat) + ": " + formatWithIngs(list) + "\n")
+        .join("");
+      const context = "You are a cosmetic/wellness formulation expert answering follow-up questions. Be specific, concise, and practical. Use plain text only — no markdown asterisks, no bullet symbols, no citation brackets.\n\n" +
         "FULL ROUTINE:\n" +
-        (skinProds.length > 0 ? "Skin: " + formatWithIngs(skinProds) + "\n" : "") +
-        (hairProds.length > 0 ? "Hair: " + formatWithIngs(hairProds) + "\n" : "") +
-        (txProds.length > 0 ? "Treatments: " + formatWithIngs(txProds) + "\n" : "") +
+        groupLines +
         (result && !result.raw ? "\nPrevious analysis:\nStrengths: " + (result.strengths||"") + "\nConflicts: " + (result.conflicts||"") + "\nGaps: " + (result.gaps||"") + "\nRecommendation: " + (result.recommendation||"") : "");
       const messages = [
         { role: "user", content: context + "\n\nQuestion: " + userMsg }
@@ -1802,15 +1860,30 @@ function CompareRoutines({ snapshots, products, entries, onClose }) {
 
     const routineBlocks = selectedSnaps.map((snap, i) => {
       const prods = snap.products.map(sp => products.find(p=>p.id===sp.product_id)).filter(Boolean);
-      const skin = prods.filter(p=>p.category==="skin").map(p=>`${p.name}${p.brand?` by ${p.brand}`:""}`).join(", ");
-      const hair = prods.filter(p=>p.category==="hair").map(p=>`${p.name}${p.brand?` by ${p.brand}`:""}`).join(", ");
-      const tx   = prods.filter(p=>p.category==="treatment").map(p=>`${p.name}${p.brand?` by ${p.brand}`:""}`).join(", ");
+      // Group by whatever categories are actually present, so user-defined
+      // categories (supplements, peptides, etc.) appear in the comparison.
+      const grouped = {};
+      prods.forEach(p => {
+        const c = p.category || "other";
+        if (!grouped[c]) grouped[c] = [];
+        grouped[c].push(p);
+      });
+      // Preserve user ordering: user categories first, then unknown cats, then "treatment" last.
+      const known = (userCategories && userCategories.length) ? userCategories : ["skin","hair"];
+      const seen = new Set();
+      const ordered = [];
+      known.forEach(c => { if (grouped[c]) { ordered.push(c); seen.add(c); } });
+      Object.keys(grouped).forEach(c => { if (!seen.has(c) && c !== "treatment") { ordered.push(c); seen.add(c); } });
+      if (grouped.treatment) ordered.push("treatment");
+      const blocks = ordered.map(c => {
+        const list = grouped[c].map(p => `${p.name}${p.brand?` by ${p.brand}`:""}`).join(", ");
+        const label = c === "treatment" ? "Treatments" : (c.charAt(0).toUpperCase() + c.slice(1));
+        return `${label}: ${list}`;
+      });
       const notes = getSnapNotes(snap);
       return [
         "ROUTINE " + (i+1) + " (" + getSnapLabel(snap) + "):",
-        skin ? "Skin: " + skin : "",
-        hair ? "Hair: " + hair : "",
-        tx ? "Treatments: " + tx : "",
+        ...blocks,
         notes ? "Journal notes:\n" + notes : "No journal notes for this period."
       ].filter(Boolean).join("\n");
     }).join("\n\n---\n\n");
@@ -1943,7 +2016,10 @@ function CompareRoutines({ snapshots, products, entries, onClose }) {
   );
 }
 
-function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
+function ProductForm({ initialData, isEditingProd, onSave, onClose, categories = ["skin","hair","treatment"] }) {
+  const pfIcon  = c => c==="skin"?"🌿":c==="hair"?"✨":c==="treatment"?"💉":"○";
+  const pfLabel = c => c==="treatment"?"Treatment":(c.charAt(0).toUpperCase()+c.slice(1));
+  const pfShort = c => c==="treatment"?"Treat":pfLabel(c);
   // Own internal state — never re-mounts on parent re-render, so focus is never lost
   const [p, setP] = useState(initialData);
   const [customTagInput, setCustomTagInput] = useState("");
@@ -1981,15 +2057,15 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose }) {
       {isEditingProd
         ? <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
             <div style={{background:"#f0e8f4",borderRadius:8,padding:"6px 14px",fontSize:".74rem",color:"#7a6a8a",fontWeight:500}}>
-              {p.category==="skin"?"🌿 Skin":p.category==="treatment"?"💉 Treatment":"✨ Hair"}
+              {pfIcon(p.category)} {pfLabel(p.category)}
             </div>
             <div style={{fontSize:".64rem",color:"#2A2820",fontStyle:"italic"}}>Category can't be changed — remove and re-add to change.</div>
           </div>
-        : <div style={{display:"flex",gap:8,marginBottom:10}}>
-            {["skin","hair","treatment"].map(cat=>(
-              <button key={cat} className={`dow-chip ${p.category===cat?"on":""}`} style={{flex:1,fontSize:".74rem",textAlign:"center"}}
+        : <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+            {categories.map(cat=>(
+              <button key={cat} className={`dow-chip ${p.category===cat?"on":""}`} style={{flex:"1 1 auto",fontSize:".74rem",textAlign:"center"}}
                 onClick={()=>setP(prev=>({...prev,category:cat}))}>
-                {cat==="skin"?"🌿 Skin":cat==="treatment"?"💉 Treat":"✨ Hair"}
+                {pfIcon(cat)} {pfShort(cat)}
               </button>
             ))}
           </div>
@@ -2135,7 +2211,7 @@ function SlimEditForm({ initialData, onSave, onClose, viewOnly }) {
     else setP(prev=>({...prev,frequency:c+"x "+per}));
   };
   const bump = delta => setFreq(Math.min(7,Math.max(1,count+delta)), period==="day"?"week":period);
-  const catLabel = p.category==="skin"?"Skin":p.category==="treatment"?"Treatment":"Hair";
+  const catLabel = p.category==="treatment"?"Treatment":(p.category?p.category.charAt(0).toUpperCase()+p.category.slice(1):"");
   const handleImageFile = (file) => {
     if (!file) return;
     const reader = new FileReader();
@@ -2165,7 +2241,7 @@ function SlimEditForm({ initialData, onSave, onClose, viewOnly }) {
               <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.3rem",color:"#D4C8B8",lineHeight:1.1}}>{p.name}</div>
               {p.brand&&<div style={{fontSize:".74rem",color:"#5A5248",marginTop:2}}>{p.brand}</div>}
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
-                <div style={{background:"#f7f0ea",borderRadius:5,padding:"2px 8px",fontSize:".6rem",color:"#C8B8A0",letterSpacing:".06em",textTransform:"uppercase",fontWeight:600}}>{p.category==="skin"?"Skin":p.category==="treatment"?"Treatment":"Hair"}</div>
+                <div style={{background:"#f7f0ea",borderRadius:5,padding:"2px 8px",fontSize:".6rem",color:"#C8B8A0",letterSpacing:".06em",textTransform:"uppercase",fontWeight:600}}>{catLabel}</div>
                 {p.is_staple&&<div style={{background:"#fff8e8",borderRadius:5,padding:"2px 8px",fontSize:".6rem",color:"#9a7010",letterSpacing:".06em",border:"1px solid #e8d060"}}>⭐ Staple</div>}
               </div>
             </div>
@@ -2351,7 +2427,7 @@ function SlimEditForm({ initialData, onSave, onClose, viewOnly }) {
   );
 }
 
-function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onUpdateSnapProduct, onUpdateSnapProductName, onRemoveFromSnapshot, onFinalizeBase, onDeleteSnapshot, onFetchIngredients, onSaveProductOrder, onUpdateSnapProductTimeOfDay, onBack, onHome, onMenuOpen }) {
+function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteProduct, onOpenSnapshot, onAddToSnapshot, onUpdateSnapProduct, onUpdateSnapProductName, onRemoveFromSnapshot, onFinalizeBase, onDeleteSnapshot, onFetchIngredients, onSaveProductOrder, onUpdateSnapProductTimeOfDay, onBack, onHome, onMenuOpen, userCategories = [] }) {
   const [tab, setTab] = useState("current");
   const [editMode, setEditMode] = useState(false); // draft edit mode on finalized routine
   const [showForm, setShowForm] = useState(false);
@@ -2404,9 +2480,23 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
         };
       }).filter(Boolean)
     : [];
-  const skinProds = snapProducts.filter(p=>p.category==="skin").sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-  const hairProds = snapProducts.filter(p=>p.category==="hair").sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-  const txProds   = snapProducts.filter(p=>p.category==="treatment").sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  // Canonical list of buckets to render. User categories come first (in order),
+  // then "treatment" (always supported), then any other categories that exist
+  // in the data but aren't in the user's category list.
+  const userCats = (userCategories && userCategories.length) ? userCategories : ["skin","hair"];
+  const dataCats = Array.from(new Set(snapProducts.map(p=>p.category).filter(Boolean)));
+  const extraCats = dataCats.filter(c => !userCats.includes(c) && c !== "treatment");
+  const productCats = [...userCats, ...extraCats, "treatment"];
+  const prodsByCat = Object.fromEntries(productCats.map(c => [
+    c,
+    snapProducts.filter(p=>p.category===c).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
+  ]));
+  const catIcon = (c) => c==="skin"?"🌿":c==="hair"?"✨":c==="treatment"?"💉":"○";
+  const catLabelFor = (c) => c==="treatment"?"Treatments":(c.charAt(0).toUpperCase()+c.slice(1));
+  // Legacy aliases kept so the rest of this component compiles unchanged.
+  const skinProds = prodsByCat.skin || [];
+  const hairProds = prodsByCat.hair || [];
+  const txProds   = prodsByCat.treatment || [];
 
   const blank = (cat) => ({ id:crypto.randomUUID(), name:"", brand:"", category:cat, image:"", link:"", price:"", notes:"", tags:[], frequency:"", is_staple:false });
 
@@ -2578,9 +2668,14 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
       if (!prod) return null;
       return {...prod, name:sp.name_snapshot||prod.name, brand:sp.brand_snapshot||prod.brand};
     }).filter(Boolean);
-    const skinP=prods.filter(p=>p.category==="skin");
-    const hairP=prods.filter(p=>p.category==="hair");
-    const txP=prods.filter(p=>p.category==="treatment");
+    // Use the same user-category order + fallback rules as the main view.
+    const snapDataCats = Array.from(new Set(prods.map(p=>p.category).filter(Boolean)));
+    const snapExtras = snapDataCats.filter(c => !userCats.includes(c) && c !== "treatment");
+    const snapCats = [...userCats, ...snapExtras, "treatment"];
+    const snapProdsByCat = Object.fromEntries(snapCats.map(c => [c, prods.filter(p=>p.category===c)]));
+    const skinP=snapProdsByCat.skin||[];
+    const hairP=snapProdsByCat.hair||[];
+    const txP=snapProdsByCat.treatment||[];
     const startLabel = new Date(snap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
     const endLabel = snap.ended_at ? new Date(snap.ended_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}) : "Present";
     const SnapCatRow = ({cat, label, catProds}) => {
@@ -2614,7 +2709,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
           <div>
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"rgba(255,255,255,.85)"}}>{startLabel} — {endLabel}</div>
-            <div style={{fontSize:".72rem",color:"rgba(255,255,255,.55)",marginTop:3}}>{prods.length} product{prods.length!==1?"s":""}{skinP.length>0?` · ${skinP.length} skin`:""}{ hairP.length>0?` · ${hairP.length} hair`:""}{ txP.length>0?` · ${txP.length} treatment`:""}</div>
+            <div style={{fontSize:".72rem",color:"rgba(255,255,255,.55)",marginTop:3}}>{prods.length} product{prods.length!==1?"s":""}{snapCats.map(c=>{const n=(snapProdsByCat[c]||[]).length; return n>0?` · ${n} ${c}`:"";}).join("")}</div>
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
             <button onClick={e=>{e.stopPropagation();setSnapAnalysis(v=>!v);}} style={{background:"none",border:"1px solid rgba(255,255,255,.25)",borderRadius:8,padding:"4px 10px",color:"rgba(255,255,255,.6)",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
@@ -2634,7 +2729,8 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
             dateRange={{start:snap.started_at, end:snap.ended_at}}
             isCurrent={false}
             onClose={()=>setSnapAnalysis(false)}
-            onFetchIngredients={onFetchIngredients}/>
+            onFetchIngredients={onFetchIngredients}
+            userCategories={userCategories}/>
         </div>}
         {confirmDel&&<div style={{marginTop:12,background:"rgba(200,100,80,.08)",border:"1px solid #f0c8c0",borderRadius:12,padding:"14px"}} onClick={e=>e.stopPropagation()}>
           <div style={{fontSize:".84rem",color:"rgba(255,255,255,.85)",marginBottom:12,lineHeight:1.5}}>Delete this snapshot? This cannot be undone.</div>
@@ -2647,9 +2743,9 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
           </div>
         </div>}
         {open&&<div style={{marginTop:14,borderTop:"1px solid rgba(255,255,255,.15)",paddingTop:14}} onClick={e=>e.stopPropagation()}>
-          <SnapCatRow cat="skin" label="🌿 Skin" catProds={skinP}/>
-          <SnapCatRow cat="hair" label="✨ Hair" catProds={hairP}/>
-          <SnapCatRow cat="treatment" label="💉 Treatments" catProds={txP}/>
+          {snapCats.map(c => (
+            <SnapCatRow key={c} cat={c} label={`${catIcon(c)} ${catLabelFor(c)}`} catProds={snapProdsByCat[c] || []}/>
+          ))}
         </div>}
       </div>
     );
@@ -2691,12 +2787,12 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
         <>
           {/* ── Screen 2: Featured Carousel ── */}
           {featuredView&&(()=>{
-            const catProds = featuredView.category==="skin"?skinProds:featuredView.category==="hair"?hairProds:txProds;
+            const catProds = prodsByCat[featuredView.category] || [];
             const idx = Math.min(featuredView.index, catProds.length-1);
             const curr = catProds[idx];
             const prevP = idx>0?catProds[idx-1]:null;
             const nextP = idx<catProds.length-1?catProds[idx+1]:null;
-            const catLabel = featuredView.category==="skin"?"Skin":featuredView.category==="hair"?"Hair":"Treatments";
+            const catLabel = catLabelFor(featuredView.category);
             const goTo = (i) => setFeaturedView(f=>({...f,index:i}));
             if (!curr) { setFeaturedView(null); return null; }
             return (
@@ -2815,7 +2911,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                     <div>
                       {activeSnap&&<div style={{fontSize:".58rem",letterSpacing:".14em",textTransform:"uppercase",color:"rgba(255,255,255,.4)",marginBottom:3}}>Current Routine</div>}
                       {activeSnap&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"rgba(255,255,255,.85)"}}>Since {new Date(activeSnap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>}
-                      {activeSnap&&<div style={{fontSize:".7rem",color:"rgba(255,255,255,.55)",marginTop:3}}>{snapProducts.length} product{snapProducts.length!==1?"s":""}{skinProds.length>0?` · ${skinProds.length} skin`:""}{ hairProds.length>0?` · ${hairProds.length} hair`:""}{ txProds.length>0?` · ${txProds.length} treatment`:""}</div>}
+                      {activeSnap&&<div style={{fontSize:".7rem",color:"rgba(255,255,255,.55)",marginTop:3}}>{snapProducts.length} product{snapProducts.length!==1?"s":""}{productCats.map(c=>{const n=(prodsByCat[c]||[]).length; return n>0?` · ${n} ${c}`:"";}).join("")}</div>}
                       {isDraft&&draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:500,color:"#7EC49A",letterSpacing:".04em"}}>Building your routine</div>}
                       {isDraft&&!draftSnap&&<div style={{marginTop:4,fontSize:".72rem",fontWeight:500,color:"#243D30",letterSpacing:".04em"}}>Editing your routine</div>}
                     </div>
@@ -2830,13 +2926,13 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                   {/* Analysis panel */}
                   {showAnalysis&&activeSnap&&!isDraft&&(
                     <div style={{marginBottom:16,borderBottom:"1px solid rgba(255,255,255,.15)",paddingBottom:16}}>
-                      <RoutineAnalysis products={products} snapProducts={activeSnap.products} entries={entries} dateRange={{start:activeSnap.started_at,end:null}} isCurrent={true} onClose={()=>setShowAnalysis(false)} onFetchIngredients={onFetchIngredients}/>
+                      <RoutineAnalysis products={products} snapProducts={activeSnap.products} entries={entries} dateRange={{start:activeSnap.started_at,end:null}} isCurrent={true} onClose={()=>setShowAnalysis(false)} onFetchIngredients={onFetchIngredients} userCategories={userCategories}/>
                     </div>
                   )}
 
 
                   {/* Add product form */}
-                  {showForm&&editProd&&<ProductForm key={editProd.id} initialData={editProd} isEditingProd={isEditingProd} onSave={save} onClose={handleCloseForm}/>}
+                  {showForm&&editProd&&<ProductForm key={editProd.id} initialData={editProd} isEditingProd={isEditingProd} onSave={save} onClose={handleCloseForm} categories={productCats}/>}
 
                   {/* Add product button */}
                   {!showForm&&isDraft&&!chooseCat&&(
@@ -2851,11 +2947,11 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                     <div style={{background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.2)",borderRadius:14,padding:"16px",marginBottom:14}}>
                       <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem",fontStyle:"italic",color:"rgba(255,255,255,.8)",marginBottom:12}}>Add a product</div>
                       <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                        {[["🌿","Skin","skin"],["✨","Hair","hair"],["💉","Treatment","treatment"]].map(([emoji,label,cat])=>(
+                        {productCats.map(cat=>(
                           <button key={cat} onClick={()=>{setEditProd(blank(cat));setIsEditingProd(false);setShowForm(true);setChooseCat(false);}}
                             style={{display:"flex",alignItems:"center",gap:12,background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:12,padding:"11px 14px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
-                            <span style={{fontSize:"1.2rem"}}>{emoji}</span>
-                            <span style={{fontSize:".86rem",color:"rgba(255,255,255,.9)",fontWeight:500}}>{label} Product</span>
+                            <span style={{fontSize:"1.2rem"}}>{catIcon(cat)}</span>
+                            <span style={{fontSize:".86rem",color:"rgba(255,255,255,.9)",fontWeight:500}}>{catLabelFor(cat)} Product</span>
                           </button>
                         ))}
                         <button onClick={()=>setChooseCat(false)} style={{background:"none",border:"none",fontSize:".76rem",color:"rgba(255,255,255,.5)",cursor:"pointer",marginTop:2,fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
@@ -2864,7 +2960,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                   )}
 
                   {/* Category rows */}
-                  {[["skin","🌿 Skin",skinProds],["hair","✨ Hair",hairProds],["treatment","💉 Treatments",txProds]].filter(([,,p])=>p.length>0).map(([cat,label,prods],ri,arr)=>(
+                  {productCats.map(c => [c, `${catIcon(c)} ${catLabelFor(c)}`, prodsByCat[c] || []]).filter(([,,p])=>p.length>0).map(([cat,label,prods],ri,arr)=>(
                     <div key={cat} style={{marginBottom:ri<arr.length-1?18:0}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:9}}>
                         <div style={{fontSize:".66rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)"}}>
@@ -4368,11 +4464,15 @@ export default function App({ user }) {
   const setRoutine = (cat, items) => setRoutinesByCat(prev => ({ ...prev, [cat]: items }));
   const allItems   = Object.values(routinesByCat).flat();
   const itemById   = Object.fromEntries(allItems.map(r => [r.id, r]));
+  // Default category for new rows when the caller didn't supply one
+  // (first user-configured category, falling back to "skin" only if
+  //  user_categories hasn't loaded yet)
+  const defaultCat = userCategories[0] || "skin";
   const categoryOfItem = (itemId) => {
     for (const [cat, items] of Object.entries(routinesByCat)) {
       if (items.some(i => i.id === itemId)) return cat;
     }
-    return userCategories[0] || "skin";
+    return defaultCat;
   };
   // Legacy id->item maps kept for code paths that still reference them
   const allSkinMap = Object.fromEntries([...DEFAULT_SKIN,...skinR].map(r=>[r.id,r]));
@@ -4444,7 +4544,6 @@ export default function App({ user }) {
   useEffect(()=>{
     if (!activeTab) { setCurPhotos([]); return; }
     setCurPhotos(getCatE(activeDate, activeTab).photos || []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   },[activeDate,activeTab,entries]);
 
   const shiftD = (d,n)=>{ const dt=parse(d); dt.setDate(dt.getDate()+n); return fmt(dt); };
@@ -4711,7 +4810,7 @@ export default function App({ user }) {
     if (!user) return;
     // userImage is a UI-only field (data URL from file picker) — strip from DB row
     const { userImage, ...prod } = p;
-    const row = { id:prod.id, user_id:user.id, name:prod.name, brand:prod.brand||"", category:prod.category||"skin", image:prod.image||"", link:prod.link||"", price:prod.price||null, notes:prod.notes||"", tags:prod.tags||[], frequency:prod.frequency||"", global_product_id:prod.global_product_id||null, ingredients:prod.ingredients||[], is_staple:prod.is_staple||false, sort_order:prod.sort_order||0, media_url:prod.media_url||"" };
+    const row = { id:prod.id, user_id:user.id, name:prod.name, brand:prod.brand||"", category:prod.category||defaultCat, image:prod.image||"", link:prod.link||"", price:prod.price||null, notes:prod.notes||"", tags:prod.tags||[], frequency:prod.frequency||"", global_product_id:prod.global_product_id||null, ingredients:prod.ingredients||[], is_staple:prod.is_staple||false, sort_order:prod.sort_order||0, media_url:prod.media_url||"" };
     await supabase.from("products").upsert(row, {onConflict:"id"});
     setProducts(prev => { const idx=prev.findIndex(x=>x.id===prod.id); return idx>=0?prev.map(x=>x.id===prod.id?prod:x):[prod,...prev]; });
     // Background lookups — fire and forget
@@ -4747,7 +4846,7 @@ export default function App({ user }) {
       const res = await fetch("/api/ingredients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name:p.name, brand:p.brand||"", category:p.category||"skin", globalProductId:p.global_product_id||null })
+        body: JSON.stringify({ name:p.name, brand:p.brand||"", category:p.category||defaultCat, globalProductId:p.global_product_id||null })
       });
       if (!res.ok) return null;
       const data = await res.json();
@@ -4788,7 +4887,7 @@ export default function App({ user }) {
   // ── Wishlist CRUD ──
   const saveWishlistItem = async (item) => {
     if (!user) return;
-    const row = { id:item.id, user_id:user.id, name:item.name, brand:item.brand||"", category:item.category||"skin", image:item.image||"", link:item.link||"", notes:item.notes||"", tags:item.tags||[], priority:item.priority||0 };
+    const row = { id:item.id, user_id:user.id, name:item.name, brand:item.brand||"", category:item.category||defaultCat, image:item.image||"", link:item.link||"", notes:item.notes||"", tags:item.tags||[], priority:item.priority||0 };
     await supabase.from("wishlist").upsert(row, {onConflict:"id"});
     setWishlist(prev => { const idx=prev.findIndex(x=>x.id===item.id); return idx>=0?prev.map(x=>x.id===item.id?item:x):[item,...prev]; });
     showT("Saved to wishlist");
@@ -4803,7 +4902,7 @@ export default function App({ user }) {
   // ── Planned Purchases CRUD ──
   const savePlannedPurchase = async (item) => {
     if (!user) return;
-    const row = { id:item.id, user_id:user.id, name:item.name, brand:item.brand||"", category:item.category||"skin", image:item.image||"", link:item.link||"", price:item.price||null, notes:item.notes||"", product_id:item.product_id||null, wishlist_id:item.wishlist_id||null };
+    const row = { id:item.id, user_id:user.id, name:item.name, brand:item.brand||"", category:item.category||defaultCat, image:item.image||"", link:item.link||"", price:item.price||null, notes:item.notes||"", product_id:item.product_id||null, wishlist_id:item.wishlist_id||null };
     await supabase.from("planned_purchases").upsert(row, {onConflict:"id"});
     setPlannedPurchases(prev=>{ const idx=prev.findIndex(x=>x.id===item.id); return idx>=0?prev.map(x=>x.id===item.id?item:x):[item,...prev]; });
     showT("Saved to planned purchases");
@@ -4813,14 +4912,14 @@ export default function App({ user }) {
     setPlannedPurchases(prev=>prev.filter(p=>p.id!==id));
   };
   const movePlannedToPurchase = async (item, date) => {
-    const purchase = { id:uid(), name:item.name, brand:item.brand||"", category:item.category||"skin", price:String(item.price||""), quantity:"1", date, notes:item.notes||"", tags:[], image:item.image||"", link:item.link||"", frequency:"", product_id:item.product_id||null, treatment_type:"" };
+    const purchase = { id:uid(), name:item.name, brand:item.brand||"", category:item.category||defaultCat, price:String(item.price||""), quantity:"1", date, notes:item.notes||"", tags:[], image:item.image||"", link:item.link||"", frequency:"", product_id:item.product_id||null, treatment_type:"" };
     await savePurchase(purchase);
     await deletePlannedPurchase(item.id);
   };
 
   const moveWishlistToPurchase = async (item) => {
     // Create a purchase from wishlist item
-    const newPurchase = { id:crypto.randomUUID(), name:item.name, brand:item.brand||"", category:item.category||"skin", price:"", quantity:"1", date:fmt(new Date()), notes:item.notes||"", tags:item.tags||[], image:item.image||"", link:item.link||"" };
+    const newPurchase = { id:crypto.randomUUID(), name:item.name, brand:item.brand||"", category:item.category||defaultCat, price:"", quantity:"1", date:fmt(new Date()), notes:item.notes||"", tags:item.tags||[], image:item.image||"", link:item.link||"" };
     await deleteWishlistItem(item.id);
     return newPurchase; // caller opens purchase form pre-filled
   };
@@ -5109,7 +5208,8 @@ export default function App({ user }) {
         onUpdateSnapProductTimeOfDay={updateSnapProductTimeOfDay}
         onBack={()=>setPageView(null)}
         onHome={goHome}
-        onMenuOpen={()=>setSideMenu(true)}/>}
+        onMenuOpen={()=>setSideMenu(true)}
+        userCategories={userCategories}/>}
       {pageView==="wishlist"&&<WishlistPage
         wishlist={wishlist}
         products={products}
@@ -5122,7 +5222,8 @@ export default function App({ user }) {
         onMoveToCart={async(item)=>{ const prefill=await moveWishlistToPurchase(item); setPrefillPurchase(prefill); setPageView("purchases"); }}
         onBack={()=>setPageView(null)}
         onHome={goHome}
-        onMenuOpen={()=>setSideMenu(true)}/>}
+        onMenuOpen={()=>setSideMenu(true)}
+        userCategories={userCategories}/>}
       {pageView==="account"&&(
         <div className="app">
           <div className="header" style={{position:"relative"}}>
@@ -5364,8 +5465,9 @@ export default function App({ user }) {
                 </svg>
               );
 
+              const isDoneIn = (cat, id) => (getCatE(activeDate, cat).done || []).includes(id);
               const renderCard = (it) => {
-                const isDone = it._tab==="skin"?(e2.skin||[]).includes(it.id):(e2.hair||[]).includes(it.id);
+                const isDone = isDoneIn(it._tab, it.id);
                 const linkedProd = getLinkedProduct(it.id);
                 const {svg, bgClass} = getBottleSvg(it);
                 return (
@@ -5401,7 +5503,7 @@ export default function App({ user }) {
                         <div className="log-section-title"><SunIcon/> Morning <ChevronIcon collapsed={collapsedSections.morning}/></div>
                         <div className="log-section-actions" onClick={e=>e.stopPropagation()}>
                           {!collapsedSections.morning&&<button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(morningItems,"morning");}}>
-                            {morningItems.filter(it=>(it.time||"both")==="day").every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"↩ Undo":"✓ All done"}
+                            {morningItems.filter(it=>(it.time||"both")==="day").every(it=>isDoneIn(it._tab, it.id))?"↩ Undo":"✓ All done"}
                           </button>}
                           {!collapsedSections.morning&&<button className="log-sec-edit-btn" onClick={e=>{e.stopPropagation();setEditSection("morning");setModal("manageItems");}}><PencilIcon/></button>}
                         </div>
@@ -5415,7 +5517,7 @@ export default function App({ user }) {
                         <div className="log-section-title"><MoonIcon/> Evening <ChevronIcon collapsed={collapsedSections.night}/></div>
                         <div className="log-section-actions" onClick={e=>e.stopPropagation()}>
                           {!collapsedSections.night&&<button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(nightItems,"night");}}>
-                            {nightItems.filter(it=>(it.time||"both")==="night").every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"↩ Undo":"✓ All done"}
+                            {nightItems.filter(it=>(it.time||"both")==="night").every(it=>isDoneIn(it._tab, it.id))?"↩ Undo":"✓ All done"}
                           </button>}
                           {!collapsedSections.night&&<button className="log-sec-edit-btn" onClick={e=>{e.stopPropagation();setEditSection("night");setModal("manageItems");}}><PencilIcon/></button>}
                         </div>
@@ -5494,12 +5596,16 @@ export default function App({ user }) {
             </div>
 
             {selectedDay&&rangeStart&&!rangeEnd&&(()=>{
-              const e=getE(selectedDay);
-              const si=(e.skin||[]).map(id=>allSkinMap[id]).filter(Boolean);
-              const hi=(e.hair||[]).map(id=>allHairMap[id]).filter(Boolean);
-              const hasSkin=!!(si.length||e.skin_mood||e.skin_notes||e.skin_photos?.length);
-              const hasHair=!!(hi.length||e.hair_mood||e.hair_notes||e.hair_photos?.length);
-              const hasAny=hasSkin||hasHair;
+              const cats = (userCategories && userCategories.length) ? userCategories : ["skin","hair"];
+              // For each category, resolve its day-entry + its items (done checkmarks).
+              const perCat = cats.map((cat, idx) => {
+                const ce = getCatE(selectedDay, cat);
+                const items = (ce.done || []).map(id => itemById[id] || allSkinMap[id] || allHairMap[id]).filter(Boolean);
+                const has = !!(items.length || ce.mood || ce.notes || ce.photos?.length);
+                return { cat, ce, items, has, idx };
+              });
+              const hasAny = perCat.some(p => p.has);
+              const catIcon = (cat) => cat === "skin" ? "🌿" : cat === "hair" ? "✨" : cat === "treatment" ? "💉" : "○";
               return (
                 <div className="day-panel">
                   <div className="day-panel-header">
@@ -5509,20 +5615,17 @@ export default function App({ user }) {
 
                   {hasAny?(
                     <>
-                      {hasSkin&&<>
-                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#5A5248",marginBottom:6,marginTop:4}}>🌿 Skin</div>
-                        {si.length>0&&<div className="dp-pills">{si.map(r=><span key={r.id} className="dp-pill">{r.emoji} {r.label}</span>)}</div>}
-                        {e.skin_mood&&<div className="dp-mood">Feeling: {e.skin_mood}</div>}
-                        {e.skin_notes&&<div className="dp-note">"{e.skin_notes}"</div>}
-                        {e.skin_photos?.length>0&&<div className="photo-thumbs" style={{marginTop:6,marginBottom:4}}>{e.skin_photos.map(p=><div key={p.id} className="photo-thumb" style={{cursor:"pointer"}} onClick={()=>setLightboxPhoto({...p,_type:"skin",_date:selectedDay})}><img src={p.src} alt={p.name}/></div>)}</div>}
-                      </>}
-                      {hasHair&&<>
-                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#5A5248",marginBottom:6,marginTop:hasSkin?12:4}}>✨ Hair</div>
-                        {hi.length>0&&<div className="dp-pills">{hi.map(r=><span key={r.id} className="dp-pill h">{r.emoji} {r.label}</span>)}</div>}
-                        {e.hair_mood&&<div className="dp-mood">Feeling: {e.hair_mood}</div>}
-                        {e.hair_notes&&<div className="dp-note">"{e.hair_notes}"</div>}
-                        {e.hair_photos?.length>0&&<div className="photo-thumbs" style={{marginTop:6}}>{e.hair_photos.map(p=><div key={p.id} className="photo-thumb" style={{cursor:"pointer"}} onClick={()=>setLightboxPhoto({...p,_type:"hair",_date:selectedDay})}><img src={p.src} alt={p.name}/></div>)}</div>}
-                      </>}
+                      {perCat.filter(p=>p.has).map(({cat, ce, items, idx}, visIdx) => (
+                        <Fragment key={cat}>
+                          <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"#5A5248",marginBottom:6,marginTop:visIdx===0?4:12}}>
+                            {catIcon(cat)} {capCat(cat)}
+                          </div>
+                          {items.length>0&&<div className="dp-pills">{items.map(r=><span key={r.id} className={`dp-pill${cat==="hair"?" h":""}`}>{r.emoji} {r.label}</span>)}</div>}
+                          {ce.mood&&<div className="dp-mood">Feeling: {ce.mood}</div>}
+                          {ce.notes&&<div className="dp-note">"{ce.notes}"</div>}
+                          {ce.photos?.length>0&&<div className="photo-thumbs" style={{marginTop:6,marginBottom:4}}>{ce.photos.map(p=><div key={p.id} className="photo-thumb" style={{cursor:"pointer"}} onClick={()=>setLightboxPhoto({...p,_type:cat,_date:selectedDay})}><img src={p.src} alt={p.name}/></div>)}</div>}
+                        </Fragment>
+                      ))}
                     </>
                   ):<div className="dp-empty">Nothing logged for this day yet</div>}
                 </div>
@@ -5930,12 +6033,17 @@ export default function App({ user }) {
         onClose={()=>setLightboxPhoto(null)}
         onDelete={(photoId)=>{
           const date=lightboxPhoto._date;
-          const type=lightboxPhoto._type;
+          const cat=lightboxPhoto._type;
           const e=getE(date);
-          const key=type==="skin"?"skin_photos":"hair_photos";
-          const updated={...e,[key]:(e[key]||[]).filter(p=>p.id!==photoId)};
+          const curCat=getCatE(date, cat);
+          const nextCat={...curCat, photos:(curCat.photos||[]).filter(p=>p.id!==photoId)};
+          const nextByCategory={...(e.byCategory||{}), [cat]: nextCat};
+          const updated={...e, byCategory: nextByCategory};
+          // Mirror to legacy columns for skin/hair so old consumers stay in sync
+          if (cat === "skin") updated.skin_photos = nextCat.photos;
+          if (cat === "hair") updated.hair_photos = nextCat.photos;
           saveDayEdit(date,updated);
-          if(date===activeDate&&type===activeTab) setCurPhotos(prev=>prev.filter(p=>p.id!==photoId));
+          if(date===activeDate&&cat===activeTab) setCurPhotos(prev=>prev.filter(p=>p.id!==photoId));
         }}/>}
       {confirmDelete&&<ConfirmDialog message={confirmDelete.message} onConfirm={()=>{confirmDelete.onConfirm();setConfirmDelete(null);}} onCancel={()=>setConfirmDelete(null)}/>}
       {debrief&&<RitualDebrief debrief={debrief} onClose={()=>setDebrief(null)}/>}
