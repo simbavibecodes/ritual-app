@@ -1015,7 +1015,7 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
         const allProds = [...(products||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)), ...(wishlist||[]).slice().sort((a,b)=>(b.priority||0)-(a.priority||0))];
         const featured = allProds.slice(0,6);
         const pickItem = item => {
-          setEditP(blank(item.category||"skin",{name:item.name,brand:item.brand||"",image:item.image||"",link:item.link||"",price:String(item.price||""),product_id:(products||[]).find(p=>p.id===item.id)?item.id:null}));
+          setEditP(blank(item.category||(userCategories&&userCategories[0])||"skin",{name:item.name,brand:item.brand||"",image:item.image||"",link:item.link||"",price:String(item.price||""),product_id:(products||[]).find(p=>p.id===item.id)?item.id:null}));
           setAddMode("form");
         };
         return (
@@ -1070,7 +1070,7 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
         const q = pickerSearch.toLowerCase();
         const visible = q ? allProds.filter(p=>p.name.toLowerCase().includes(q)||(p.brand||"").toLowerCase().includes(q)) : allProds;
         const pickItem = item => {
-          setEditP(blank(item.category||"skin",{name:item.name,brand:item.brand||"",image:item.image||"",link:item.link||"",price:String(item.price||""),product_id:(products||[]).find(p=>p.id===item.id)?item.id:null}));
+          setEditP(blank(item.category||(userCategories&&userCategories[0])||"skin",{name:item.name,brand:item.brand||"",image:item.image||"",link:item.link||"",price:String(item.price||""),product_id:(products||[]).find(p=>p.id===item.id)?item.id:null}));
           setPickerSearch(""); setAddMode("form");
         };
         return (
@@ -1094,7 +1094,7 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
                 </div>
               ))}
               {/* Add New square */}
-              <div onClick={()=>{setPickerSearch("");setEditP(blank("skin"));setAddMode("form");}}
+              <div onClick={()=>{setPickerSearch("");setEditP(blank((userCategories&&userCategories[0])||"skin"));setAddMode("form");}}
                 style={{width:"calc(33.33% - 7px)",display:"flex",flexDirection:"column",alignItems:"center",gap:5,cursor:"pointer"}}>
                 <div style={{width:"100%",aspectRatio:"1",borderRadius:12,border:"1.5px dashed rgba(255,255,255,.3)",background:"transparent",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>
                   <span style={{fontSize:"1.2rem",color:"rgba(255,255,255,.6)"}}>+</span>
@@ -1264,7 +1264,7 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
   const [newPlanned, setNewPlanned] = useState(null);
 
   const blankWish = (cat) => ({ id:uid(), name:"", brand:"", category:cat, image:"", link:"", notes:"", tags:[], priority:0 });
-  const blankPlanned = () => ({ id:uid(), name:"", brand:"", category:"skin", image:"", link:"", price:"", notes:"", product_id:null, wishlist_id:null });
+  const blankPlanned = () => ({ id:uid(), name:"", brand:"", category:_wUserCats[0]||"skin", image:"", link:"", price:"", notes:"", product_id:null, wishlist_id:null });
   const saveWish = () => { if(!editItem.name.trim()) return; onSave(editItem); setShowForm(false); setEditItem(null); };
   const savePlanned = () => { if(!newPlanned.name.trim()) return; onSavePlanned(newPlanned); setShowPlannedForm(false); setNewPlanned(null); };
 
@@ -1373,7 +1373,7 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
               <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
                 {item.link&&<button onClick={()=>openUrl(item.link)} style={{background:"#1E3428",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
                 <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>onMoveToCart(item)}>✓ Purchased</button>
-                <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setNewPlanned({...blankPlanned(),name:item.name,brand:item.brand||"",category:item.category||"skin",image:item.image||"",link:item.link||"",notes:item.notes||"",wishlist_id:item.id});setShowPlannedForm(true);setTab("planned");}}>📋 Plan</button>
+                <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setNewPlanned({...blankPlanned(),name:item.name,brand:item.brand||"",category:item.category||_wUserCats[0]||"skin",image:item.image||"",link:item.link||"",notes:item.notes||"",wishlist_id:item.id});setShowPlannedForm(true);setTab("planned");}}>📋 Plan</button>
                 <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setEditItem({...item});setShowForm(true);}}>Edit</button>
                 <button className="del-btn" style={{fontSize:".74rem"}} onClick={()=>onDelete(item.id)}>✕</button>
               </div>
@@ -1397,7 +1397,7 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
               {p.notes&&<div style={{fontSize:".72rem",color:"#6B8C7A",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
               <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
                 {p.link&&<button onClick={()=>openUrl(p.link)} style={{background:"#1E3428",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",cursor:"pointer",fontSize:".76rem",fontFamily:"'DM Sans',sans-serif"}}>Buy Now</button>}
-                <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setNewPlanned({...blankPlanned(),name:p.name,brand:p.brand||"",category:p.category||"skin",image:p.image||"",link:p.link||"",price:String(p.price||""),product_id:p.id});setShowPlannedForm(true);setTab("planned");}}>📋 Plan to Buy</button>
+                <button className="ghost-btn" style={{fontSize:".74rem",padding:"4px 10px"}} onClick={()=>{setNewPlanned({...blankPlanned(),name:p.name,brand:p.brand||"",category:p.category||_wUserCats[0]||"skin",image:p.image||"",link:p.link||"",price:String(p.price||""),product_id:p.id});setShowPlannedForm(true);setTab("planned");}}>📋 Plan to Buy</button>
               </div>
             </div>
           </div>
@@ -1467,7 +1467,7 @@ function WishlistPage({ wishlist, products, plannedPurchases, onSave, onDelete, 
 }
 
 // ── MY PRODUCTS PAGE ───────────────────────────────────────────
-function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, isCurrent, onFetchIngredients }) {
+function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, isCurrent, onFetchIngredients, userCategories = [] }) {
   const [status, setStatus] = useState(() => isCurrent ? "confirm_entries" : "loading_auto");
   const [result, setResult] = useState(null);
   const [includeEntries, setIncludeEntries] = useState(true);
@@ -1860,15 +1860,30 @@ function CompareRoutines({ snapshots, products, entries, onClose }) {
 
     const routineBlocks = selectedSnaps.map((snap, i) => {
       const prods = snap.products.map(sp => products.find(p=>p.id===sp.product_id)).filter(Boolean);
-      const skin = prods.filter(p=>p.category==="skin").map(p=>`${p.name}${p.brand?` by ${p.brand}`:""}`).join(", ");
-      const hair = prods.filter(p=>p.category==="hair").map(p=>`${p.name}${p.brand?` by ${p.brand}`:""}`).join(", ");
-      const tx   = prods.filter(p=>p.category==="treatment").map(p=>`${p.name}${p.brand?` by ${p.brand}`:""}`).join(", ");
+      // Group by whatever categories are actually present, so user-defined
+      // categories (supplements, peptides, etc.) appear in the comparison.
+      const grouped = {};
+      prods.forEach(p => {
+        const c = p.category || "other";
+        if (!grouped[c]) grouped[c] = [];
+        grouped[c].push(p);
+      });
+      // Preserve user ordering: user categories first, then unknown cats, then "treatment" last.
+      const known = (userCategories && userCategories.length) ? userCategories : ["skin","hair"];
+      const seen = new Set();
+      const ordered = [];
+      known.forEach(c => { if (grouped[c]) { ordered.push(c); seen.add(c); } });
+      Object.keys(grouped).forEach(c => { if (!seen.has(c) && c !== "treatment") { ordered.push(c); seen.add(c); } });
+      if (grouped.treatment) ordered.push("treatment");
+      const blocks = ordered.map(c => {
+        const list = grouped[c].map(p => `${p.name}${p.brand?` by ${p.brand}`:""}`).join(", ");
+        const label = c === "treatment" ? "Treatments" : (c.charAt(0).toUpperCase() + c.slice(1));
+        return `${label}: ${list}`;
+      });
       const notes = getSnapNotes(snap);
       return [
         "ROUTINE " + (i+1) + " (" + getSnapLabel(snap) + "):",
-        skin ? "Skin: " + skin : "",
-        hair ? "Hair: " + hair : "",
-        tx ? "Treatments: " + tx : "",
+        ...blocks,
         notes ? "Journal notes:\n" + notes : "No journal notes for this period."
       ].filter(Boolean).join("\n");
     }).join("\n\n---\n\n");
@@ -2714,7 +2729,8 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
             dateRange={{start:snap.started_at, end:snap.ended_at}}
             isCurrent={false}
             onClose={()=>setSnapAnalysis(false)}
-            onFetchIngredients={onFetchIngredients}/>
+            onFetchIngredients={onFetchIngredients}
+            userCategories={userCategories}/>
         </div>}
         {confirmDel&&<div style={{marginTop:12,background:"rgba(200,100,80,.08)",border:"1px solid #f0c8c0",borderRadius:12,padding:"14px"}} onClick={e=>e.stopPropagation()}>
           <div style={{fontSize:".84rem",color:"rgba(255,255,255,.85)",marginBottom:12,lineHeight:1.5}}>Delete this snapshot? This cannot be undone.</div>
@@ -2910,7 +2926,7 @@ function MyProductsPage({ products, snapshots, entries, onSaveProduct, onDeleteP
                   {/* Analysis panel */}
                   {showAnalysis&&activeSnap&&!isDraft&&(
                     <div style={{marginBottom:16,borderBottom:"1px solid rgba(255,255,255,.15)",paddingBottom:16}}>
-                      <RoutineAnalysis products={products} snapProducts={activeSnap.products} entries={entries} dateRange={{start:activeSnap.started_at,end:null}} isCurrent={true} onClose={()=>setShowAnalysis(false)} onFetchIngredients={onFetchIngredients}/>
+                      <RoutineAnalysis products={products} snapProducts={activeSnap.products} entries={entries} dateRange={{start:activeSnap.started_at,end:null}} isCurrent={true} onClose={()=>setShowAnalysis(false)} onFetchIngredients={onFetchIngredients} userCategories={userCategories}/>
                     </div>
                   )}
 
@@ -4448,11 +4464,15 @@ export default function App({ user }) {
   const setRoutine = (cat, items) => setRoutinesByCat(prev => ({ ...prev, [cat]: items }));
   const allItems   = Object.values(routinesByCat).flat();
   const itemById   = Object.fromEntries(allItems.map(r => [r.id, r]));
+  // Default category for new rows when the caller didn't supply one
+  // (first user-configured category, falling back to "skin" only if
+  //  user_categories hasn't loaded yet)
+  const defaultCat = userCategories[0] || "skin";
   const categoryOfItem = (itemId) => {
     for (const [cat, items] of Object.entries(routinesByCat)) {
       if (items.some(i => i.id === itemId)) return cat;
     }
-    return userCategories[0] || "skin";
+    return defaultCat;
   };
   // Legacy id->item maps kept for code paths that still reference them
   const allSkinMap = Object.fromEntries([...DEFAULT_SKIN,...skinR].map(r=>[r.id,r]));
@@ -4790,7 +4810,7 @@ export default function App({ user }) {
     if (!user) return;
     // userImage is a UI-only field (data URL from file picker) — strip from DB row
     const { userImage, ...prod } = p;
-    const row = { id:prod.id, user_id:user.id, name:prod.name, brand:prod.brand||"", category:prod.category||"skin", image:prod.image||"", link:prod.link||"", price:prod.price||null, notes:prod.notes||"", tags:prod.tags||[], frequency:prod.frequency||"", global_product_id:prod.global_product_id||null, ingredients:prod.ingredients||[], is_staple:prod.is_staple||false, sort_order:prod.sort_order||0, media_url:prod.media_url||"" };
+    const row = { id:prod.id, user_id:user.id, name:prod.name, brand:prod.brand||"", category:prod.category||defaultCat, image:prod.image||"", link:prod.link||"", price:prod.price||null, notes:prod.notes||"", tags:prod.tags||[], frequency:prod.frequency||"", global_product_id:prod.global_product_id||null, ingredients:prod.ingredients||[], is_staple:prod.is_staple||false, sort_order:prod.sort_order||0, media_url:prod.media_url||"" };
     await supabase.from("products").upsert(row, {onConflict:"id"});
     setProducts(prev => { const idx=prev.findIndex(x=>x.id===prod.id); return idx>=0?prev.map(x=>x.id===prod.id?prod:x):[prod,...prev]; });
     // Background lookups — fire and forget
@@ -4826,7 +4846,7 @@ export default function App({ user }) {
       const res = await fetch("/api/ingredients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name:p.name, brand:p.brand||"", category:p.category||"skin", globalProductId:p.global_product_id||null })
+        body: JSON.stringify({ name:p.name, brand:p.brand||"", category:p.category||defaultCat, globalProductId:p.global_product_id||null })
       });
       if (!res.ok) return null;
       const data = await res.json();
@@ -4867,7 +4887,7 @@ export default function App({ user }) {
   // ── Wishlist CRUD ──
   const saveWishlistItem = async (item) => {
     if (!user) return;
-    const row = { id:item.id, user_id:user.id, name:item.name, brand:item.brand||"", category:item.category||"skin", image:item.image||"", link:item.link||"", notes:item.notes||"", tags:item.tags||[], priority:item.priority||0 };
+    const row = { id:item.id, user_id:user.id, name:item.name, brand:item.brand||"", category:item.category||defaultCat, image:item.image||"", link:item.link||"", notes:item.notes||"", tags:item.tags||[], priority:item.priority||0 };
     await supabase.from("wishlist").upsert(row, {onConflict:"id"});
     setWishlist(prev => { const idx=prev.findIndex(x=>x.id===item.id); return idx>=0?prev.map(x=>x.id===item.id?item:x):[item,...prev]; });
     showT("Saved to wishlist");
@@ -4882,7 +4902,7 @@ export default function App({ user }) {
   // ── Planned Purchases CRUD ──
   const savePlannedPurchase = async (item) => {
     if (!user) return;
-    const row = { id:item.id, user_id:user.id, name:item.name, brand:item.brand||"", category:item.category||"skin", image:item.image||"", link:item.link||"", price:item.price||null, notes:item.notes||"", product_id:item.product_id||null, wishlist_id:item.wishlist_id||null };
+    const row = { id:item.id, user_id:user.id, name:item.name, brand:item.brand||"", category:item.category||defaultCat, image:item.image||"", link:item.link||"", price:item.price||null, notes:item.notes||"", product_id:item.product_id||null, wishlist_id:item.wishlist_id||null };
     await supabase.from("planned_purchases").upsert(row, {onConflict:"id"});
     setPlannedPurchases(prev=>{ const idx=prev.findIndex(x=>x.id===item.id); return idx>=0?prev.map(x=>x.id===item.id?item:x):[item,...prev]; });
     showT("Saved to planned purchases");
@@ -4892,14 +4912,14 @@ export default function App({ user }) {
     setPlannedPurchases(prev=>prev.filter(p=>p.id!==id));
   };
   const movePlannedToPurchase = async (item, date) => {
-    const purchase = { id:uid(), name:item.name, brand:item.brand||"", category:item.category||"skin", price:String(item.price||""), quantity:"1", date, notes:item.notes||"", tags:[], image:item.image||"", link:item.link||"", frequency:"", product_id:item.product_id||null, treatment_type:"" };
+    const purchase = { id:uid(), name:item.name, brand:item.brand||"", category:item.category||defaultCat, price:String(item.price||""), quantity:"1", date, notes:item.notes||"", tags:[], image:item.image||"", link:item.link||"", frequency:"", product_id:item.product_id||null, treatment_type:"" };
     await savePurchase(purchase);
     await deletePlannedPurchase(item.id);
   };
 
   const moveWishlistToPurchase = async (item) => {
     // Create a purchase from wishlist item
-    const newPurchase = { id:crypto.randomUUID(), name:item.name, brand:item.brand||"", category:item.category||"skin", price:"", quantity:"1", date:fmt(new Date()), notes:item.notes||"", tags:item.tags||[], image:item.image||"", link:item.link||"" };
+    const newPurchase = { id:crypto.randomUUID(), name:item.name, brand:item.brand||"", category:item.category||defaultCat, price:"", quantity:"1", date:fmt(new Date()), notes:item.notes||"", tags:item.tags||[], image:item.image||"", link:item.link||"" };
     await deleteWishlistItem(item.id);
     return newPurchase; // caller opens purchase form pre-filled
   };
@@ -5445,8 +5465,9 @@ export default function App({ user }) {
                 </svg>
               );
 
+              const isDoneIn = (cat, id) => (getCatE(activeDate, cat).done || []).includes(id);
               const renderCard = (it) => {
-                const isDone = it._tab==="skin"?(e2.skin||[]).includes(it.id):(e2.hair||[]).includes(it.id);
+                const isDone = isDoneIn(it._tab, it.id);
                 const linkedProd = getLinkedProduct(it.id);
                 const {svg, bgClass} = getBottleSvg(it);
                 return (
@@ -5482,7 +5503,7 @@ export default function App({ user }) {
                         <div className="log-section-title"><SunIcon/> Morning <ChevronIcon collapsed={collapsedSections.morning}/></div>
                         <div className="log-section-actions" onClick={e=>e.stopPropagation()}>
                           {!collapsedSections.morning&&<button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(morningItems,"morning");}}>
-                            {morningItems.filter(it=>(it.time||"both")==="day").every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"↩ Undo":"✓ All done"}
+                            {morningItems.filter(it=>(it.time||"both")==="day").every(it=>isDoneIn(it._tab, it.id))?"↩ Undo":"✓ All done"}
                           </button>}
                           {!collapsedSections.morning&&<button className="log-sec-edit-btn" onClick={e=>{e.stopPropagation();setEditSection("morning");setModal("manageItems");}}><PencilIcon/></button>}
                         </div>
@@ -5496,7 +5517,7 @@ export default function App({ user }) {
                         <div className="log-section-title"><MoonIcon/> Evening <ChevronIcon collapsed={collapsedSections.night}/></div>
                         <div className="log-section-actions" onClick={e=>e.stopPropagation()}>
                           {!collapsedSections.night&&<button className="log-sec-complete-btn" onClick={e=>{e.stopPropagation();completeSectionItems(nightItems,"night");}}>
-                            {nightItems.filter(it=>(it.time||"both")==="night").every(it=>(it._tab==="skin"?(e2.skin||[]):(e2.hair||[])).includes(it.id))?"↩ Undo":"✓ All done"}
+                            {nightItems.filter(it=>(it.time||"both")==="night").every(it=>isDoneIn(it._tab, it.id))?"↩ Undo":"✓ All done"}
                           </button>}
                           {!collapsedSections.night&&<button className="log-sec-edit-btn" onClick={e=>{e.stopPropagation();setEditSection("night");setModal("manageItems");}}><PencilIcon/></button>}
                         </div>
