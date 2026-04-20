@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import Auth from './Auth';
@@ -24,7 +24,16 @@ function Root() {
 
   // Onboarding gating: null = still checking, false = needs onboarding, true = done
   const [onboardingComplete, setOnboardingComplete] = useState(null);
-  const [profileChecking, setProfileChecking]     = useState(false);
+  // Guard against concurrent profile checks. Using a ref (not state) so that
+  // React StrictMode's double-invocation can't deadlock us: a cancelled first
+  // run must still be able to reset the guard in `finally` regardless of
+  // component unmount state.
+  const checkingRef = useRef(false);
+  // Hard-stop safety net: if the async check takes > 8s (network, weird RLS,
+  // etc.), fail open so the user isn't staring at "Preparing your space…"
+  // forever. Better to land them in the app with the legacy ["skin","hair"]
+  // defaults than to block indefinitely.
+  const timeoutRef = useRef(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -36,6 +45,7 @@ function Root() {
       setUser(session?.user ?? null);
       // Reset onboarding state on auth change so we re-check for the new user
       setOnboardingComplete(null);
+      checkingRef.current = false;
     });
 
     return () => subscription.unsubscribe();
@@ -43,12 +53,27 @@ function Root() {
 
   // Whenever we have a user but haven't yet determined their onboarding state, check it.
   useEffect(() => {
-    if (!user || onboardingComplete !== null || profileChecking) return;
-    let cancelled = false;
-    setProfileChecking(true);
+    if (!user || onboardingComplete !== null) return;
+    if (checkingRef.current) return;
+    checkingRef.current = true;
+
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
+      checkingRef.current = false;
+      setOnboardingComplete(value);
+    };
+
+    // Safety-net timeout — never block longer than 8s.
+    timeoutRef.current = setTimeout(() => {
+      console.warn("Onboarding check timed out after 8s — failing open.");
+      finish(true);
+    }, 8000);
+
     (async () => {
       try {
-        // Try user_profile first
         const { data: profile, error: profErr } = await supabase
           .from("user_profile")
           .select("onboarding_complete")
@@ -56,22 +81,13 @@ function Root() {
           .maybeSingle();
 
         if (profErr && profErr.code !== "PGRST116") {
-          // Table might not exist yet (migration not run). Fail open → treat
-          // as complete so existing users aren't locked out.
           console.warn("user_profile check failed, treating as complete:", profErr.message);
-          if (!cancelled) setOnboardingComplete(true);
-          return;
+          finish(true); return;
         }
 
-        if (profile?.onboarding_complete) {
-          if (!cancelled) setOnboardingComplete(true);
-          return;
-        }
+        if (profile?.onboarding_complete) { finish(true); return; }
 
-        // Backwards compatibility: if the user has existing data (any routine,
-        // entry, or product row), treat them as an existing user and skip
-        // onboarding — we'll auto-seed their categories as ["skin","hair"]
-        // inside App.jsx when user_categories is empty.
+        // Existing-user backwards-compat — skip onboarding if any data exists.
         const [
           { data: anyRoutine },
           { data: anyEntry },
@@ -87,26 +103,21 @@ function Root() {
           (anyProduct && anyProduct.length > 0);
 
         if (isExistingUser) {
-          // Seed a user_profile row so we don't ask them again next load.
-          await supabase.from("user_profile").upsert(
+          // Fire-and-forget — don't block the gate on this write.
+          supabase.from("user_profile").upsert(
             { user_id: user.id, onboarding_complete: true },
             { onConflict: "user_id" }
-          );
-          if (!cancelled) setOnboardingComplete(true);
-          return;
+          ).then(({ error }) => { if (error) console.warn("user_profile seed failed:", error.message); });
+          finish(true); return;
         }
 
-        if (!cancelled) setOnboardingComplete(false);
+        finish(false);
       } catch (e) {
-        console.error("Onboarding check error", e);
-        // Fail open so a transient error doesn't block the app.
-        if (!cancelled) setOnboardingComplete(true);
-      } finally {
-        if (!cancelled) setProfileChecking(false);
+        console.error("Onboarding check error — failing open:", e);
+        finish(true);
       }
     })();
-    return () => { cancelled = true; };
-  }, [user, onboardingComplete, profileChecking]);
+  }, [user, onboardingComplete]);
 
   if (loading) return <Loading />;
   if (!user)  return <Auth />;
