@@ -4444,7 +4444,6 @@ export default function App({ user }) {
   useEffect(()=>{
     if (!activeTab) { setCurPhotos([]); return; }
     setCurPhotos(getCatE(activeDate, activeTab).photos || []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   },[activeDate,activeTab,entries]);
 
   const shiftD = (d,n)=>{ const dt=parse(d); dt.setDate(dt.getDate()+n); return fmt(dt); };
