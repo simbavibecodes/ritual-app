@@ -14,6 +14,11 @@ const DEFAULT_HAIR = [
   { id: "minoxidil",    label: "Minoxidil",    emoji: "💊", time: "both" },
   { id: "biotin",       label: "Biotin",       emoji: "🌱", time: "both" },
 ];
+// Any user-defined category starts empty by default. Skin & hair retain their
+// legacy seeds above for backward compatibility with existing users.
+const emptyRoutine = () => [];
+// Capitalise a category key for display (e.g. "skin" -> "Skin", "peptides" -> "Peptides")
+const capCat = (c) => (c ? c.charAt(0).toUpperCase() + c.slice(1) : "");
 const MOODS = ["✨ Glowing", "😊 Good", "😐 Okay", "😞 Bad"];
 const EMOJI_OPTIONS = [
   // Skincare & beauty
@@ -553,7 +558,8 @@ function ManageItemsModal({ type, section, items, products, onAdd, onRemove, onE
   useEffect(()=>{ setTimeout(()=>ref.current?.focus(),80); },[]);
 
   const titleMap = { morning:"Edit morning routine", night:"Edit evening routine" };
-  const modalTitle = titleMap[section] || `Manage ${type==="skin"?"Skin":"Hair"} steps`;
+  const typeLabel = type ? (type.charAt(0).toUpperCase()+type.slice(1)) : "Routine";
+  const modalTitle = titleMap[section] || `Manage ${typeLabel} steps`;
 
   const doAdd = () => {
     if (!label.trim()) return;
@@ -1102,11 +1108,11 @@ function PurchasesPage({ purchases, products, wishlist, prefill, onClearPrefill,
           {editP.category==="treatment"?(
             <>
               <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Treatment name *" value={editP.name} onChange={e=>setEditP(p=>({...p,name:e.target.value}))} autoFocus/>
-              <div style={{display:"flex",gap:8,marginBottom:10}}>
-                {["skin","hair"].map(tp=>(
-                  <button key={tp} className={`dow-chip ${editP.treatment_type===tp?"on":""}`} style={{flex:1,textAlign:"center",fontSize:".78rem"}}
+              <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+                {((userCategories && userCategories.length > 0) ? userCategories : ["skin","hair"]).map(tp=>(
+                  <button key={tp} className={`dow-chip ${editP.treatment_type===tp?"on":""}`} style={{flex:1,minWidth:70,textAlign:"center",fontSize:".78rem"}}
                     onClick={()=>setEditP(p=>({...p,treatment_type:tp}))}>
-                    {tp==="skin"?"🌿 Skin":"✨ Hair"}
+                    {tp.charAt(0).toUpperCase() + tp.slice(1)}
                   </button>
                 ))}
               </div>
@@ -3156,7 +3162,7 @@ function TreatmentHistoryCard({ tx, doneDates }) {
         <span className="freq-count">{doneDates.length}x done</span>
         <span style={{marginLeft:6,color:"#C8B8A0",fontSize:".8rem"}}>{open?"▲":"▼"}</span>
       </div>
-      <div style={{fontSize:".72rem",color:"#5A5248",marginTop:2}}>{tx.type==="skin"?"🌿 Skin":"✨ Hair"}</div>
+      <div style={{fontSize:".72rem",color:"#5A5248",marginTop:2}}>{tx.type ? (tx.type.charAt(0).toUpperCase()+tx.type.slice(1)) : ""}</div>
       {open&&sorted.length>0&&<div style={{marginTop:10,borderTop:"1px solid #1E1C1A",paddingTop:8}}>
         {sorted.map(d=>(
           <div key={d} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid #222019",fontSize:".8rem",color:"#D4C8B8"}}>
@@ -3258,11 +3264,24 @@ function MiniCal({ selectedDates, onToggleDate, rangeStart, onRangeStart, onRang
   );
 }
 
-function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsProp, schedules, treatments, entries, products, wishlist, today, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose, onAddItem, onEditItem, initialPlan, initialTreatment }) {
+function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsProp, categories = [], routinesByCat = {}, schedules, treatments, entries, products, wishlist, today, onSave, onSaveMany, onDelete, onSaveTreatment, onDeleteTreatment, onClose, onAddItem, onEditItem, initialPlan, initialTreatment }) {
+  // Normalize the category list we'll use inside the modal.
+  const planCats = (categories && categories.length > 0) ? categories : ["skin", "hair"];
+  const firstCat = planCats[0];
+  // Lookup: which category does a given routine item live in?
+  const catOfItem = (itemId) => {
+    for (const cat of planCats) {
+      if ((routinesByCat[cat] || []).some(r => r.id === itemId)) return cat;
+    }
+    // Legacy fallback — check the old skin/hair props.
+    if (skinItemsProp?.some(r => r.id === itemId)) return "skin";
+    if (hairItemsProp?.some(r => r.id === itemId)) return "hair";
+    return firstCat;
+  };
   const _today = today || fmt(new Date());
   const [screen, setScreen]=useState(initialPlan?(initialPlan._editMode?"editPlan":"viewPlan"):initialTreatment?"editTreatment":"chooseType"); // chooseType | viewPlan | editPlan | editTreatment
   const [editing, setEditing]=useState(initialPlan?{...initialPlan,itemIds:initialPlan.itemIds||[initialPlan.itemId].filter(Boolean),dates:initialPlan.dates||[],startDate:initialPlan.startDate||"",endDate:initialPlan.endDate||"",linkedProductId:initialPlan.linkedProductId||""}:{id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),endDate:"",linkedProductId:"",reminder:false,time:"08:00",location:""});
-  const [editTx, setEditTx]=useState(initialTreatment?{...initialTreatment}:{id:uid(),name:"",type:"skin",dates:[],completedDates:[],location:"",price:"",notes:""});
+  const [editTx, setEditTx]=useState(initialTreatment?{...initialTreatment}:{id:uid(),name:"",type:firstCat,dates:[],completedDates:[],location:"",price:"",notes:""});
   const [txMode, setTxMode]=useState(initialTreatment?"upcoming":null); // null | "past" | "upcoming"
   const [pastDate, setPastDate]=useState(fmt(new Date()));
   const [showItemPick, setShowItemPick]=useState(false);
@@ -3274,7 +3293,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
 
   const startNewPlan=()=>{ setEditing({id:uid(),itemIds:[],days:[],dates:[],startDate:fmt(new Date()),endDate:"",linkedProductId:"",reminder:false,time:"08:00",location:""}); setScreen("editPlan"); };
   const startEditPlan=s=>{ setEditing({...s,itemIds:s.itemIds||[s.itemId].filter(Boolean),dates:s.dates||[],startDate:s.startDate||"",endDate:s.endDate||"",linkedProductId:s.linkedProductId||""}); setScreen("editPlan"); };
-  const startNewTx=()=>{ setEditTx({id:uid(),name:"",type:"skin",dates:[]}); setScreen("editTreatment"); };
+  const startNewTx=()=>{ setEditTx({id:uid(),name:"",type:firstCat,dates:[]}); setScreen("editTreatment"); };
   const startEditTx=t=>{ setEditTx({...t}); setScreen("editTreatment"); };
 
   const toggleDay=d=>setEditing(e=>({...e,days:e.days.includes(d)?e.days.filter(x=>x!==d):[...e.days,d]}));
@@ -3307,12 +3326,18 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
           <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.5rem",fontStyle:"italic",color:"#1A2820",marginBottom:6}}>What's the routine?</div>
           <div style={{fontSize:".78rem",color:"#9AB0A4",marginBottom:28}}>Choose a category to get started</div>
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            {[["🌿","Skin Routine","Plan your skin care steps","skin"],["✨","Hair Routine","Plan your hair care steps","hair"],["💉","Treatment","Schedule a treatment session","treatment"]].map(([emoji,label,sub,type])=>(
+            {[
+              ...planCats.map(cat => ({
+                type: cat,
+                label: (cat.charAt(0).toUpperCase() + cat.slice(1)) + " Routine",
+                sub: "Plan your " + cat + " care steps",
+              })),
+              { type: "treatment", label: "Treatment", sub: "Schedule a treatment session" }
+            ].map(({ type, label, sub }) => (
               <button key={type} onClick={()=>{
-                if(type==="treatment"){ setEditTx({id:uid(),name:"",type:"skin",dates:[]}); setScreen("editTreatment"); }
+                if(type==="treatment"){ setEditTx({id:uid(),name:"",type:firstCat,dates:[]}); setScreen("editTreatment"); }
                 else { setEditing(e=>({...e,itemIds:[],_category:type})); setScreen("editPlan"); }
               }} style={{display:"flex",alignItems:"center",gap:14,background:"#F8FAF8",border:"1px solid #EEF4F0",borderRadius:14,padding:"14px 18px",cursor:"pointer",textAlign:"left",transition:"all .15s",fontFamily:"'DM Sans',sans-serif"}}>
-                <span style={{fontSize:"1.6rem"}}>{emoji}</span>
                 <div>
                   <div style={{fontSize:".9rem",color:"#1A2820",fontWeight:500}}>{label}</div>
                   <div style={{fontSize:".74rem",color:"#9AB0A4",marginTop:2}}>{sub}</div>
@@ -3330,11 +3355,16 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
     const recurDays=(editing.days||[]).sort().map(d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d]).join(", ");
     const dateCount=(editing.dates||[]).length;
     const linkedProd=[...(products||[]),(wishlist||[]).map(w=>({...w,_fromWishlist:true}))].flat().find(p=>p.id===editing.linkedProductId);
-    const itemType=skinItemsProp?.find(r=>r.id===(editing.itemIds?.[0]||editing.itemId))?"skin":"hair";
+    const itemType=catOfItem(editing.itemIds?.[0]||editing.itemId);
+    // Resolve "done" for a given date+category, preferring the new JSONB
+    // shape and falling back to legacy top-level skin/hair arrays.
+    const doneOn = (d, cat) =>
+      entries?.[d]?.byCategory?.[cat]?.done ||
+      entries?.[d]?.[cat] || [];
     let completion=null;
     const hasStartDate=!!editing.startDate;
     if(editing.dates?.length>0){
-      const done=editing.dates.filter(d=>(entries?.[d]?.[itemType]||[]).includes(editing.itemIds?.[0]||editing.itemId)).length;
+      const done=editing.dates.filter(d=>doneOn(d,itemType).includes(editing.itemIds?.[0]||editing.itemId)).length;
       completion={done,total:editing.dates.length};
     } else if(editing.days?.length>0&&hasStartDate){
       const start=new Date(editing.startDate+"T12:00:00"),end=new Date(_today+"T12:00:00");
@@ -3343,7 +3373,7 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
         if(editing.days.includes(cur.getDay())){
           total++;
           const d=fmt(cur);
-          if((entries?.[d]?.[itemType]||[]).includes(editing.itemIds?.[0]||editing.itemId)) done++;
+          if(doneOn(d,itemType).includes(editing.itemIds?.[0]||editing.itemId)) done++;
         }
         cur.setDate(cur.getDate()+1);
       }
@@ -3476,7 +3506,10 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
             <>
               <div className="modal-sub">Select items for this routine</div>
               <div style={{marginBottom:8,display:"flex",flexDirection:"column",gap:6}}>
-                {(editing._category==="hair"?hairItems:editing._category==="skin"?skinItems:allItems).map(it=>{
+                {(editing._category && editing._category !== "treatment"
+                    ? (routinesByCat[editing._category] || [])
+                    : allItems
+                  ).map(it=>{
                   const on=(editing.itemIds||[]).includes(it.id);
                   return (
                     <div key={it.id} className="m-item" style={{cursor:"pointer",background:on?"#EEF4F0":"#F8FAF8",border:on?"1.5px solid #7EC49A":"1px solid #EEF4F0",marginBottom:0}}
@@ -3498,7 +3531,8 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                     onKeyDown={e=>{
                       if(e.key==="Enter"&&newStepLabel.trim()){
                         const item={id:uid(),label:newStepLabel.trim(),emoji:newStepEmoji};
-                        onAddItem(editing._category==="hair"?"hair":"skin", item);
+                        const targetCat = editing._category && editing._category !== "treatment" ? editing._category : firstCat;
+                        onAddItem(targetCat, item);
                         setEditing(ed=>({...ed,itemIds:[...(ed.itemIds||[]),item.id]}));
                         setNewStepLabel(""); setNewStepEmoji("🌿"); setShowNewStepEmoji(false);
                       }
@@ -3506,7 +3540,8 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
                   <button className="confirm-btn" disabled={!newStepLabel.trim()} onClick={()=>{
                     if(!newStepLabel.trim()) return;
                     const item={id:uid(),label:newStepLabel.trim(),emoji:newStepEmoji};
-                    onAddItem(editing._category==="hair"?"hair":"skin", item);
+                    const targetCat = editing._category && editing._category !== "treatment" ? editing._category : firstCat;
+                    onAddItem(targetCat, item);
                     setEditing(ed=>({...ed,itemIds:[...(ed.itemIds||[]),item.id]}));
                     setNewStepLabel(""); setNewStepEmoji("🌿"); setShowNewStepEmoji(false);
                   }}>+ Add</button>
@@ -3628,11 +3663,11 @@ function PlanModal({ allItems, skinItems: skinItemsProp, hairItems: hairItemsPro
   if(screen==="editTreatment"&&editTx){
     const isExisting=treatments.find(t=>t.id===editTx.id);
     const TypeToggle=()=>(
-      <div style={{display:"flex",gap:8,marginBottom:12}}>
-        {["skin","hair"].map(tp=>(
-          <button key={tp} className={`dow-chip ${editTx.type===tp?"on":""}`} style={{flex:1,textAlign:"center"}}
+      <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+        {planCats.map(tp=>(
+          <button key={tp} className={`dow-chip ${editTx.type===tp?"on":""}`} style={{flex:1,minWidth:70,textAlign:"center"}}
             onClick={()=>setEditTx(t=>({...t,type:tp}))}>
-            {tp==="skin"?"🌿 Skin":"✨ Hair"}
+            {tp.charAt(0).toUpperCase() + tp.slice(1)}
           </button>
         ))}
       </div>
@@ -3802,28 +3837,51 @@ function FreqModal({ allItems, tracked, period, onToggle, onPeriod, onClose }) {
   );
 }
 
-function DayEditModal({ date, entry, skinRoutines, hairRoutines, onSave, onClose }) {
-  const [skin,setSkin]           = useState(entry.skin||[]);
-  const [hair,setHair]           = useState(entry.hair||[]);
-  const [skinMood,setSkinMood]   = useState(entry.skin_mood||"");
-  const [hairMood,setHairMood]   = useState(entry.hair_mood||"");
-  const [skinNotes,setSkinNotes] = useState(entry.skin_notes||"");
-  const [hairNotes,setHairNotes] = useState(entry.hair_notes||"");
-  const [skinPhotos,setSkinPhotos]=useState(entry.skin_photos||[]);
-  const [hairPhotos,setHairPhotos]=useState(entry.hair_photos||[]);
-  const [tab,setTab]             = useState("skin");
-  const toggle = (type,id) => {
-    if(type==="skin") setSkin(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
-    else setHair(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
+function DayEditModal({ date, entry, categories = [], routinesByCat = {}, onSave, onClose }) {
+  const cats = (categories && categories.length > 0) ? categories : ["skin","hair"];
+  // Per-category state: { done:[], mood:"", notes:"", photos:[] } seeded from entry.
+  const seed = () => {
+    const initial = {};
+    cats.forEach(cat => {
+      const fromNew = entry?.byCategory?.[cat];
+      if (fromNew) {
+        initial[cat] = {
+          done:   [...(fromNew.done || [])],
+          mood:   fromNew.mood || "",
+          notes:  fromNew.notes || "",
+          photos: [...(fromNew.photos || [])],
+        };
+      } else if (cat === "skin") {
+        initial[cat] = { done: [...(entry?.skin||[])], mood: entry?.skin_mood||"", notes: entry?.skin_notes||"", photos: [...(entry?.skin_photos||[])] };
+      } else if (cat === "hair") {
+        initial[cat] = { done: [...(entry?.hair||[])], mood: entry?.hair_mood||"", notes: entry?.hair_notes||"", photos: [...(entry?.hair_photos||[])] };
+      } else {
+        initial[cat] = { done: [], mood: "", notes: "", photos: [] };
+      }
+    });
+    return initial;
   };
-  const list=tab==="skin"?skinRoutines:hairRoutines;
-  const checked=tab==="skin"?skin:hair;
-  const mood=tab==="skin"?skinMood:hairMood;
-  const setMood=tab==="skin"?setSkinMood:setHairMood;
-  const notes=tab==="skin"?skinNotes:hairNotes;
-  const setNotes=tab==="skin"?setSkinNotes:setHairNotes;
-  const photos=tab==="skin"?skinPhotos:hairPhotos;
-  const setPhotos=tab==="skin"?setSkinPhotos:setHairPhotos;
+  const [state, setState] = useState(seed);
+  const [tab, setTab]     = useState(cats[0]);
+  const cur = state[tab] || { done: [], mood: "", notes: "", photos: [] };
+  const list = routinesByCat[tab] || [];
+  const patch = (p) => setState(prev => ({ ...prev, [tab]: { ...prev[tab], ...p } }));
+  const toggle = (id) => {
+    const d = cur.done.includes(id) ? cur.done.filter(x=>x!==id) : [...cur.done, id];
+    patch({ done: d });
+  };
+  const handleSave = () => {
+    // Build byCategory + legacy mirrors for back-compat onSave consumers.
+    const byCategory = {};
+    const legacy = {};
+    cats.forEach(cat => {
+      const s = state[cat] || { done: [], mood: "", notes: "", photos: [] };
+      byCategory[cat] = { done: s.done, mood: s.mood, notes: s.notes, photos: s.photos };
+      if (cat === "skin") Object.assign(legacy, { skin: s.done, skin_mood: s.mood, skin_notes: s.notes, skin_photos: s.photos });
+      if (cat === "hair") Object.assign(legacy, { hair: s.done, hair_mood: s.mood, hair_notes: s.notes, hair_photos: s.photos });
+    });
+    onSave({ ...legacy, byCategory });
+  };
   return (
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal">
@@ -3832,12 +3890,13 @@ function DayEditModal({ date, entry, skinRoutines, hairRoutines, onSave, onClose
           <button className="modal-x" onClick={onClose}>×</button>
         </div>
         <div className="sub-tabs">
-          <button className={`sub-tab ${tab==="skin"?"active":""}`} onClick={()=>setTab("skin")}>🌿 Skin</button>
-          <button className={`sub-tab ${tab==="hair"?"active":""}`} onClick={()=>setTab("hair")}>✨ Hair</button>
+          {cats.map(cat => (
+            <button key={cat} className={`sub-tab ${tab===cat?"active":""}`} onClick={()=>setTab(cat)}>{capCat(cat)}</button>
+          ))}
         </div>
         <div className="routine-grid" style={{marginBottom:16}}>
-          {list.map(it=>{ const on=checked.includes(it.id); return (
-            <div key={it.id} className={`r-item ${on?"on":""}`} onClick={()=>toggle(tab,it.id)}>
+          {list.map(it=>{ const on=cur.done.includes(it.id); return (
+            <div key={it.id} className={`r-item ${on?"on":""}`} onClick={()=>toggle(it.id)}>
               <span className="r-emoji">{it.emoji}</span>
               <span className="r-label">{it.label}</span>
               <div className="r-check">{on&&<CheckIcon/>}</div>
@@ -3846,45 +3905,55 @@ function DayEditModal({ date, entry, skinRoutines, hairRoutines, onSave, onClose
         </div>
         <div className="modal-sub">How's your {tab} feeling?</div>
         <div className="mood-row" style={{marginBottom:14}}>
-          {MOODS.map(m=><button key={m} className={`mood-chip ${mood===m?"on":""}`} onClick={()=>setMood(p=>p===m?"":m)}>{m}</button>)}
+          {MOODS.map(m=><button key={m} className={`mood-chip ${cur.mood===m?"on":""}`} onClick={()=>patch({ mood: cur.mood === m ? "" : m })}>{m}</button>)}
         </div>
         <div className="modal-sub">Notes & Photos</div>
-        <PhotoNotes notes={notes} photos={photos} onNotesChange={setNotes} onPhotosChange={v=>setPhotos(typeof v==="function"?v(photos):v)}/>
-        <button className="save-btn" onClick={()=>onSave({skin,hair,skin_mood:skinMood,hair_mood:hairMood,skin_notes:skinNotes,hair_notes:hairNotes,skin_photos:skinPhotos,hair_photos:hairPhotos})}>Save Entry</button>
+        <PhotoNotes notes={cur.notes} photos={cur.photos}
+          onNotesChange={v=>patch({ notes: v })}
+          onPhotosChange={v=>patch({ photos: typeof v==="function"?v(cur.photos):v })}/>
+        <button className="save-btn" onClick={handleSave}>Save Entry</button>
       </div>
     </div>
   );
 }
 
-function RangeApplyModal({ rangeStart, rangeEnd, skinRoutines, hairRoutines, onApply, onClose }) {
-  const [skin,setSkin]           = useState([]);
-  const [hair,setHair]           = useState([]);
-  const [skinMood,setSkinMood]   = useState("");
-  const [hairMood,setHairMood]   = useState("");
-  const [skinNotes,setSkinNotes] = useState("");
-  const [hairNotes,setHairNotes] = useState("");
-  const [skinPhotos,setSkinPhotos]=useState([]);
-  const [hairPhotos,setHairPhotos]=useState([]);
-  const [tab,setTab]             = useState("skin");
-  const days = dateRange(rangeStart, rangeEnd);
-  const toggle = (type,id) => {
-    if(type==="skin") setSkin(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
-    else setHair(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
+function RangeApplyModal({ rangeStart, rangeEnd, categories = [], routinesByCat = {}, onApply, onClose }) {
+  const cats = (categories && categories.length > 0) ? categories : ["skin","hair"];
+  const makeEmpty = () => {
+    const init = {};
+    cats.forEach(c => { init[c] = { done: [], mood: "", notes: "", photos: [] }; });
+    return init;
   };
-  const list=tab==="skin"?skinRoutines:hairRoutines;
-  const checked=tab==="skin"?skin:hair;
-  const mood=tab==="skin"?skinMood:hairMood;
-  const setMood=tab==="skin"?setSkinMood:setHairMood;
-  const notes=tab==="skin"?skinNotes:hairNotes;
-  const setNotes=tab==="skin"?setSkinNotes:setHairNotes;
-  const photos=tab==="skin"?skinPhotos:hairPhotos;
-  const setPhotos=tab==="skin"?setSkinPhotos:setHairPhotos;
+  const [state, setState] = useState(makeEmpty);
+  const [tab, setTab]     = useState(cats[0]);
+  const days = dateRange(rangeStart, rangeEnd);
+  const cur = state[tab] || { done: [], mood: "", notes: "", photos: [] };
+  const list = routinesByCat[tab] || [];
+  const patch = (p) => setState(prev => ({ ...prev, [tab]: { ...prev[tab], ...p } }));
+  const toggle = (id) => {
+    const d = cur.done.includes(id) ? cur.done.filter(x=>x!==id) : [...cur.done, id];
+    patch({ done: d });
+  };
   const sD=parse(rangeStart), eD=parse(rangeEnd);
   const sameMonth=sD.getMonth()===eD.getMonth()&&sD.getFullYear()===eD.getFullYear();
   const label=sameMonth
     ?`${sD.toLocaleDateString("en-US",{month:"long",day:"numeric"})} – ${eD.getDate()}`
     :`${sD.toLocaleDateString("en-US",{month:"short",day:"numeric"})} – ${eD.toLocaleDateString("en-US",{month:"short",day:"numeric"})}`;
-  const hasAny=skin.length||hair.length||skinMood||hairMood||skinNotes||hairNotes||skinPhotos.length||hairPhotos.length;
+  const hasAny = cats.some(c => {
+    const s = state[c] || {};
+    return (s.done||[]).length || s.mood || s.notes || (s.photos||[]).length;
+  });
+  const handleApply = () => {
+    const byCategory = {};
+    const legacy = {};
+    cats.forEach(cat => {
+      const s = state[cat] || { done: [], mood: "", notes: "", photos: [] };
+      byCategory[cat] = { done: s.done, mood: s.mood, notes: s.notes, photos: s.photos };
+      if (cat === "skin") Object.assign(legacy, { skin: s.done, skin_mood: s.mood, skin_notes: s.notes, skin_photos: s.photos });
+      if (cat === "hair") Object.assign(legacy, { hair: s.done, hair_mood: s.mood, hair_notes: s.notes, hair_photos: s.photos });
+    });
+    onApply({ ...legacy, byCategory }, days);
+  };
   return (
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal">
@@ -3897,12 +3966,13 @@ function RangeApplyModal({ rangeStart, rangeEnd, skinRoutines, hairRoutines, onA
         </div>
         <div className="modal-sub">Steps done across this period</div>
         <div className="sub-tabs">
-          <button className={`sub-tab ${tab==="skin"?"active":""}`} onClick={()=>setTab("skin")}>🌿 Skin</button>
-          <button className={`sub-tab ${tab==="hair"?"active":""}`} onClick={()=>setTab("hair")}>✨ Hair</button>
+          {cats.map(cat => (
+            <button key={cat} className={`sub-tab ${tab===cat?"active":""}`} onClick={()=>setTab(cat)}>{capCat(cat)}</button>
+          ))}
         </div>
         <div className="routine-grid" style={{marginBottom:16}}>
-          {list.map(it=>{ const on=checked.includes(it.id); return (
-            <div key={it.id} className={`r-item ${on?"on":""}`} onClick={()=>toggle(tab,it.id)}>
+          {list.map(it=>{ const on=cur.done.includes(it.id); return (
+            <div key={it.id} className={`r-item ${on?"on":""}`} onClick={()=>toggle(it.id)}>
               <span className="r-emoji">{it.emoji}</span>
               <span className="r-label">{it.label}</span>
               <div className="r-check">{on&&<CheckIcon/>}</div>
@@ -3911,12 +3981,13 @@ function RangeApplyModal({ rangeStart, rangeEnd, skinRoutines, hairRoutines, onA
         </div>
         <div className="modal-sub">How's your {tab} feeling?</div>
         <div className="mood-row" style={{marginBottom:14}}>
-          {MOODS.map(m=><button key={m} className={`mood-chip ${mood===m?"on":""}`} onClick={()=>setMood(p=>p===m?"":m)}>{m}</button>)}
+          {MOODS.map(m=><button key={m} className={`mood-chip ${cur.mood===m?"on":""}`} onClick={()=>patch({ mood: cur.mood === m ? "" : m })}>{m}</button>)}
         </div>
         <div className="modal-sub">Notes & Photos</div>
-        <PhotoNotes notes={notes} photos={photos} onNotesChange={setNotes} onPhotosChange={v=>setPhotos(typeof v==="function"?v(photos):v)}/>
-        <button className="save-btn" disabled={!hasAny} style={{opacity:hasAny?1:.4}}
-          onClick={()=>onApply({skin,hair,skin_mood:skinMood,hair_mood:hairMood,skin_notes:skinNotes,hair_notes:hairNotes,skin_photos:skinPhotos,hair_photos:hairPhotos},days)}>
+        <PhotoNotes notes={cur.notes} photos={cur.photos}
+          onNotesChange={v=>patch({ notes: v })}
+          onPhotosChange={v=>patch({ photos: typeof v==="function"?v(cur.photos):v })}/>
+        <button className="save-btn" disabled={!hasAny} style={{opacity:hasAny?1:.4}} onClick={handleApply}>
           Apply to {days.length} Day{days.length!==1?"s":""}
         </button>
       </div>
@@ -4103,7 +4174,7 @@ function getBottleSvg(item) {
 export default function App({ user }) {
   const today = fmt(new Date());
   const [view,        setView]        = useState(() => sessionStorage.getItem('ritual_view') || "log");
-  const [activeTab,   setActiveTab]   = useState("skin");
+  const [activeTab,   setActiveTab]   = useState(null); // null until userCategories resolves
   const [logFilter,   setLogFilter]   = useState("all");
   // User-defined categories loaded from `user_categories`. Defaults to
   // ["skin","hair"] for existing users (or until the row is loaded) so
@@ -4117,8 +4188,16 @@ export default function App({ user }) {
   const toggleSection = key => setCollapsedSections(p=>({...p,[key]:!p[key]}));
   const [activeDate,  setActiveDate]  = useState(today);
   const [entries,     setEntries]     = useState({});
-  const [skinR,       setSkinR]       = useState(DEFAULT_SKIN);
-  const [hairR,       setHairR]       = useState(DEFAULT_HAIR);
+  // Generic routines-by-category map. Keyed by lowercase category name.
+  // Legacy `skin` and `hair` entries keep their seeded defaults so existing
+  // users never see a blank routine before the DB load finishes. New
+  // user-defined categories start empty (handled via getRoutine()).
+  const [routinesByCat, setRoutinesByCat] = useState({ skin: DEFAULT_SKIN, hair: DEFAULT_HAIR });
+  // Back-compat shims so the rest of the (large) render tree keeps compiling
+  // without touching every call site. These are DERIVED values — never set
+  // directly; always mutate via setRoutinesByCat.
+  const skinR = routinesByCat.skin || [];
+  const hairR = routinesByCat.hair || [];
   const [schedules,   setSchedules]   = useState([]);
   const [freqTracked, setFreqTracked] = useState(["tretinoin","spf","alpyn_serum","rosemary_oil"]);
   const [freqPeriod,  setFreqPeriod]  = useState("year");
@@ -4200,19 +4279,48 @@ export default function App({ user }) {
 
         if (entryRows) {
           const map = {};
-          entryRows.forEach(r => { map[r.date] = {
-            skin: r.skin||[], hair: r.hair||[],
-            skin_mood: r.skin_mood||"", hair_mood: r.hair_mood||"",
-            skin_notes: r.skin_notes||"", hair_notes: r.hair_notes||"",
-            skin_photos: r.skin_photos||[], hair_photos: r.hair_photos||[]
-          }; });
+          entryRows.forEach(r => {
+            // Prefer the new JSONB column when present; fall back to the
+            // legacy skin/hair columns for rollback / pre-migration rows.
+            let byCategory = r.by_category && typeof r.by_category === "object" ? { ...r.by_category } : {};
+            if (Object.keys(byCategory).length === 0) {
+              if (r.skin?.length || r.skin_mood || r.skin_notes || r.skin_photos?.length) {
+                byCategory.skin = {
+                  done: r.skin || [], mood: r.skin_mood || "",
+                  notes: r.skin_notes || "", photos: r.skin_photos || []
+                };
+              }
+              if (r.hair?.length || r.hair_mood || r.hair_notes || r.hair_photos?.length) {
+                byCategory.hair = {
+                  done: r.hair || [], mood: r.hair_mood || "",
+                  notes: r.hair_notes || "", photos: r.hair_photos || []
+                };
+              }
+            }
+            // Keep legacy top-level keys mirrored so legacy readers still work
+            // within a single render without forcing a rewrite everywhere.
+            map[r.date] = {
+              byCategory,
+              skin:        byCategory.skin?.done   || r.skin        || [],
+              hair:        byCategory.hair?.done   || r.hair        || [],
+              skin_mood:   byCategory.skin?.mood   || r.skin_mood   || "",
+              hair_mood:   byCategory.hair?.mood   || r.hair_mood   || "",
+              skin_notes:  byCategory.skin?.notes  || r.skin_notes  || "",
+              hair_notes:  byCategory.hair?.notes  || r.hair_notes  || "",
+              skin_photos: byCategory.skin?.photos || r.skin_photos || [],
+              hair_photos: byCategory.hair?.photos || r.hair_photos || [],
+            };
+          });
           setEntries(map);
         }
         if (routineRows) {
-          const sk = routineRows.find(r=>r.type==="skin");
-          const ha = routineRows.find(r=>r.type==="hair");
-          if (sk) setSkinR(sk.items);
-          if (ha) setHairR(ha.items);
+          const map = {};
+          routineRows.forEach(r => {
+            const cat = (r.category || r.type || "").toLowerCase();
+            if (!cat) return;
+            map[cat] = r.items || [];
+          });
+          setRoutinesByCat(prev => ({ ...prev, ...map }));
         }
         if (schedErr) console.error("Schedule load error:", schedErr);
         if (schedRows) setSchedules(schedRows.map(r=>({ id:r.id, itemId:r.item_id, days:r.days||[], dates:r.dates||[], startDate:r.start_date||null, endDate:r.end_date||"", linkedProductId:r.linked_product_id||"", reminder:r.reminder, time:r.time, location:r.location||'', ended_at:r.ended_at||null })));
@@ -4248,12 +4356,97 @@ export default function App({ user }) {
     })();
   },[user]);
 
-  useEffect(()=>{ const k=activeTab==="skin"?"skin_photos":"hair_photos"; setCurPhotos(entries[activeDate]?.[k]||[]); },[activeDate,activeTab]);
+  // Once userCategories loads, pick the first one as the default active tab.
+  useEffect(()=>{
+    if (!activeTab && userCategories && userCategories.length > 0) {
+      setActiveTab(userCategories[0]);
+    }
+  }, [userCategories, activeTab]);
 
-  const getE = d => entries[d]||{skin:[],hair:[],skin_mood:"",hair_mood:"",skin_notes:"",hair_notes:"",skin_photos:[],hair_photos:[]};
-  const allItems   = [...skinR,...hairR];
+  // ── Generic category-driven helpers ──────────────────────────────────────
+  const getRoutine = (cat) => routinesByCat[cat] || [];
+  const setRoutine = (cat, items) => setRoutinesByCat(prev => ({ ...prev, [cat]: items }));
+  const allItems   = Object.values(routinesByCat).flat();
+  const itemById   = Object.fromEntries(allItems.map(r => [r.id, r]));
+  const categoryOfItem = (itemId) => {
+    for (const [cat, items] of Object.entries(routinesByCat)) {
+      if (items.some(i => i.id === itemId)) return cat;
+    }
+    return userCategories[0] || "skin";
+  };
+  // Legacy id->item maps kept for code paths that still reference them
   const allSkinMap = Object.fromEntries([...DEFAULT_SKIN,...skinR].map(r=>[r.id,r]));
   const allHairMap = Object.fromEntries([...DEFAULT_HAIR,...hairR].map(r=>[r.id,r]));
+
+  // ── Entries shape helpers ────────────────────────────────────────────────
+  const emptyCatEntry = () => ({ done: [], mood: "", notes: "", photos: [] });
+  // Legacy view: when callers still read e.skin / e.hair / e.skin_mood etc,
+  // synthesize those keys from byCategory for backwards compat within a single
+  // render pass. Writes always go through setCatE (new shape).
+  const getE = (d) => {
+    const raw = entries[d] || {};
+    const byCategory = raw.byCategory || {};
+    const legacy = {
+      skin:        byCategory.skin?.done   || raw.skin        || [],
+      hair:        byCategory.hair?.done   || raw.hair        || [],
+      skin_mood:   byCategory.skin?.mood   || raw.skin_mood   || "",
+      hair_mood:   byCategory.hair?.mood   || raw.hair_mood   || "",
+      skin_notes:  byCategory.skin?.notes  || raw.skin_notes  || "",
+      hair_notes:  byCategory.hair?.notes  || raw.hair_notes  || "",
+      skin_photos: byCategory.skin?.photos || raw.skin_photos || [],
+      hair_photos: byCategory.hair?.photos || raw.hair_photos || [],
+    };
+    return { ...legacy, byCategory };
+  };
+  const getCatE = (date, cat) => {
+    const e = getE(date);
+    const fromNew = e.byCategory?.[cat];
+    if (fromNew) return { ...emptyCatEntry(), ...fromNew };
+    // Legacy fallback — if this is skin or hair, read from legacy keys.
+    if (cat === "skin") return { done: e.skin, mood: e.skin_mood, notes: e.skin_notes, photos: e.skin_photos };
+    if (cat === "hair") return { done: e.hair, mood: e.hair_mood, notes: e.hair_notes, photos: e.hair_photos };
+    return emptyCatEntry();
+  };
+  const setCatE = (date, cat, patch) => {
+    setEntries(prev => {
+      const day = prev[date] || { byCategory: {} };
+      const byCategory = day.byCategory || {};
+      const current = { ...emptyCatEntry(), ...(byCategory[cat] || {}) };
+      // If legacy keys were present on day (skin/hair data pre-migration),
+      // carry them into byCategory first so we don't lose them.
+      if (cat === "skin" && !byCategory.skin && (day.skin || day.skin_mood || day.skin_notes || day.skin_photos)) {
+        current.done = day.skin || []; current.mood = day.skin_mood || "";
+        current.notes = day.skin_notes || ""; current.photos = day.skin_photos || [];
+      }
+      if (cat === "hair" && !byCategory.hair && (day.hair || day.hair_mood || day.hair_notes || day.hair_photos)) {
+        current.done = day.hair || []; current.mood = day.hair_mood || "";
+        current.notes = day.hair_notes || ""; current.photos = day.hair_photos || [];
+      }
+      const next = { ...current, ...patch };
+      const newDay = {
+        ...day,
+        byCategory: { ...byCategory, [cat]: next },
+      };
+      // Mirror into legacy top-level keys so any code still reading them
+      // (and the DB write layer) stays correct.
+      if (cat === "skin") {
+        newDay.skin = next.done; newDay.skin_mood = next.mood;
+        newDay.skin_notes = next.notes; newDay.skin_photos = next.photos;
+      } else if (cat === "hair") {
+        newDay.hair = next.done; newDay.hair_mood = next.mood;
+        newDay.hair_notes = next.notes; newDay.hair_photos = next.photos;
+      }
+      return { ...prev, [date]: newDay };
+    });
+  };
+
+  // Keep curPhotos in sync with the active category's entry photos
+  useEffect(()=>{
+    if (!activeTab) { setCurPhotos([]); return; }
+    setCurPhotos(getCatE(activeDate, activeTab).photos || []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[activeDate,activeTab,entries]);
+
   const shiftD = (d,n)=>{ const dt=parse(d); dt.setDate(dt.getDate()+n); return fmt(dt); };
   const showT  = msg=>{ setToast(msg); setTimeout(()=>setToast(""),2200); };
 
@@ -4264,21 +4457,38 @@ export default function App({ user }) {
       // Save entries if changed
       if (overrides.entries !== undefined || overrides === {}) {
         const entriesToSave = overrides.entries ?? entries;
-        const rows = Object.entries(entriesToSave).map(([date, e]) => ({
-          user_id: uid, date, skin: e.skin||[], hair: e.hair||[],
-          mood: e.mood||"", notes: e.notes||"", photos: e.photos||[], updated_at: new Date().toISOString()
-        }));
+        const rows = Object.entries(entriesToSave).map(([date, e]) => {
+          const byCat = e.byCategory || {};
+          const skinE = byCat.skin || {};
+          const hairE = byCat.hair || {};
+          return {
+            user_id: uid, date,
+            by_category: byCat,
+            // Legacy mirror columns — kept until old schema is dropped
+            skin:  skinE.done   || e.skin        || [],
+            hair:  hairE.done   || e.hair        || [],
+            skin_mood:   skinE.mood   || e.skin_mood   || "",
+            hair_mood:   hairE.mood   || e.hair_mood   || "",
+            skin_notes:  skinE.notes  || e.skin_notes  || "",
+            hair_notes:  hairE.notes  || e.hair_notes  || "",
+            skin_photos: skinE.photos || e.skin_photos || [],
+            hair_photos: hairE.photos || e.hair_photos || [],
+            updated_at: new Date().toISOString()
+          };
+        });
         if (rows.length > 0) {
           await supabase.from("entries").upsert(rows, { onConflict: "user_id,date" });
         }
       }
-      // Save routines
-      const skinToSave = overrides.skinR ?? skinR;
-      const hairToSave = overrides.hairR ?? hairR;
-      await supabase.from("routines").upsert([
-        { user_id: uid, type: "skin", items: skinToSave, updated_at: new Date().toISOString() },
-        { user_id: uid, type: "hair", items: hairToSave, updated_at: new Date().toISOString() }
-      ], { onConflict: "user_id,type" });
+      // Save routines — iterate over every category in routinesByCat
+      const routinesToSave = overrides.routinesByCat ?? routinesByCat;
+      const routineRows = Object.entries(routinesToSave).map(([cat, items]) => ({
+        user_id: uid, type: cat, category: cat, items: items || [],
+        updated_at: new Date().toISOString()
+      }));
+      if (routineRows.length > 0) {
+        await supabase.from("routines").upsert(routineRows, { onConflict: "user_id,type" });
+      }
       // Save freq settings
       await supabase.from("freq_settings").upsert({
         user_id: uid,
@@ -4289,16 +4499,26 @@ export default function App({ user }) {
     } catch(e) { console.error("Persist error", e); }
   };
 
-  // Save a single entry to Supabase immediately
+  // Save a single entry to Supabase immediately. Writes both the new JSONB
+  // `by_category` column and the legacy skin/hair columns for rollback safety.
   const persistEntry = async (date, entryData) => {
     if (!user) return;
+    const byCat = entryData.byCategory || {};
+    const skinE = byCat.skin || {};
+    const hairE = byCat.hair || {};
     try {
       await supabase.from("entries").upsert({
         user_id: user.id, date,
-        skin: entryData.skin||[], hair: entryData.hair||[],
-        skin_mood: entryData.skin_mood||"", hair_mood: entryData.hair_mood||"",
-        skin_notes: entryData.skin_notes||"", hair_notes: entryData.hair_notes||"",
-        skin_photos: entryData.skin_photos||[], hair_photos: entryData.hair_photos||[],
+        by_category: byCat,
+        // Legacy mirrors — skin/hair only populated if those categories exist
+        skin:        skinE.done   || entryData.skin        || [],
+        hair:        hairE.done   || entryData.hair        || [],
+        skin_mood:   skinE.mood   || entryData.skin_mood   || "",
+        hair_mood:   hairE.mood   || entryData.hair_mood   || "",
+        skin_notes:  skinE.notes  || entryData.skin_notes  || "",
+        hair_notes:  hairE.notes  || entryData.hair_notes  || "",
+        skin_photos: skinE.photos || entryData.skin_photos || [],
+        hair_photos: hairE.photos || entryData.hair_photos || [],
         updated_at: new Date().toISOString()
       }, { onConflict: "user_id,date" });
     } catch(e) { console.error("Entry save error", e); }
@@ -4357,18 +4577,32 @@ export default function App({ user }) {
     } catch(e) { console.error("Schedule save error:", e); }
   };
 
+  // Toggle a routine-item's "done" state for the given date + category.
+  // `type` here is the category name (previously "skin" | "hair").
   const toggleItem=(date,type,id)=>{
-    const e=getE(date); const cur=e[type]||[];
-    const updated={...e,[type]:cur.includes(id)?cur.filter(x=>x!==id):[...cur,id]};
-    setEntries(p=>({...p,[date]:updated}));
-    persistEntry(date, updated);
+    const cur = getCatE(date, type).done || [];
+    const done = cur.includes(id) ? cur.filter(x=>x!==id) : [...cur, id];
+    setCatE(date, type, { done });
+    // Persist using the freshest entry state. We read from current entries +
+    // apply the patch locally for the DB write.
+    const existing = entries[date] || { byCategory: {} };
+    const byCategory = { ...(existing.byCategory || {}) };
+    byCategory[type] = { ...emptyCatEntry(), ...(byCategory[type] || {}), done };
+    // Ensure legacy rows for skin/hair still carry matching top-level fields.
+    const merged = { ...existing, byCategory };
+    if (type === "skin") merged.skin = done;
+    if (type === "hair") merged.hair = done;
+    persistEntry(date, merged);
   };
-  const setNotesVal=(date,tab,v)=>setEntries(p=>({...p,[date]:{...getE(date),[tab==="skin"?"skin_notes":"hair_notes"]:v}}));
-  const setMoodVal=(date,tab,v)=>{ const e=getE(date); const k=tab==="skin"?"skin_mood":"hair_mood"; setEntries(p=>({...p,[date]:{...e,[k]:e[k]===v?"":v}})); };
+  const setNotesVal=(date,tab,v)=>setCatE(date, tab, { notes: v });
+  const setMoodVal=(date,tab,v)=>{
+    const cur = getCatE(date, tab).mood || "";
+    setCatE(date, tab, { mood: cur === v ? "" : v });
+  };
   const setPhotosVal=(date,tab,v)=>{
-    const k=tab==="skin"?"skin_photos":"hair_photos";
-    const photos=typeof v==="function"?v(getE(date)[k]||[]):v;
-    setEntries(p=>({...p,[date]:{...getE(date),[k]:photos}}));
+    const prev = getCatE(date, tab).photos || [];
+    const photos = typeof v === "function" ? v(prev) : v;
+    setCatE(date, tab, { photos });
     setCurPhotos(photos);
   };
 
@@ -4385,43 +4619,67 @@ export default function App({ user }) {
   const saveEntry=async()=>{
     const e = getE(activeDate);
     await persistEntry(activeDate, e);
-    // Compute streak
+    // Compute streak — a day counts as "done" if any category had a routine item ticked
+    const cats = userCategories.length ? userCategories : Object.keys(routinesByCat);
     let streak=0, d=today;
-    while(true){const ev=getE(d);if(ev.skin?.length||ev.hair?.length){streak++;d=shiftD(d,-1);}else break;}
-    // Compute skipped
-    const allR=[...skinR,...hairR];
-    const doneIds=[...(e.skin||[]),...(e.hair||[])];
+    while(true){
+      const ev = getE(d);
+      const anyDone = cats.some(c => (getCatE(d, c).done || []).length > 0);
+      if (anyDone) { streak++; d = shiftD(d, -1); } else break;
+    }
+    // Compute skipped across ALL categories
+    const allR = Object.values(routinesByCat).flat();
+    const doneIds = cats.flatMap(c => getCatE(activeDate, c).done || []);
     const skipped=allR.filter(it=>!doneIds.includes(it.id)).map(it=>it.label);
     const pct=allR.length>0?Math.round(doneIds.length/allR.length*100):0;
     setStreakSheet({streak,pct,skipped});
   };
-  const persistRoutines = async (newSkin, newHair) => {
+  // Persist routines for one or more categories. `updates` is a
+  // { [cat]: items[] } map. Writes BOTH the new `category` column and legacy
+  // `type` column so rollback stays safe.
+  const persistRoutines = async (updates) => {
     if (!user) return;
     try {
-      await supabase.from("routines").upsert([
-        { user_id: user.id, type: "skin", items: newSkin, updated_at: new Date().toISOString() },
-        { user_id: user.id, type: "hair", items: newHair, updated_at: new Date().toISOString() }
-      ], { onConflict: "user_id,type" });
+      const rows = Object.entries(updates).map(([cat, items]) => ({
+        user_id: user.id, type: cat, category: cat, items: items || [],
+        updated_at: new Date().toISOString()
+      }));
+      if (rows.length > 0) {
+        await supabase.from("routines").upsert(rows, { onConflict: "user_id,type" });
+      }
     } catch(e) { console.error("Routine save error", e); }
   };
   const addItem=async(type,item)=>{
-    const newSkin = type==="skin" ? [...skinR, item] : skinR;
-    const newHair = type==="hair" ? [...hairR, item] : hairR;
-    if(type==="skin") setSkinR(newSkin); else setHairR(newHair);
-    await persistRoutines(newSkin, newHair);
+    const next = [...(routinesByCat[type] || []), item];
+    setRoutinesByCat(prev => ({ ...prev, [type]: next }));
+    await persistRoutines({ [type]: next });
   };
   const removeItem=async(type,id)=>{
-    const newSkin = type==="skin" ? skinR.filter(r=>r.id!==id) : skinR;
-    const newHair = type==="hair" ? hairR.filter(r=>r.id!==id) : hairR;
-    if(type==="skin") setSkinR(newSkin); else setHairR(newHair);
-    setEntries(p=>{ const u={...p}; for(const d in u){ if(u[d][type]) u[d]={...u[d],[type]:u[d][type].filter(x=>x!==id)} } return u; });
-    await persistRoutines(newSkin, newHair);
+    const next = (routinesByCat[type] || []).filter(r=>r.id!==id);
+    setRoutinesByCat(prev => ({ ...prev, [type]: next }));
+    // Strip the removed id from every entry's per-category done list so stale
+    // references don't linger on history / calendar cards.
+    setEntries(p=>{
+      const u = { ...p };
+      for (const d in u) {
+        const day = u[d];
+        const byCategory = { ...(day.byCategory || {}) };
+        if (byCategory[type]?.done?.includes(id)) {
+          byCategory[type] = { ...byCategory[type], done: byCategory[type].done.filter(x=>x!==id) };
+        }
+        const patched = { ...day, byCategory };
+        if (type === "skin" && Array.isArray(day.skin)) patched.skin = day.skin.filter(x=>x!==id);
+        if (type === "hair" && Array.isArray(day.hair)) patched.hair = day.hair.filter(x=>x!==id);
+        u[d] = patched;
+      }
+      return u;
+    });
+    await persistRoutines({ [type]: next });
   };
   const editItem=async(type,id,changes)=>{
-    const newSkin = type==="skin" ? skinR.map(r=>r.id===id?{...r,...changes}:r) : skinR;
-    const newHair = type==="hair" ? hairR.map(r=>r.id===id?{...r,...changes}:r) : hairR;
-    if(type==="skin") setSkinR(newSkin); else setHairR(newHair);
-    await persistRoutines(newSkin, newHair);
+    const next = (routinesByCat[type] || []).map(r=>r.id===id?{...r,...changes}:r);
+    setRoutinesByCat(prev => ({ ...prev, [type]: next }));
+    await persistRoutines({ [type]: next });
   };
   const savePurchase = async (p) => {
     if (!user) return;
@@ -4693,7 +4951,20 @@ export default function App({ user }) {
     for(let d=1;d<=days;d++) cells.push(fmt(new Date(y,m,d)));
     return cells;
   };
-  const hasEntry=d=>{ if(!d) return false; const e=entries[d]; return e&&(e.skin?.length||e.hair?.length||e.skin_notes||e.hair_notes||e.skin_mood||e.hair_mood||e.skin_photos?.length||e.hair_photos?.length); };
+  const hasEntry=d=>{
+    if(!d) return false;
+    const e=entries[d];
+    if(!e) return false;
+    // Check legacy top-level fields first
+    if (e.skin?.length||e.hair?.length||e.skin_notes||e.hair_notes||e.skin_mood||e.hair_mood||e.skin_photos?.length||e.hair_photos?.length) return true;
+    // Then check byCategory for any non-empty activity
+    if (e.byCategory) {
+      for (const cat of Object.values(e.byCategory)) {
+        if (cat?.done?.length || cat?.mood || cat?.notes || cat?.photos?.length) return true;
+      }
+    }
+    return false;
+  };
   const getSchedDow=d=>schedules.some(s=>s.days.includes(parse(d).getDay()));
 
   // Achievement checks for calendar badges
@@ -4763,17 +5034,26 @@ export default function App({ user }) {
     const startStr=fmt(start);
     const filtered=purchases.filter(p=>p.date>=startStr);
     const total=filtered.reduce((s,p)=>s+p.price*p.quantity,0);
-    const skin=filtered.filter(p=>p.category==="skin").reduce((s,p)=>s+p.price*p.quantity,0);
-    const hair=filtered.filter(p=>p.category==="hair").reduce((s,p)=>s+p.price*p.quantity,0);
-    return { total, skin, hair, count: filtered.length };
-  }, [purchases]);
+    const cats = (userCategories && userCategories.length) ? userCategories : ["skin","hair"];
+    const byCat = Object.fromEntries(cats.map(c => [
+      c,
+      filtered.filter(p=>p.category===c).reduce((s,p)=>s+p.price*p.quantity,0)
+    ]));
+    return { total, byCat, count: filtered.length,
+      // legacy aliases for any call sites that still read .skin/.hair
+      skin: byCat.skin || 0, hair: byCat.hair || 0 };
+  }, [purchases, userCategories]);
 
   const freqStats=useCallback(itemId=>{
     const {start}=freqRange();
     const startD=parse(start),todayD=parse(today);
     const possible=Math.max(1,Math.round((todayD-startD)/86400000)+1);
     const count=Object.keys(entries).filter(d=>d>=start&&d<=today).filter(d=>{
-      const e=entries[d]; return (e.skin||[]).includes(itemId)||(e.hair||[]).includes(itemId);
+      const e=entries[d]||{};
+      // by_category (new) + legacy skin/hair arrays
+      const bc = e.by_category || {};
+      if (Object.values(bc).some(v => Array.isArray(v?.done) && v.done.includes(itemId))) return true;
+      return (e.skin||[]).includes(itemId)||(e.hair||[]).includes(itemId);
     }).length;
     return {count,possible};
   },[entries,freqRange,today]);
@@ -4782,8 +5062,8 @@ export default function App({ user }) {
   const activeDateDow=parse(activeDate).getDay();
   const visibleReminders=schedules.filter(s=>!dismissed.includes(s.id)&&(!s.startDate||activeDate>=s.startDate)&&((s.days&&s.days.includes(activeDateDow))||(s.dates&&s.dates.includes(activeDate))));
   const entry=getE(activeDate);
-  const routines=activeTab==="skin"?skinR:hairR;
-  const checked=activeTab==="skin"?entry.skin:entry.hair;
+  const routines = activeTab ? getRoutine(activeTab) : [];
+  const checked  = activeTab ? (getCatE(activeDate, activeTab).done || []) : [];
   const done=checked.filter(id=>routines.find(r=>r.id===id)).length;
 
   const goHome = () => { setView("log"); setActiveDate(today); setPageView(null); };
@@ -5003,15 +5283,17 @@ export default function App({ user }) {
               );
             })()}
             {(()=>{
-              const allRoutines = [
-                ...skinR.map(it=>({...it,_tab:"skin"})),
-                ...hairR.map(it=>({...it,_tab:"hair"}))
-              ];
+              // Build the "All" list by flattening every user category's routine,
+              // tagging each item with its source category name (_tab).
+              const cats = (userCategories && userCategories.length > 0) ? userCategories : Object.keys(routinesByCat);
+              const allRoutines = cats.flatMap(cat =>
+                (routinesByCat[cat] || []).map(it => ({ ...it, _tab: cat }))
+              );
               const filterFn = it => logFilter==="all" || it._tab===logFilter;
               const e2 = getE(activeDate);
 
               const getLinkedProduct = (itemId) => {
-                const routineItem = [...skinR,...hairR].find(r=>r.id===itemId);
+                const routineItem = allItems.find(r=>r.id===itemId);
                 const productId = routineItem?.productId
                   || schedules.find(s=>s.itemId===itemId)?.linkedProductId;
                 return products.find(p=>p.id===productId);
@@ -5022,26 +5304,37 @@ export default function App({ user }) {
                 if (isFutureDate) return;
                 // Exclude "both" items — they cross-appear in both sections; complete individually
                 const exclusive = sectionItems.filter(it=>(it.time||"both")===(sectionKey==="morning"?"day":"night"));
-                const skinItems = exclusive.filter(it=>it._tab==="skin");
-                const hairItems = exclusive.filter(it=>it._tab==="hair");
-                const skinDone = e2.skin||[];
-                const hairDone = e2.hair||[];
-                const allDone = skinItems.every(it=>skinDone.includes(it.id)) && hairItems.every(it=>hairDone.includes(it.id));
-                if (allDone) {
-                  const updated = {...e2,
-                    skin: skinDone.filter(id=>!skinItems.find(it=>it.id===id)),
-                    hair: hairDone.filter(id=>!hairItems.find(it=>it.id===id))
-                  };
-                  setEntries(p=>({...p,[activeDate]:updated}));
-                  persistEntry(activeDate, updated);
-                } else {
-                  const updated = {...e2,
-                    skin:[...new Set([...skinDone,...skinItems.map(it=>it.id)])],
-                    hair:[...new Set([...hairDone,...hairItems.map(it=>it.id)])]
-                  };
-                  setEntries(p=>({...p,[activeDate]:updated}));
-                  persistEntry(activeDate, updated);
-                }
+                // Group items by their source category (_tab is the category name).
+                const byCat = {};
+                exclusive.forEach(it => {
+                  const cat = it._tab || categoryOfItem(it.id);
+                  if (!byCat[cat]) byCat[cat] = [];
+                  byCat[cat].push(it);
+                });
+                // Check if every item in every category is already marked done.
+                const allDone = Object.entries(byCat).every(([cat, items]) => {
+                  const doneIds = getCatE(activeDate, cat).done || [];
+                  return items.every(it => doneIds.includes(it.id));
+                });
+                // Build the new byCategory patch
+                const existing = entries[activeDate] || { byCategory: {} };
+                const nextByCategory = { ...(existing.byCategory || {}) };
+                Object.entries(byCat).forEach(([cat, items]) => {
+                  const cur = { ...emptyCatEntry(), ...(nextByCategory[cat] || {}) };
+                  const doneIds = cur.done || [];
+                  if (allDone) {
+                    cur.done = doneIds.filter(id => !items.find(it => it.id === id));
+                  } else {
+                    cur.done = [...new Set([...doneIds, ...items.map(it => it.id)])];
+                  }
+                  nextByCategory[cat] = cur;
+                });
+                const updated = { ...existing, byCategory: nextByCategory };
+                // Mirror legacy skin/hair top-level fields for back-compat
+                if (nextByCategory.skin) updated.skin = nextByCategory.skin.done;
+                if (nextByCategory.hair) updated.hair = nextByCategory.hair.done;
+                setEntries(p => ({ ...p, [activeDate]: updated }));
+                persistEntry(activeDate, updated);
               };
 
               const SunIcon = () => (
@@ -5134,17 +5427,22 @@ export default function App({ user }) {
               );
             })()}
             <div className="sec-label" style={{paddingBottom:8}}>
-              <span className="sec-tag">How does your {activeTab==="skin"?"skin":"hair"} feel?</span>
+              <span className="sec-tag">How does your {activeTab || "ritual"} feel?</span>
               <div className="sec-line"/>
             </div>
             <div className="mood-row">
-              {MOODS.map(m=><button key={m} className={`mood-chip ${(activeTab==="skin"?entry.skin_mood:entry.hair_mood)===m?"on":""}`} onClick={()=>setMoodVal(activeDate,activeTab,m)}>{m}</button>)}
+              {MOODS.map(m=>{
+                const curMood = activeTab ? (getCatE(activeDate, activeTab).mood || "") : "";
+                return (
+                  <button key={m} className={`mood-chip ${curMood===m?"on":""}`} onClick={()=>setMoodVal(activeDate,activeTab,m)}>{m}</button>
+                );
+              })}
             </div>
             <div className="sec-label" style={{paddingTop:16,paddingBottom:8}}>
-              <span className="sec-tag">How did your skin feel today?</span>
+              <span className="sec-tag">How did your {activeTab || "ritual"} feel today?</span>
               <div className="sec-line"/>
             </div>
-            <PhotoNotes notes={activeTab==="skin"?entry.skin_notes:entry.hair_notes} photos={curPhotos}
+            <PhotoNotes notes={activeTab ? (getCatE(activeDate, activeTab).notes || "") : ""} photos={curPhotos}
               hidePhotos={true}
               onNotesChange={v=>setNotesVal(activeDate,activeTab,v)}
               onPhotosChange={v=>setPhotosVal(activeDate,activeTab,v)}/>
@@ -5278,12 +5576,21 @@ export default function App({ user }) {
                 if(txFilter==="past") return !hasFuture;
                 return true;
               };
-              const skinPlans=schedules.filter(s=>skinR.find(r=>r.id===s.itemId)&&filterPlan(s));
-              const hairPlans=schedules.filter(s=>hairR.find(r=>r.id===s.itemId)&&filterPlan(s));
-              const skinTreatments=treatments.filter(t=>t.type==="skin"&&filterTx(t));
-              const hairTreatments=treatments.filter(t=>t.type==="hair"&&filterTx(t));
-              const hasAnything=schedules.length||treatments.length;
-              const hasVisible=skinPlans.length||hairPlans.length||skinTreatments.length||hairTreatments.length;
+              const cats = (userCategories && userCategories.length) ? userCategories : ["skin","hair"];
+              const plansByCat = Object.fromEntries(cats.map(c => [
+                c,
+                schedules.filter(s => (routinesByCat[c]||[]).find(r => r.id === s.itemId) && filterPlan(s))
+              ]));
+              const txByCat = Object.fromEntries(cats.map(c => [
+                c,
+                treatments.filter(t => t.type === c && filterTx(t))
+              ]));
+              const allTxByCat = Object.fromEntries(cats.map(c => [
+                c,
+                treatments.filter(t => t.type === c)
+              ]));
+              const hasAnything = schedules.length || treatments.length;
+              const hasVisible = cats.some(c => (plansByCat[c]?.length || 0) + (txByCat[c]?.length || 0) > 0);
 
               const PlanCardList=({s})=>{
                 const it=allItems.find(x=>x.id===s.itemId); if(!it) return null;
@@ -5467,38 +5774,37 @@ export default function App({ user }) {
               if(!hasAnything) return <div style={{textAlign:"center",padding:"32px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No plans yet — tap + Add to start</div>;
               if(!hasVisible) return <div style={{textAlign:"center",padding:"24px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem"}}>No {plansFilter} plans</div>;
 
-              const allSkinTx=treatments.filter(t=>t.type==="skin");
-              const allHairTx=treatments.filter(t=>t.type==="hair");
-
               if(plansViewMode==="carousel") return (
                 <>
-                  <SectionCarousel label="Skin" planItems={skinPlans} txItems={skinTreatments} allTxForSection={allSkinTx}/>
-                  <SectionCarousel label="Hair" planItems={hairPlans} txItems={hairTreatments} allTxForSection={allHairTx}/>
+                  {cats.map(cat => (
+                    <SectionCarousel
+                      key={cat}
+                      label={capCat(cat)}
+                      planItems={plansByCat[cat] || []}
+                      txItems={txByCat[cat] || []}
+                      allTxForSection={allTxByCat[cat] || []}
+                    />
+                  ))}
                 </>
               );
 
               return (
                 <>
-                  {(skinPlans.length>0||skinTreatments.length>0)&&(
-                    <div style={{marginBottom:16,background:"rgba(255,255,255,.26)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.35)",borderRadius:18,padding:"14px 14px 6px"}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)",fontWeight:600}}>Skin</div>
-                        {skinTreatments.length>0&&<TxFilterBar/>}
+                  {cats.map(cat => {
+                    const pItems = plansByCat[cat] || [];
+                    const tItems = txByCat[cat] || [];
+                    if (pItems.length === 0 && tItems.length === 0) return null;
+                    return (
+                      <div key={cat} style={{marginBottom:16,background:"rgba(255,255,255,.26)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.35)",borderRadius:18,padding:"14px 14px 6px"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                          <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)",fontWeight:600}}>{capCat(cat)}</div>
+                          {tItems.length>0&&<TxFilterBar/>}
+                        </div>
+                        {pItems.map(s=><PlanCardList key={s.id} s={s}/>)}
+                        {tItems.map(tx=><TxCardList key={tx.id} tx={tx}/>)}
                       </div>
-                      {skinPlans.map(s=><PlanCardList key={s.id} s={s}/>)}
-                      {skinTreatments.map(tx=><TxCardList key={tx.id} tx={tx}/>)}
-                    </div>
-                  )}
-                  {(hairPlans.length>0||hairTreatments.length>0)&&(
-                    <div style={{marginBottom:16,background:"rgba(255,255,255,.26)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.35)",borderRadius:18,padding:"14px 14px 6px"}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                        <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)",fontWeight:600}}>Hair</div>
-                        {hairTreatments.length>0&&<TxFilterBar/>}
-                      </div>
-                      {hairPlans.map(s=><PlanCardList key={s.id} s={s}/>)}
-                      {hairTreatments.map(tx=><TxCardList key={tx.id} tx={tx}/>)}
-                    </div>
-                  )}
+                    );
+                  })}
                 </>
               );
             })()}
@@ -5567,17 +5873,20 @@ export default function App({ user }) {
       {modal==="manageItems"&&<ManageItemsModal
         type={activeTab}
         section={editSection}
-        items={[...skinR.map(it=>({...it,_tab:"skin"})),...hairR.map(it=>({...it,_tab:"hair"}))].filter(it=>{
+        items={(() => {
+          const cats = (userCategories && userCategories.length > 0) ? userCategories : Object.keys(routinesByCat);
+          return cats.flatMap(cat => (routinesByCat[cat] || []).map(it => ({ ...it, _tab: cat })));
+        })().filter(it=>{
           if(editSection==="morning") return (it.time||"both")==="day"||(it.time||"both")==="both";
           if(editSection==="night") return (it.time||"both")==="night"||(it.time||"both")==="both";
           return true;
         })}
         products={products}
         onAdd={item=>addItem(item._tab||activeTab,item)}
-        onRemove={id=>{ const tab=skinR.find(r=>r.id===id)?"skin":"hair"; removeItem(tab,id); }}
-        onEdit={(id,changes)=>{ const tab=skinR.find(r=>r.id===id)?"skin":"hair"; editItem(tab,id,changes); }}
+        onRemove={id=>{ const tab=categoryOfItem(id); removeItem(tab,id); }}
+        onEdit={(id,changes)=>{ const tab=categoryOfItem(id); editItem(tab,id,changes); }}
         onClose={()=>setModal(null)}/>}
-      {selectedPlan&&<PlanModal allItems={allItems} skinItems={skinR} hairItems={hairR} schedules={schedules} treatments={treatments}
+      {selectedPlan&&<PlanModal allItems={allItems} skinItems={skinR} hairItems={hairR} categories={userCategories} routinesByCat={routinesByCat} schedules={schedules} treatments={treatments}
         entries={entries} products={products} wishlist={wishlist} today={today}
         onSave={async s=>{ await saveSched(s); setSelectedPlan(null); }}
         onSaveMany={async plans=>{ await saveSchedMany(plans); setSelectedPlan(null); }}
@@ -5585,14 +5894,14 @@ export default function App({ user }) {
         onSaveTreatment={async tx=>{ await saveTreatment(tx); setSelectedPlan(null); }}
         onDeleteTreatment={id=>{ confirmDeleteTreatment(id); setSelectedPlan(null); }}
         onAddItem={(type,item)=>addItem(type,item)}
-        onEditItem={(id,changes)=>{ const type=skinR.find(r=>r.id===id)?"skin":"hair"; editItem(type,id,changes); }}
+        onEditItem={(id,changes)=>{ const type=categoryOfItem(id); editItem(type,id,changes); }}
         onClose={()=>setSelectedPlan(null)}
         initialPlan={selectedPlan.type==="plan"?selectedPlan.data:null}
         initialTreatment={selectedPlan.type==="treatment"?selectedPlan.data:null}/>}
-      {modal==="plan"&&<PlanModal allItems={allItems} skinItems={skinR} hairItems={hairR} schedules={schedules} treatments={treatments} onSave={saveSched} onSaveMany={saveSchedMany} onDelete={deleteSched} onSaveTreatment={saveTreatment} onDeleteTreatment={deleteTreatment} onAddItem={(type,item)=>addItem(type,item)} onEditItem={(id,changes)=>{ const type=skinR.find(r=>r.id===id)?"skin":"hair"; editItem(type,id,changes); }} onClose={()=>setModal(null)}/>}
+      {modal==="plan"&&<PlanModal allItems={allItems} skinItems={skinR} hairItems={hairR} categories={userCategories} routinesByCat={routinesByCat} schedules={schedules} treatments={treatments} onSave={saveSched} onSaveMany={saveSchedMany} onDelete={deleteSched} onSaveTreatment={saveTreatment} onDeleteTreatment={deleteTreatment} onAddItem={(type,item)=>addItem(type,item)} onEditItem={(id,changes)=>{ const type=categoryOfItem(id); editItem(type,id,changes); }} onClose={()=>setModal(null)}/>}
       {modal==="freq"&&<FreqModal allItems={allItems} tracked={freqTracked} period={freqPeriod} onToggle={async id=>{ const newTracked=freqTracked.includes(id)?freqTracked.filter(x=>x!==id):[...freqTracked,id]; setFreqTracked(newTracked); if(user) await supabase.from('freq_settings').upsert({user_id:user.id,period:freqPeriod,tracked:newTracked,updated_at:new Date().toISOString()},{onConflict:'user_id'}); }} onPeriod={async p=>{ setFreqPeriod(p); await persist({freqPeriod:p}); }} onClose={()=>setModal(null)}/>}
-      {modal==="dayEdit"&&selectedDay&&<DayEditModal date={selectedDay} entry={getE(selectedDay)} skinRoutines={skinR} hairRoutines={hairR} onSave={data=>saveDayEdit(selectedDay,data)} onClose={()=>setModal(null)}/>}
-      {modal==="rangeApply"&&rangeStart&&rangeEnd&&<RangeApplyModal rangeStart={rangeStart} rangeEnd={rangeEnd} skinRoutines={skinR} hairRoutines={hairR} onApply={applyRange} onClose={()=>{ setModal(null); setRangeStart(null); setRangeEnd(null); setRangeMode(false); }}/>}
+      {modal==="dayEdit"&&selectedDay&&<DayEditModal date={selectedDay} entry={getE(selectedDay)} categories={userCategories} routinesByCat={routinesByCat} onSave={data=>saveDayEdit(selectedDay,data)} onClose={()=>setModal(null)}/>}
+      {modal==="rangeApply"&&rangeStart&&rangeEnd&&<RangeApplyModal rangeStart={rangeStart} rangeEnd={rangeEnd} categories={userCategories} routinesByCat={routinesByCat} onApply={applyRange} onClose={()=>{ setModal(null); setRangeStart(null); setRangeEnd(null); setRangeMode(false); }}/>}
 
       {showNamePrompt&&(
         <div className="name-prompt-overlay">
