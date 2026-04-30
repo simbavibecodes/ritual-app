@@ -2021,8 +2021,14 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose, categories =
   const pfLabel = c => c==="treatment"?"Treatment":(c.charAt(0).toUpperCase()+c.slice(1));
   const pfShort = c => c==="treatment"?"Treat":pfLabel(c);
   // Own internal state — never re-mounts on parent re-render, so focus is never lost
-  const [p, setP] = useState(initialData);
+  const [p, setP] = useState({ type: "product", ...initialData });
   const [customTagInput, setCustomTagInput] = useState("");
+  const itemType = p.type || "product";
+  const isProduct   = itemType === "product";
+  const isPractice  = itemType === "practice";
+  const isTreatment = itemType === "treatment";
+  const isOther     = itemType === "other";
+  const namePlaceholder = isProduct ? "Product name" : isPractice ? "Practice name" : isTreatment ? "Treatment name" : (p.type_name||"Item")+" name";
   const mediaRef = useRef(null);
   const handleMediaFile = (file) => {
     if (!file) return;
@@ -2044,16 +2050,43 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose, categories =
   return (
     <div style={{background:"#1A1917",border:"1.5px solid #252320",borderRadius:16,padding:"18px",marginBottom:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#8A8070"}}>{isEditingProd?"Edit Product":"Add Product"}</div>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem",fontStyle:"italic",color:"#8A8070"}}>{isEditingProd?"Edit Item":"Add Item"}</div>
         <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.3rem",cursor:"pointer",color:"#5A5248"}}>×</button>
       </div>
-      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Product name" value={p.name} onChange={e=>setP(prev=>({...prev,name:e.target.value}))} autoFocus/>
-      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={p.brand||""} onChange={e=>setP(prev=>({...prev,brand:e.target.value}))}/>
+      {!isEditingProd && (
+        <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
+          {[["product","Product"],["practice","Practice"],["treatment","Treatment"],["other","Other"]].map(([v,l])=>(
+            <button key={v} className={`dow-chip ${itemType===v?"on":""}`}
+              style={{flex:"1 1 auto",fontSize:".74rem",textAlign:"center"}}
+              onClick={()=>setP(prev=>({...prev,type:v}))}>
+              {l}
+            </button>
+          ))}
+        </div>
+      )}
+      {isOther && (
+        <input className="ifield" style={{width:"100%",marginBottom:10}}
+          placeholder="What would you like to call this? (e.g. Morning walk)"
+          value={p.type_name||""}
+          onChange={e=>setP(prev=>({...prev,type_name:e.target.value}))}/>
+      )}
+      <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder={namePlaceholder} value={p.name} onChange={e=>setP(prev=>({...prev,name:e.target.value}))} autoFocus/>
+      {isProduct && (
+        <input className="ifield" style={{width:"100%",marginBottom:10}} placeholder="Brand" value={p.brand||""} onChange={e=>setP(prev=>({...prev,brand:e.target.value}))}/>
+      )}
       {isEditingProd&&<div style={{fontSize:".64rem",color:"#2A2820",fontStyle:"italic",marginTop:-6,marginBottom:10}}>Name and brand changes apply across your routine history.</div>}
-      <div style={{display:"flex",gap:8,marginBottom:10}}>
-        <input className="ifield" style={{flex:1}} placeholder="Product URL" value={p.link||""} onChange={e=>setP(prev=>({...prev,link:e.target.value}))}/>
-        <input className="ifield" style={{width:88}} placeholder="Price" type="number" min="0" step="0.01" value={p.price||""} onChange={e=>setP(prev=>({...prev,price:e.target.value}))}/>
-      </div>
+      {isProduct && (
+        <div style={{display:"flex",gap:8,marginBottom:10}}>
+          <input className="ifield" style={{flex:1}} placeholder="Product URL" value={p.link||""} onChange={e=>setP(prev=>({...prev,link:e.target.value}))}/>
+          <input className="ifield" style={{width:88}} placeholder="Price" type="number" min="0" step="0.01" value={p.price||""} onChange={e=>setP(prev=>({...prev,price:e.target.value}))}/>
+        </div>
+      )}
+      {isTreatment && (
+        <div style={{display:"flex",gap:8,marginBottom:10}}>
+          <input className="ifield" style={{flex:1}} placeholder="Provider (optional)" value={p.provider||""} onChange={e=>setP(prev=>({...prev,provider:e.target.value}))}/>
+          <input className="ifield" style={{flex:1}} placeholder="Location (optional)" value={p.location||""} onChange={e=>setP(prev=>({...prev,location:e.target.value}))}/>
+        </div>
+      )}
       {isEditingProd
         ? <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
             <div style={{background:"#f0e8f4",borderRadius:8,padding:"6px 14px",fontSize:".74rem",color:"#7a6a8a",fontWeight:500}}>
@@ -2070,6 +2103,7 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose, categories =
             ))}
           </div>
       }
+      {isProduct && (<>
       <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:6}}>
         {["Moisturizer","Serum","Cleanser","Toner","SPF","Oil","Mask","Shampoo","Conditioner","Treatment","Supplement","Other"].map(tag=>(
           <button key={tag} className={`dow-chip ${(p.tags||[]).includes(tag)?"on":""}`}
@@ -2096,6 +2130,8 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose, categories =
           + Add
         </button>
       </div>
+      </>)}
+      {isProduct && (
       <div style={{marginBottom:10}}>
         <button onClick={()=>setP(prev=>({...prev,is_staple:!prev.is_staple}))}
           style={{display:"inline-flex",alignItems:"center",gap:5,padding:"5px 12px",
@@ -2107,6 +2143,7 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose, categories =
           <span style={{fontSize:".8rem"}}>⭐</span> Staple
         </button>
       </div>
+      )}
       {(()=>{
         const raw = p.frequency||"";
         const isDaily = raw==="Daily";
@@ -2170,7 +2207,7 @@ function ProductForm({ initialData, isEditingProd, onSave, onClose, categories =
           </div>
         )}
       </div>
-      <button className="save-btn" onClick={()=>onSave(p)} disabled={!p.name.trim()} style={{opacity:p.name.trim()?1:.4}}>
+      <button className="save-btn" onClick={()=>onSave(p)} disabled={!p.name.trim()||(isOther&&!(p.type_name||"").trim())} style={{opacity:(p.name.trim()&&(!isOther||(p.type_name||"").trim()))?1:.4}}>
         {isEditingProd?"Save Changes":"Add to My Routine"}
       </button>
     </div>
@@ -4328,6 +4365,18 @@ export default function App({ user }) {
   const [plansViewMode,   setPlansViewMode]   = useState("carousel"); // "carousel" | "list"
   const [plansFilter,     setPlansFilter]     = useState("active");   // "active" | "past" | "all"
   const [txFilter,        setTxFilter]        = useState("all");      // "all" | "upcoming" | "past"
+  // Routines tab sub-tabs: Ritual (default) and Product Library
+  const [routinesSubTab,  setRoutinesSubTab]  = useState("ritual");   // "ritual" | "library"
+  // Currently Tracking view mode (auto-flips to carousel for >10 items per category)
+  const [trackingViewMode,setTrackingViewMode]= useState("list");     // "list" | "carousel"
+  // Product Library view mode + filters
+  const [libraryViewMode, setLibraryViewMode] = useState("list");     // "list" | "carousel"
+  const [libraryStatus,   setLibraryStatus]   = useState("all");      // "all" | "active" | "inactive"
+  const [libraryType,     setLibraryType]     = useState("all");      // "all" | "product" | "practice" | "treatment" | "other"
+  // Inline overlays for Routines tab (no navigation away from view)
+  const [routinesAnalyze, setRoutinesAnalyze] = useState(false);
+  const [routinesCompare, setRoutinesCompare] = useState(false);
+  const [routinesProductForm, setRoutinesProductForm] = useState(null); // {initial, isEdit}|null
 
   // Persist current page across refreshes
   useEffect(() => { sessionStorage.setItem('ritual_view', view); }, [view]);
@@ -4810,7 +4859,7 @@ export default function App({ user }) {
     if (!user) return;
     // userImage is a UI-only field (data URL from file picker) — strip from DB row
     const { userImage, ...prod } = p;
-    const row = { id:prod.id, user_id:user.id, name:prod.name, brand:prod.brand||"", category:prod.category||defaultCat, image:prod.image||"", link:prod.link||"", price:prod.price||null, notes:prod.notes||"", tags:prod.tags||[], frequency:prod.frequency||"", global_product_id:prod.global_product_id||null, ingredients:prod.ingredients||[], is_staple:prod.is_staple||false, sort_order:prod.sort_order||0, media_url:prod.media_url||"" };
+    const row = { id:prod.id, user_id:user.id, name:prod.name, brand:prod.brand||"", category:prod.category||defaultCat, image:prod.image||"", link:prod.link||"", price:prod.price||null, notes:prod.notes||"", tags:prod.tags||[], frequency:prod.frequency||"", global_product_id:prod.global_product_id||null, ingredients:prod.ingredients||[], is_staple:prod.is_staple||false, sort_order:prod.sort_order||0, media_url:prod.media_url||"", type:prod.type||"product", type_name:prod.type_name||null, provider:prod.provider||null, location:prod.location||null, is_active:prod.is_active!==false };
     await supabase.from("products").upsert(row, {onConflict:"id"});
     setProducts(prev => { const idx=prev.findIndex(x=>x.id===prod.id); return idx>=0?prev.map(x=>x.id===prod.id?prod:x):[prod,...prev]; });
     // Background lookups — fire and forget
@@ -5631,6 +5680,39 @@ export default function App({ user }) {
                 </div>
               );
             })()}
+
+            {/* ── Habit Frequency (moved from Routines) ── */}
+            <hr style={{border:"none",borderTop:"1px solid rgba(255,255,255,.12)",margin:"20px 14px"}}/>
+            <div className="sec-head">
+              <div className="sec-title">Habit Frequency</div>
+              <button className="ghost-btn" onClick={()=>setModal("freq")}>Configure</button>
+            </div>
+            <div className="period-row">
+              {["week","month","year"].map(p=>(
+                <button key={p} className={`period-chip ${freqPeriod===p?"on":""}`}
+                  onClick={async()=>{ setFreqPeriod(p); await supabase.from('freq_settings').upsert({user_id:user.id,period:p,tracked:freqTracked,updated_at:new Date().toISOString()},{onConflict:'user_id'}); }}>
+                  This {p[0].toUpperCase()+p.slice(1)}
+                </button>
+              ))}
+            </div>
+            {!freqTracked.length?(
+              <div style={{textAlign:"center",padding:"32px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No habits tracked — tap Configure</div>
+            ):freqTracked.map(id=>{
+              const it=allItems.find(x=>x.id===id); if(!it) return null;
+              const {count,possible}=freqStats(id);
+              const pct=possible>0?Math.round((count/possible)*100):0;
+              return (
+                <div key={id} className="freq-card">
+                  <div className="freq-top">
+                    <span className="freq-emoji">{it.emoji}</span>
+                    <span className="freq-label">{it.label}</span>
+                    <span className="freq-count">{count} / {possible} days</span>
+                  </div>
+                  <div className="freq-bar-bg"><div className="freq-bar-fill" style={{width:`${pct}%`}}/></div>
+                  <div className="freq-sub">{pct}% of days {freqRange().label}</div>
+                </div>
+              );
+            })}
           </>
         )}
 
@@ -5639,39 +5721,198 @@ export default function App({ user }) {
             {/* ── Routines header ── */}
             <div className="sec-head">
               <div className="sec-title">Routines</div>
-              <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                <button className="ghost-btn" style={{fontSize:".72rem",padding:"4px 8px"}}
-                  onClick={()=>setPlansViewMode(p=>p==="carousel"?"list":"carousel")}>
-                  {plansViewMode==="carousel"?"☰ List":"⊟ Carousel"}
-                </button>
-                <button className="ghost-btn" onClick={()=>setModal("plan")}>+ Add</button>
-              </div>
-            </div>
-            {/* ── Products shortcut ── */}
-            <div style={{margin:"0 14px 16px",display:"flex",alignItems:"center",gap:10,background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.2)",borderRadius:14,padding:"11px 14px",cursor:"pointer"}}
-              onClick={()=>setPageView("products")}>
-              <span style={{fontSize:"1.1rem"}}>💄</span>
-              <div style={{flex:1}}>
-                <div style={{fontSize:".82rem",color:"rgba(255,255,255,.9)",fontWeight:500}}>My Products</div>
-                <div style={{fontSize:".68rem",color:"rgba(255,255,255,.5)",marginTop:1}}>{products.length} product{products.length!==1?"s":""} in your library</div>
-              </div>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
 
-            {/* ── Filter tabs ── */}
-            <div style={{display:"flex",gap:6,marginBottom:18}}>
-              {[["active","Active"],["past","Past"],["all","All"]].map(([v,l])=>(
-                <button key={v} onClick={()=>setPlansFilter(v)}
-                  style={{padding:"5px 14px",borderRadius:20,border:"1px solid",fontSize:".74rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",transition:"all .15s",
-                    background:plansFilter===v?"#1E3428":"rgba(255,255,255,.15)",
-                    color:plansFilter===v?"#fff":"rgba(255,255,255,.65)",
-                    borderColor:plansFilter===v?"#1E3428":"rgba(255,255,255,.3)"}}>
-                  {l}
-                </button>
+            {/* ── Sub-tab nav: Ritual / Product Library ── */}
+            <div className="cat-pills" style={{paddingTop:0,marginBottom:14}}>
+              {[["ritual","Ritual"],["library","Product Library"]].map(([v,l])=>(
+                <button key={v} className={`cat-pill ${routinesSubTab===v?"active":""}`}
+                  onClick={()=>setRoutinesSubTab(v)}>{l}</button>
               ))}
             </div>
 
-            {(()=>{
+            {routinesSubTab==="ritual" && (()=>{
+              const cats = (userCategories && userCategories.length) ? userCategories : ["skin","hair"];
+              const activeSnap = snapshots.find(s=>!s.ended_at);
+              const pastSnaps = snapshots.filter(s=>s.ended_at).sort((a,b)=>b.started_at.localeCompare(a.started_at));
+              // Currently Tracking: routinesByCat items grouped by category, with auto-carousel for >10
+              const trackingByCat = Object.fromEntries(cats.map(c=>[c, routinesByCat[c]||[]]));
+              const anyTracking = cats.some(c => (trackingByCat[c]||[]).length > 0);
+
+              const ItemRow = ({it, cat}) => (
+                <div className="pc-card" style={{margin:"0 0 8px"}}
+                  onClick={()=>{setEditSection(null);setActiveTab(cat);setModal("manageItems");}}>
+                  <div className="pc-img g" style={{fontSize:"1.3rem"}}>{it.emoji||"○"}</div>
+                  <div className="pc-info">
+                    <div className="pc-name">{it.label}</div>
+                    <div style={{display:"flex",gap:6,marginTop:3,alignItems:"center",flexWrap:"wrap"}}>
+                      <span className="pc-cat-tag">{capCat(cat)}</span>
+                      {it.time&&it.time!=="both"&&<span className={`pc-time ${it.time==="night"?"eve":""}`}>{it.time==="day"?"AM":"PM"}</span>}
+                    </div>
+                  </div>
+                </div>
+              );
+              const ItemCarouselCard = ({it, cat}) => (
+                <div style={{flexShrink:0,width:120,background:"rgba(255,255,255,.92)",border:"1px solid rgba(255,255,255,.9)",borderRadius:14,padding:"12px 10px",cursor:"pointer",textAlign:"center"}}
+                  onClick={()=>{setEditSection(null);setActiveTab(cat);setModal("manageItems");}}>
+                  <div style={{fontSize:"1.6rem",marginBottom:4}}>{it.emoji||"○"}</div>
+                  <div style={{fontSize:".78rem",color:"#1A2820",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{it.label}</div>
+                  <div style={{fontSize:".62rem",color:"#6B8C7A",marginTop:4}}>{capCat(cat)}</div>
+                </div>
+              );
+
+              return (
+                <>
+                  {/* ─── Section 1: Currently Tracking ─── */}
+                  <div className="sec-head" style={{paddingTop:0}}>
+                    <div className="sec-title" style={{fontStyle:"normal",color:"rgba(255,255,255,.85)"}}>Currently Tracking</div>
+                    <button className="ghost-btn" style={{fontSize:".68rem",padding:"4px 8px"}}
+                      onClick={()=>setTrackingViewMode(m=>m==="carousel"?"list":"carousel")}>
+                      {trackingViewMode==="carousel"?"List":"Carousel"}
+                    </button>
+                  </div>
+                  {!anyTracking ? (
+                    <div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1rem"}}>Nothing tracked yet</div>
+                  ) : cats.map(cat => {
+                    const items = trackingByCat[cat] || [];
+                    if (!items.length) return null;
+                    // Auto-carousel rule: >10 items per category forces carousel regardless of toggle
+                    const useCarousel = items.length > 10 || trackingViewMode === "carousel";
+                    return (
+                      <div key={cat} style={{marginBottom:14,background:"rgba(255,255,255,.22)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.32)",borderRadius:18,padding:"12px 12px 8px"}}>
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                          <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.6)",fontWeight:600}}>{capCat(cat)}</div>
+                          <div style={{fontSize:".62rem",color:"rgba(255,255,255,.45)"}}>{items.length} item{items.length!==1?"s":""}</div>
+                        </div>
+                        {useCarousel ? (
+                          <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+                            {items.map(it=><ItemCarouselCard key={it.id} it={it} cat={cat}/>)}
+                          </div>
+                        ) : (
+                          <div>
+                            {items.map(it=><ItemRow key={it.id} it={it} cat={cat}/>)}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <button className="add-card" style={{margin:"4px 14px 20px"}}
+                    onClick={()=>{setEditSection(null);setActiveTab(cats[0]);setModal("manageItems");}}>
+                    + Add tracking item
+                  </button>
+
+                  {/* ─── Section 2: Current Routine ─── */}
+                  <div className="sec-head" style={{paddingTop:0}}>
+                    <div className="sec-title" style={{fontStyle:"normal",color:"rgba(255,255,255,.85)"}}>Current Routine</div>
+                  </div>
+                  {!activeSnap ? (
+                    <div style={{margin:"0 14px 16px",padding:"18px 14px",background:"rgba(255,255,255,.18)",border:"1px dashed rgba(255,255,255,.32)",borderRadius:16,textAlign:"center"}}>
+                      <div style={{fontSize:".82rem",color:"rgba(255,255,255,.78)",marginBottom:8,fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif"}}>No active routine yet</div>
+                      <button className="ghost-btn" onClick={()=>setRoutinesProductForm({initial:{id:uid(),name:"",category:(userCategories&&userCategories[0])||"skin",type:"product"},isEdit:false})}>Build my routine</button>
+                    </div>
+                  ) : (() => {
+                    const snapProducts = (activeSnap.products||[]).map(sp=>{
+                      const prod = products.find(p=>p.id===sp.product_id);
+                      return prod ? { ...prod, _sp: sp } : null;
+                    }).filter(Boolean);
+                    const byCat = {};
+                    snapProducts.forEach(p => {
+                      const c = p.category || "other";
+                      (byCat[c] = byCat[c] || []).push(p);
+                    });
+                    const snapCats = Object.keys(byCat);
+                    const sinceStr = activeSnap.started_at
+                      ? new Date(activeSnap.started_at + "T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})
+                      : "";
+                    return (
+                      <div style={{margin:"0 14px 12px",background:"rgba(255,255,255,.26)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.35)",borderRadius:18,padding:"14px 12px 10px"}}>
+                        {sinceStr&&<div style={{fontSize:".68rem",color:"rgba(255,255,255,.55)",marginBottom:10,letterSpacing:".05em"}}>Since {sinceStr}</div>}
+                        {snapCats.length === 0 ? (
+                          <div style={{textAlign:"center",padding:"12px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:".95rem"}}>Routine is empty — tap Update Routine</div>
+                        ) : snapCats.map(cat => (
+                          <div key={cat} style={{marginBottom:10}}>
+                            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+                              <div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.6)",fontWeight:600}}>{capCat(cat)}</div>
+                              <div style={{fontSize:".62rem",color:"rgba(255,255,255,.45)"}}>{byCat[cat].length} product{byCat[cat].length!==1?"s":""}</div>
+                            </div>
+                            <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+                              {byCat[cat].map(p=>(
+                                <div key={p.id} style={{flexShrink:0,width:108,background:"rgba(255,255,255,.92)",borderRadius:12,padding:"10px 8px",textAlign:"center",cursor:"pointer"}}
+                                  onClick={()=>setRoutinesProductForm({initial:p,isEdit:true})}>
+                                  <div style={{width:48,height:48,margin:"0 auto 6px",borderRadius:10,background:"#EEF4F0",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
+                                    {p.media_url||p.image
+                                      ? <img src={p.media_url||p.image} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                                      : <span style={{fontSize:"1.3rem"}}>○</span>}
+                                  </div>
+                                  <div style={{fontSize:".7rem",color:"#1A2820",lineHeight:1.25,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p._sp?.name_snapshot||p.name}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                        <div style={{display:"flex",gap:8,marginTop:8}}>
+                          <button onClick={()=>setRoutinesAnalyze(true)}
+                            style={{flex:1,background:"rgba(255,255,255,.18)",border:"1px solid rgba(255,255,255,.32)",borderRadius:12,padding:"9px 10px",fontSize:".72rem",color:"#fff",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".05em"}}>
+                            Analyze My Routine
+                          </button>
+                          <button onClick={()=>setRoutinesProductForm({initial:{id:uid(),name:"",category:(userCategories&&userCategories[0])||"skin",type:"product"},isEdit:false})}
+                            style={{flex:1,background:"#1E3428",border:"1px solid #1E3428",borderRadius:12,padding:"9px 10px",fontSize:".72rem",color:"#fff",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".05em"}}>
+                            Update Routine
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ─── Section 3: Routine History ─── */}
+                  {pastSnaps.length > 0 && (
+                    <>
+                      <div className="sec-head" style={{paddingTop:8}}>
+                        <div className="sec-title" style={{fontStyle:"normal",color:"rgba(255,255,255,.85)"}}>Routine History</div>
+                      </div>
+                      {pastSnaps.map(snap => {
+                        const startStr = snap.started_at ? new Date(snap.started_at+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "";
+                        const endStr   = snap.ended_at   ? new Date(snap.ended_at  +"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "";
+                        const count = (snap.products||[]).length;
+                        return (
+                          <div key={snap.id} style={{margin:"0 14px 8px",padding:"12px 14px",background:"rgba(255,255,255,.92)",border:"1px solid rgba(255,255,255,.9)",borderRadius:14,display:"flex",alignItems:"center",gap:10,boxShadow:"0 2px 8px rgba(0,0,0,.05)"}}>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{fontSize:".86rem",color:"#1A2820",fontWeight:500}}>{snap.label||"Past routine"}</div>
+                              <div style={{fontSize:".68rem",color:"#6B8C7A",marginTop:2}}>{startStr}{endStr?` – ${endStr}`:""} · {count} product{count!==1?"s":""}</div>
+                            </div>
+                            <button onClick={()=>setRoutinesCompare(true)}
+                              style={{background:"#243D30",border:"none",borderRadius:10,padding:"6px 12px",fontSize:".7rem",color:"#fff",cursor:"pointer",letterSpacing:".08em",fontFamily:"'DM Sans',sans-serif"}}>
+                              Compare
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
+
+                  {/* ─── Plans & Reminders (preserved schedules + treatments rendering) ─── */}
+                  <div className="sec-head" style={{marginTop:18}}>
+                    <div className="sec-title" style={{fontStyle:"normal",color:"rgba(255,255,255,.85)"}}>Plans & Reminders</div>
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                      <button className="ghost-btn" style={{fontSize:".68rem",padding:"4px 8px"}}
+                        onClick={()=>setPlansViewMode(p=>p==="carousel"?"list":"carousel")}>
+                        {plansViewMode==="carousel"?"List":"Carousel"}
+                      </button>
+                      <button className="ghost-btn" onClick={()=>setModal("plan")}>+ Add</button>
+                    </div>
+                  </div>
+                  <div style={{display:"flex",gap:6,marginBottom:14,paddingLeft:14,paddingRight:14}}>
+                    {[["active","Active"],["past","Past"],["all","All"]].map(([v,l])=>(
+                      <button key={v} onClick={()=>setPlansFilter(v)}
+                        style={{padding:"5px 14px",borderRadius:20,border:"1px solid",fontSize:".74rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",transition:"all .15s",
+                          background:plansFilter===v?"#1E3428":"rgba(255,255,255,.15)",
+                          color:plansFilter===v?"#fff":"rgba(255,255,255,.65)",
+                          borderColor:plansFilter===v?"#1E3428":"rgba(255,255,255,.3)"}}>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                  {(()=>{
               const filterPlan = s => plansFilter==="active"?!s.ended_at:plansFilter==="past"?!!s.ended_at:true;
               const filterTx = tx => {
                 const hasFuture = tx.dates.some(d=>d>=today);
@@ -5912,49 +6153,142 @@ export default function App({ user }) {
               );
             })()}
 
-            {/* ── Habit Frequency (merged into Insights) ── */}
-            <hr style={{border:"none",borderTop:"1px solid rgba(255,255,255,.12)",margin:"20px 14px"}}/>
-            <div className="sec-head">
-              <div className="sec-title">Habit Frequency</div>
-              <button className="ghost-btn" onClick={()=>setModal("freq")}>⚙️ Configure</button>
-            </div>
-            <div className="period-row">
-              {["week","month","year"].map(p=>(
-                <button key={p} className={`period-chip ${freqPeriod===p?"on":""}`}
-                  onClick={async()=>{ setFreqPeriod(p); await supabase.from('freq_settings').upsert({user_id:user.id,period:p,tracked:freqTracked,updated_at:new Date().toISOString()},{onConflict:'user_id'}); }}>
-                  This {p[0].toUpperCase()+p.slice(1)}
-                </button>
-              ))}
-            </div>
-            {!freqTracked.length?(
-              <div style={{textAlign:"center",padding:"32px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.1rem"}}>No habits tracked — tap Configure</div>
-            ):freqTracked.map(id=>{
-              const it=allItems.find(x=>x.id===id); if(!it) return null;
-              const {count,possible}=freqStats(id);
-              const pct=possible>0?Math.round((count/possible)*100):0;
-              return (
-                <div key={id} className="freq-card">
-                  <div className="freq-top">
-                    <span className="freq-emoji">{it.emoji}</span>
-                    <span className="freq-label">{it.label}</span>
-                    <span className="freq-count">{count} / {possible} days</span>
+                  {treatments.length>0&&<>
+                    <div className="sec-head" style={{marginTop:28}}>
+                      <div className="sec-title" style={{fontStyle:"normal",color:"rgba(255,255,255,.85)"}}>Treatment History</div>
+                    </div>
+                    {treatments.map(tx=>{
+                      const done=tx.completedDates||[];
+                      return (
+                        <TreatmentHistoryCard key={tx.id} tx={tx} doneDates={done}/>
+                      );
+                    })}
+                  </>}
+                </>
+              );
+            })()}
+
+            {routinesSubTab==="library" && (()=>{
+              // Product Library: all items (products + practices + treatments + other)
+              const filteredByStatus = products.filter(p => {
+                if (libraryStatus === "all") return true;
+                const active = p.is_active !== false;
+                return libraryStatus === "active" ? active : !active;
+              });
+              const filtered = filteredByStatus.filter(p => {
+                if (libraryType === "all") return true;
+                const t = p.type || "product";
+                return t === libraryType;
+              });
+              const byCat = {};
+              filtered.forEach(p => {
+                const c = p.category || "other";
+                (byCat[c] = byCat[c] || []).push(p);
+              });
+              const catKeys = Object.keys(byCat);
+
+              const StatusBadge = ({active}) => (
+                <span style={{fontSize:".58rem",letterSpacing:".08em",textTransform:"uppercase",padding:"1px 6px",borderRadius:8,
+                  background:active?"rgba(80,140,100,.25)":"rgba(150,130,110,.22)",
+                  color:active?"#2E5C3F":"#7A6A5A",fontWeight:600}}>
+                  {active?"Active":"Inactive"}
+                </span>
+              );
+              const ProdRow = ({p}) => (
+                <div className="pc-card" style={{margin:"0 0 8px"}} onClick={()=>setRoutinesProductForm({initial:p,isEdit:true})}>
+                  <div className="pc-img g" style={{overflow:"hidden"}}>
+                    {p.media_url||p.image
+                      ? <img src={p.media_url||p.image} alt="" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:12}}/>
+                      : <span style={{fontSize:"1.3rem"}}>○</span>}
                   </div>
-                  <div className="freq-bar-bg"><div className="freq-bar-fill" style={{width:`${pct}%`}}/></div>
-                  <div className="freq-sub">{pct}% of days {freqRange().label}</div>
+                  <div className="pc-info">
+                    {p.brand && <div className="pc-brand">{p.brand}</div>}
+                    <div className="pc-name">{p.name}</div>
+                    <div style={{display:"flex",gap:6,marginTop:3,alignItems:"center",flexWrap:"wrap"}}>
+                      <span className="pc-cat-tag">{capCat(p.category||"other")}</span>
+                      <StatusBadge active={p.is_active!==false}/>
+                    </div>
+                  </div>
                 </div>
               );
-            })}
-          {treatments.length>0&&<>
-            <div className="sec-head" style={{marginTop:28}}>
-              <div className="sec-title">Treatment History</div>
-            </div>
-            {treatments.map(tx=>{
-              const done=tx.completedDates||[];
-              return (
-                <TreatmentHistoryCard key={tx.id} tx={tx} doneDates={done}/>
+              const ProdCarouselCard = ({p}) => (
+                <div style={{flexShrink:0,width:120,background:"rgba(255,255,255,.92)",border:"1px solid rgba(255,255,255,.9)",borderRadius:14,padding:"10px 8px",cursor:"pointer",textAlign:"center"}}
+                  onClick={()=>setRoutinesProductForm({initial:p,isEdit:true})}>
+                  <div style={{width:56,height:56,margin:"0 auto 6px",borderRadius:10,background:"#EEF4F0",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
+                    {p.media_url||p.image
+                      ? <img src={p.media_url||p.image} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                      : <span style={{fontSize:"1.3rem"}}>○</span>}
+                  </div>
+                  <div style={{fontSize:".74rem",color:"#1A2820",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p.name}</div>
+                  <div style={{marginTop:4,display:"flex",justifyContent:"center"}}><StatusBadge active={p.is_active!==false}/></div>
+                </div>
               );
-            })}
-          </>}
+
+              return (
+                <>
+                  {/* Status filter chips */}
+                  <div style={{display:"flex",gap:6,marginBottom:8,paddingLeft:14,paddingRight:14,flexWrap:"wrap"}}>
+                    {[["all","All"],["active","Active"],["inactive","Inactive"]].map(([v,l])=>(
+                      <button key={v} onClick={()=>setLibraryStatus(v)}
+                        style={{padding:"5px 14px",borderRadius:20,border:"1px solid",fontSize:".74rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",
+                          background:libraryStatus===v?"#1E3428":"rgba(255,255,255,.15)",
+                          color:libraryStatus===v?"#fff":"rgba(255,255,255,.65)",
+                          borderColor:libraryStatus===v?"#1E3428":"rgba(255,255,255,.3)"}}>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Type filter chips */}
+                  <div style={{display:"flex",gap:6,marginBottom:12,paddingLeft:14,paddingRight:14,flexWrap:"wrap"}}>
+                    {[["all","All types"],["product","Product"],["practice","Practice"],["treatment","Treatment"],["other","Other"]].map(([v,l])=>(
+                      <button key={v} onClick={()=>setLibraryType(v)}
+                        style={{padding:"4px 12px",borderRadius:16,border:"1px solid",fontSize:".7rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",
+                          background:libraryType===v?"rgba(255,255,255,.28)":"rgba(255,255,255,.1)",
+                          color:libraryType===v?"#fff":"rgba(255,255,255,.6)",
+                          borderColor:libraryType===v?"rgba(255,255,255,.5)":"rgba(255,255,255,.22)"}}>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                  {/* View-mode toggle */}
+                  <div className="sec-head" style={{paddingTop:0}}>
+                    <div style={{fontSize:".68rem",color:"rgba(255,255,255,.55)",letterSpacing:".08em"}}>{filtered.length} item{filtered.length!==1?"s":""}</div>
+                    <button className="ghost-btn" style={{fontSize:".68rem",padding:"4px 8px"}}
+                      onClick={()=>setLibraryViewMode(m=>m==="carousel"?"list":"carousel")}>
+                      {libraryViewMode==="carousel"?"List":"Carousel"}
+                    </button>
+                  </div>
+
+                  {filtered.length === 0 ? (
+                    <div style={{textAlign:"center",padding:"28px 0",color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"1.05rem"}}>Nothing here yet</div>
+                  ) : libraryViewMode === "carousel" ? (
+                    catKeys.map(cat => (
+                      <div key={cat} style={{marginBottom:14,background:"rgba(255,255,255,.22)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,.32)",borderRadius:18,padding:"12px 12px 8px"}}>
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                          <div style={{fontSize:".72rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.6)",fontWeight:600}}>{capCat(cat)}</div>
+                          <div style={{fontSize:".62rem",color:"rgba(255,255,255,.45)"}}>{byCat[cat].length}</div>
+                        </div>
+                        <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+                          {byCat[cat].map(p=><ProdCarouselCard key={p.id} p={p}/>)}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    catKeys.map(cat => (
+                      <div key={cat} style={{margin:"0 14px 14px"}}>
+                        <div style={{fontSize:".68rem",letterSpacing:".1em",textTransform:"uppercase",color:"rgba(255,255,255,.55)",fontWeight:600,marginBottom:8}}>{capCat(cat)}</div>
+                        {byCat[cat].map(p=><ProdRow key={p.id} p={p}/>)}
+                      </div>
+                    ))
+                  )}
+
+                  <button className="add-card" style={{margin:"4px 14px 20px"}}
+                    onClick={()=>setRoutinesProductForm({initial:{id:uid(),name:"",category:(userCategories&&userCategories[0])||"skin",type:"product"},isEdit:false})}>
+                    + Add product, practice, treatment or other
+                  </button>
+                </>
+              );
+            })()}
 
           </>
         )}
@@ -6005,6 +6339,66 @@ export default function App({ user }) {
       {modal==="freq"&&<FreqModal allItems={allItems} tracked={freqTracked} period={freqPeriod} onToggle={async id=>{ const newTracked=freqTracked.includes(id)?freqTracked.filter(x=>x!==id):[...freqTracked,id]; setFreqTracked(newTracked); if(user) await supabase.from('freq_settings').upsert({user_id:user.id,period:freqPeriod,tracked:newTracked,updated_at:new Date().toISOString()},{onConflict:'user_id'}); }} onPeriod={async p=>{ setFreqPeriod(p); await persist({freqPeriod:p}); }} onClose={()=>setModal(null)}/>}
       {modal==="dayEdit"&&selectedDay&&<DayEditModal date={selectedDay} entry={getE(selectedDay)} categories={userCategories} routinesByCat={routinesByCat} onSave={data=>saveDayEdit(selectedDay,data)} onClose={()=>setModal(null)}/>}
       {modal==="rangeApply"&&rangeStart&&rangeEnd&&<RangeApplyModal rangeStart={rangeStart} rangeEnd={rangeEnd} categories={userCategories} routinesByCat={routinesByCat} onApply={applyRange} onClose={()=>{ setModal(null); setRangeStart(null); setRangeEnd(null); setRangeMode(false); }}/>}
+
+      {/* Routines tab — inline overlays so nothing navigates away */}
+      {routinesProductForm && (
+        <div className="overlay" onClick={()=>setRoutinesProductForm(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()} style={{background:"#F8F4EE"}}>
+            <ProductForm
+              initialData={routinesProductForm.initial}
+              isEditingProd={routinesProductForm.isEdit}
+              categories={(userCategories&&userCategories.length)?userCategories:["skin","hair","treatment"]}
+              onClose={()=>setRoutinesProductForm(null)}
+              onSave={async (p)=>{
+                await saveProduct(p);
+                // Also add to active snapshot if this is a brand-new product and an active snapshot exists
+                if (!routinesProductForm.isEdit) {
+                  const active = snapshots.find(s=>!s.ended_at);
+                  if (active && addProductToSnapshot) {
+                    try { await addProductToSnapshot(active.id, p.id, { name_snapshot:p.name, brand_snapshot:p.brand||"" }); } catch(e){ console.error(e); }
+                  } else if (!active && openNewSnapshot && addProductToSnapshot) {
+                    try {
+                      const newSnap = await openNewSnapshot(true);
+                      if (newSnap) await addProductToSnapshot(newSnap.id, p.id, { name_snapshot:p.name, brand_snapshot:p.brand||"" });
+                    } catch(e){ console.error(e); }
+                  }
+                }
+                setRoutinesProductForm(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
+      {routinesAnalyze && (() => {
+        const active = snapshots.find(s=>!s.ended_at);
+        if (!active) return null;
+        return (
+          <div className="overlay" onClick={()=>setRoutinesAnalyze(false)}>
+            <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:560}}>
+              <RoutineAnalysis
+                products={products}
+                snapProducts={active.products||[]}
+                entries={entries}
+                dateRange={{start:active.started_at,end:null}}
+                isCurrent={true}
+                onClose={()=>setRoutinesAnalyze(false)}
+                onFetchIngredients={fetchIngredients}
+                userCategories={userCategories}/>
+            </div>
+          </div>
+        );
+      })()}
+      {routinesCompare && (
+        <div className="overlay" onClick={()=>setRoutinesCompare(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:560}}>
+            <CompareRoutines
+              snapshots={snapshots}
+              products={products}
+              entries={entries}
+              onClose={()=>setRoutinesCompare(false)}/>
+          </div>
+        </div>
+      )}
 
       {showNamePrompt&&(
         <div className="name-prompt-overlay">
