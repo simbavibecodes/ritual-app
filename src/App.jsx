@@ -1823,8 +1823,8 @@ function RoutineAnalysis({ products, snapProducts, entries, dateRange, onClose, 
   );
 }
 
-function CompareRoutines({ snapshots, products, entries, onClose }) {
-  const [selected, setSelected] = useState([]);
+function CompareRoutines({ snapshots, products, entries, onClose, initialSelected = [] }) {
+  const [selected, setSelected] = useState(initialSelected);
   const [status, setStatus] = useState("idle");
   const [result, setResult] = useState(null);
 
@@ -4375,7 +4375,7 @@ export default function App({ user }) {
   const [libraryType,     setLibraryType]     = useState("all");      // "all" | "product" | "practice" | "treatment" | "other"
   // Inline overlays for Routines tab (no navigation away from view)
   const [routinesAnalyze, setRoutinesAnalyze] = useState(false);
-  const [routinesCompare, setRoutinesCompare] = useState(false);
+  const [routinesCompare, setRoutinesCompare] = useState(null); // null=closed, []=open with no preselect, [ids]=preselected
   const [routinesProductForm, setRoutinesProductForm] = useState(null); // {initial, isEdit}|null
 
   // Persist current page across refreshes
@@ -5880,7 +5880,10 @@ export default function App({ user }) {
                               <div style={{fontSize:".86rem",color:"#1A2820",fontWeight:500}}>{snap.label||"Past routine"}</div>
                               <div style={{fontSize:".68rem",color:"#6B8C7A",marginTop:2}}>{startStr}{endStr?` – ${endStr}`:""} · {count} product{count!==1?"s":""}</div>
                             </div>
-                            <button onClick={()=>setRoutinesCompare(true)}
+                            <button onClick={()=>{
+                              const active = snapshots.find(s=>!s.ended_at);
+                              setRoutinesCompare(active ? [snap.id, active.id] : [snap.id]);
+                            }}
                               style={{background:"#243D30",border:"none",borderRadius:10,padding:"6px 12px",fontSize:".7rem",color:"#fff",cursor:"pointer",letterSpacing:".08em",fontFamily:"'DM Sans',sans-serif"}}>
                               Compare
                             </button>
@@ -6351,15 +6354,25 @@ export default function App({ user }) {
               onClose={()=>setRoutinesProductForm(null)}
               onSave={async (p)=>{
                 await saveProduct(p);
-                // Also add to active snapshot if this is a brand-new product and an active snapshot exists
+                // For newly-added items, also register them as a trackable
+                // entry in routinesByCat so they show in Currently Tracking.
                 if (!routinesProductForm.isEdit) {
+                  const cat = p.category || (userCategories&&userCategories[0]) || "skin";
+                  const exists = (routinesByCat[cat]||[]).some(r=>r.id===p.id);
+                  if (!exists) {
+                    const labelBase = (p.type==="other" && p.type_name) ? p.name : p.name;
+                    try { await addItem(cat, { id:p.id, label:labelBase, emoji:"○", time:"both" }); } catch(e){ console.error(e); }
+                  }
+                }
+                // Also add to active snapshot if this is a brand-new product and an active snapshot exists
+                if (!routinesProductForm.isEdit && (p.type||"product")==="product") {
                   const active = snapshots.find(s=>!s.ended_at);
                   if (active && addProductToSnapshot) {
                     try { await addProductToSnapshot(active.id, p.id, { name_snapshot:p.name, brand_snapshot:p.brand||"" }); } catch(e){ console.error(e); }
                   } else if (!active && openNewSnapshot && addProductToSnapshot) {
                     try {
-                      const newSnap = await openNewSnapshot(true);
-                      if (newSnap) await addProductToSnapshot(newSnap.id, p.id, { name_snapshot:p.name, brand_snapshot:p.brand||"" });
+                      const newSnapId = await openNewSnapshot(true);
+                      if (newSnapId) await addProductToSnapshot(newSnapId, p.id, { name_snapshot:p.name, brand_snapshot:p.brand||"" });
                     } catch(e){ console.error(e); }
                   }
                 }
@@ -6389,13 +6402,14 @@ export default function App({ user }) {
         );
       })()}
       {routinesCompare && (
-        <div className="overlay" onClick={()=>setRoutinesCompare(false)}>
+        <div className="overlay" onClick={()=>setRoutinesCompare(null)}>
           <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:560}}>
             <CompareRoutines
               snapshots={snapshots}
               products={products}
               entries={entries}
-              onClose={()=>setRoutinesCompare(false)}/>
+              initialSelected={Array.isArray(routinesCompare)?routinesCompare:[]}
+              onClose={()=>setRoutinesCompare(null)}/>
           </div>
         </div>
       )}
